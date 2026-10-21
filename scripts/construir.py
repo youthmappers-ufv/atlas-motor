@@ -86,6 +86,13 @@ def escrever_quarto(livro: Path, config: dict, ativos: list) -> None:
     (livro / "_quarto.yml").write_text(texto, encoding="utf-8", newline="\n")
 
 
+def tirar_somente_leitura(funcao, caminho, _info) -> None:
+    """No Windows (e em pastas do OneDrive), o Quarto deixa itens somente leitura que o
+    rmtree não apaga: tira o atributo e tenta de novo."""
+    os.chmod(caminho, 0o700)
+    funcao(caminho)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     argumento_local(ap)
@@ -111,7 +118,7 @@ def main() -> int:
 
     construcao = local / "_construcao"
     if construcao.exists():
-        shutil.rmtree(construcao)
+        shutil.rmtree(construcao, onerror=tirar_somente_leitura)
     livro = construcao / "livro"
     shutil.copytree(MOTOR / "livro", livro, ignore=shutil.ignore_patterns("_quarto.modelo.yml"))
     shutil.copytree(local / "atlas", livro, dirs_exist_ok=True)
