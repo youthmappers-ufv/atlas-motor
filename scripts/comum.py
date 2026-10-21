@@ -73,6 +73,8 @@ def ler_temas(local: Path) -> list[Tema]:
     """
     catalogo = {t["id"]: t for t in ler_toml(CATALOGO / "temas.toml")["tema"]}
     escolhas = ler_toml(local / "temas.toml").get("tema", {}) if (local / "temas.toml").exists() else {}
+    if isinstance(escolhas, list):               # formato anterior ao motor ([[tema]] com id), em commits antigos
+        escolhas = {t["id"]: t for t in escolhas if "id" in t}
     temas = []
     for tid, base in catalogo.items():
         e = escolhas.get(tid, {})
