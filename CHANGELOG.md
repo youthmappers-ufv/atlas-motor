@@ -17,6 +17,13 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
+## v0.3.0 — 2026-10-21
+
+Compatível com v0.2.1: `atualizar_motor.py --versao v0.3.0`. Sem `publicacao.ativa` no `atlas.toml`, nada muda (vale `true`).
+
+- `publicacao.ativa` no `atlas.toml`: com `false`, o workflow de publicação gera site e PDF só como artefato (e o release privado, em tags) e não envia nada ao site público; o segredo `ATLAS_CHAVE_PUBLICACAO` passa a ser opcional. Para municípios sem parceria, como o canário (decisão 0005).
+- O validador exige `true` ou `false` (sem aspas); um teste confere que todo passo que publica no site depende da opção.
+
 ## v0.2.1 — 2026-10-21
 
 Correção, a partir do teste com um segundo município (São Gotardo). Compatível: `atualizar_motor.py --versao v0.2.1`; nos municípios já criados, trocar à mão o horário dos agendamentos (ver abaixo).
