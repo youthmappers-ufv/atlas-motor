@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "Se usar o atlas-motor em trabalho acadêmico, cite-o assim."
+title: "atlas-motor: motor aberto para atlas municipais colaborativos a partir do OpenStreetMap"
+type: software
+authors:
+  - family-names: Smarzaro
+    given-names: Rodrigo
+    affiliation: "Universidade Federal de Viçosa, Campus Rio Paranaíba"
+  - name: "Programa Youthmappers UFV"
+version: v1.1
+date-released: 2026-10-21
+repository-code: "https://github.com/youthmappers-ufv/atlas-motor"
+keywords:
+  - OpenStreetMap
+  - atlas municipal
+  - completude
+  - informação geográfica voluntária
+  - extensão universitária
+  - Quarto
+abstract: >-
+  Código e estrutura comuns do Atlas Colaborativo do Programa Youthmappers UFV:
+  retratos versionados do OpenStreetMap por município, validação de integridade,
+  indicadores de completude em relação a bases oficiais (INEP, CNES), mapas e
+  publicação como site e PDF, com um repositório fino por município.
