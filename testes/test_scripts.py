@@ -102,6 +102,52 @@ class ModeloCoerenteComMotor(unittest.TestCase):
     def test_versao_registrada_no_changelog(self):
         self.assertIn(f"## {versao_motor()}", (MOTOR / "CHANGELOG.md").read_text(encoding="utf-8"))
 
+    def test_versao_com_metricas(self):
+        arq = MOTOR / "pesquisa" / "dados" / "metricas-versoes.csv"
+        self.assertTrue(arq.exists(), "falta pesquisa/dados/metricas-versoes.csv")
+        self.assertIn(f"\n{versao_motor()},", arq.read_text(encoding="utf-8"),
+                      "rode scripts/metricas_motor.py --registrar ao lançar a versão")
+
+    def test_citation_na_versao(self):
+        self.assertIn(f"version: {versao_motor()}\n", (MOTOR / "CITATION.cff").read_text(encoding="utf-8"))
+
+
+class Pesquisa(unittest.TestCase):
+    def test_metricas_medem_o_motor(self):
+        from metricas_motor import CAMPOS, medir
+        m = medir()
+        self.assertEqual(set(CAMPOS), set(m))
+        self.assertGreater(m["testes"], 0)
+        self.assertGreater(m["regras_validador"], 10)
+        self.assertEqual(m["pranchas_catalogo"], m["consultas"])
+
+    def test_serie_historica_a_partir_do_git(self):
+        import json
+        from serie_historica import serie
+        with tempfile.TemporaryDirectory() as tmp:
+            local = Path(tmp) / "atlas-exemplo"
+            shutil.copytree(MOTOR / "testes" / "exemplo", local, ignore=shutil.ignore_patterns("_construcao"))
+            def git(*a):
+                subprocess.run(["git", *a], cwd=local, check=True, capture_output=True)
+            git("init", "-q", "-b", "main")
+            git("-c", "user.name=t", "-c", "user.email=t@t", "add", "-A")
+            git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "retrato 1")
+            # segundo retrato: uma escola a mais
+            edu = local / "dados" / "osm" / "educacao.geojson"
+            dados = json.loads(edu.read_text(encoding="utf-8"))
+            dados["features"].append({"type": "Feature", "properties": {"osm": "node/99", "tags": {"amenity": "school",
+                                      "name": "Escola Municipal Rural do Povoado"}},
+                                      "geometry": {"type": "Point", "coordinates": [-46.2702, -19.2205]}})
+            edu.write_text(json.dumps(dados), encoding="utf-8")
+            ret = local / "dados" / "osm" / "retrato.json"
+            r = json.loads(ret.read_text(encoding="utf-8"))
+            r["temas"]["educacao"]["feicoes"] = 4
+            ret.write_text(json.dumps(r), encoding="utf-8")
+            git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-am", "retrato 2")
+            linhas = [l for l in serie(local) if l["tema"] == "educacao"]
+        self.assertEqual([l["total"] for l in linhas], [3, 4])
+        self.assertEqual([l["C_t"] for l in linhas], [66.7, 100.0], "a escola rural nova completa a base oficial")
+
 
 if __name__ == "__main__":
     unittest.main()
