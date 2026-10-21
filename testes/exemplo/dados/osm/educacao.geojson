@@ -1,0 +1,5 @@
+{"type":"FeatureCollection","features":[
+{"type":"Feature","properties":{"osm":"node/20","tags":{"amenity":"school","name":"Escola Estadual Major Exemplo"}},"geometry":{"type":"Point","coordinates":[-46.251,-19.201]}},
+{"type":"Feature","properties":{"osm":"node/21","tags":{"amenity":"school","name":"Escola Municipal Professora Ana","addr:street":"Rua A"}},"geometry":{"type":"Point","coordinates":[-46.247,-19.198]}},
+{"type":"Feature","properties":{"osm":"way/30","tags":{"amenity":"kindergarten"}},"geometry":{"type":"Polygon","coordinates":[[[-46.245,-19.205],[-46.244,-19.205],[-46.244,-19.204],[-46.245,-19.205]]]}}
+]}

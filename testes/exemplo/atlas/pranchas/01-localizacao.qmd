@@ -1,0 +1,7 @@
+# 1. Localização e limites {.unnumbered}
+
+<!-- Texto da prancha: escrito pela equipe do município (o que o mapa mostra, o que chama
+     atenção, o que falta). Mapas, indicadores e lacunas entram pelo include, gerados pelo motor. -->
+Exemplo fica em MG. O mapa mostra o limite do município no OpenStreetMap, a sede e os distritos, povoados e localidades registrados.
+
+{{< include ../_gerado/localizacao.md >}}

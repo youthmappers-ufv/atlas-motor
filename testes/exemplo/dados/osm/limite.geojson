@@ -1,0 +1,3 @@
+{"type":"FeatureCollection","features":[
+{"type":"Feature","properties":{"osm":"relation/1","tags":{"name":"Exemplo"}},"geometry":{"type":"Polygon","coordinates":[[[-46.29,-19.24],[-46.21,-19.24],[-46.21,-19.16],[-46.29,-19.16],[-46.29,-19.24]]]}}
+]}

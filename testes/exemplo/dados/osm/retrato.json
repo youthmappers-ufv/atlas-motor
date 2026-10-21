@@ -1,0 +1,24 @@
+{
+ "base_osm": "2026-10-21T00:00:00Z",
+ "gerado_em": "2026-10-21T00:00:00Z",
+ "municipio": "Exemplo",
+ "relacao": 1,
+ "servidor": "exemplo (dados sintéticos de teste)",
+ "temas": {
+  "educacao": {
+   "base_osm": "2026-10-21T00:00:00Z",
+   "consulta_sha256": "-",
+   "feicoes": 3
+  },
+  "localizacao": {
+   "base_osm": "2026-10-21T00:00:00Z",
+   "consulta_sha256": "-",
+   "feicoes": 2
+  },
+  "sistema-viario": {
+   "base_osm": "2026-10-21T00:00:00Z",
+   "consulta_sha256": "-",
+   "feicoes": 2
+  }
+ }
+}

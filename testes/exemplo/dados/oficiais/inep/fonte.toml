@@ -1,0 +1,12 @@
+nome = "Catálogo de Escolas (sintético, para testes)"
+orgao = "INEP"
+url = "https://www.gov.br/inep/"
+data_acesso = 2026-10-21
+licenca = "dados sintéticos de teste"
+arquivo = "escolas.csv"
+
+[colunas]
+id = "codigo"
+nome = "escola"
+lat = "latitude"
+lon = "longitude"

@@ -1,0 +1,12 @@
+# Pranchas do atlas deste município. O catálogo (números, títulos, consultas) está no
+# atlas-motor (catalogo/temas.toml); aqui só a situação de cada uma:
+#   planejado (padrão, não aparece no atlas) | em-andamento | publicado
+# Opcional por tema: referencia (base em dados/oficiais/), recorte, titulo.
+# Para ativar uma prancha: python ../atlas-motor/scripts/ativar_tema.py <id>
+# Prancha só deste município: [tema.<id>] com numero, titulo e consulta (em consultas/).
+
+[tema.localizacao]
+situacao = "em-andamento"
+
+[tema.educacao]
+situacao = "em-andamento"

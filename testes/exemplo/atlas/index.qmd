@@ -1,0 +1,16 @@
+# Apresentação {.unnumbered}
+
+<!-- Texto do município: ajuste à vontade. Os trechos com include são gerados pelo motor. -->
+O **Atlas Colaborativo de Exemplo** reúne mapas temáticos do município feitos a partir do [OpenStreetMap](https://www.openstreetmap.org), o mapa livre mantido por voluntários do mundo todo. Cada prancha mostra o que já está no mapa, mede o quanto ele está completo em relação às bases oficiais e aponta as lacunas, que estudantes e comunidade completam em campo e em mapatonas.
+
+{{< include _gerado/edicao.md >}}
+
+O atlas é produzido pelo Programa Youthmappers UFV, da Universidade Federal de Viçosa, *Campus* Rio Paranaíba, em parceria com o município, e é atualizado a cada mês.
+
+## Pranchas desta edição
+
+{{< include _gerado/pranchas.md >}}
+
+## Como usar e citar
+
+Os mapas e os dados podem ser usados livremente, com a atribuição: *Dados © colaboradores do OpenStreetMap (ODbL); Atlas Colaborativo de Exemplo, Programa Youthmappers UFV*. Encontrou um erro no mapa? Corrija no OpenStreetMap ou fale com o programa.

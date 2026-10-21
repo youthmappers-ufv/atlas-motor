@@ -1,0 +1,4 @@
+{"type":"FeatureCollection","features":[
+{"type":"Feature","properties":{"osm":"node/10","tags":{"place":"town","name":"Exemplo"}},"geometry":{"type":"Point","coordinates":[-46.25,-19.2]}},
+{"type":"Feature","properties":{"osm":"node/11","tags":{"place":"hamlet","name":"Povoado do Exemplo"}},"geometry":{"type":"Point","coordinates":[-46.27,-19.22]}}
+]}

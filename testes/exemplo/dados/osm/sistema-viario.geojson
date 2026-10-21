@@ -1,0 +1,4 @@
+{"type":"FeatureCollection","features":[
+{"type":"Feature","properties":{"osm":"way/40","tags":{"highway":"primary","surface":"asphalt"}},"geometry":{"type":"LineString","coordinates":[[-46.29,-19.2],[-46.21,-19.2]]}},
+{"type":"Feature","properties":{"osm":"way/41","tags":{"highway":"residential"}},"geometry":{"type":"LineString","coordinates":[[-46.25,-19.24],[-46.25,-19.16]]}}
+]}
