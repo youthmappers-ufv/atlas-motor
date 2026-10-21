@@ -1,0 +1,60 @@
+# Workflow reutilizável: verifica o repositório de um município.
+# Chamado pelo .github/workflows/verificar.yml de cada atlas-<cidade>, em todo PR e push na main.
+#  1. validação do repositório do município (validar.py, biblioteca padrão);
+#  2. montagem do livro e renderização do site em HTML (garante que continua gerando).
+# O motor é baixado na versão declarada no atlas.toml do município (motor.versao).
+name: Verificar município (reutilizável)
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  integridade:
+    name: Validação
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: local
+      - name: Versão do motor declarada pelo município
+        id: motor
+        run: echo "versao=$(python3 -c "import tomllib; print(tomllib.load(open('local/atlas.toml','rb'))['motor']['versao'])")" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: youthmappers-ufv/atlas-motor
+          ref: ${{ steps.motor.outputs.versao }}
+          path: motor
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validação do repositório
+        run: python motor/scripts/validar.py --local local
+
+  construir:
+    name: Construção do site
+    needs: integridade
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: local
+      - name: Versão do motor declarada pelo município
+        id: motor
+        run: echo "versao=$(python3 -c "import tomllib; print(tomllib.load(open('local/atlas.toml','rb'))['motor']['versao'])")" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: youthmappers-ufv/atlas-motor
+          ref: ${{ steps.motor.outputs.versao }}
+          path: motor
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: motor/requirements.txt
+      - run: pip install -r motor/requirements.txt
+      - uses: quarto-dev/quarto-actions/setup@v2
+      - name: Montar o livro e renderizar o site (HTML)
+        run: python motor/scripts/construir.py --local local --renderizar html

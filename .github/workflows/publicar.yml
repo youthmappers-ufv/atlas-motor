@@ -1,0 +1,139 @@
+# Workflow reutilizável: gera site e PDF do atlas de um município e publica em
+# youthmappers-ufv/atlas (GitHub Pages), na pasta do município (atlas.toml: publicacao.slug).
+# Chamado pelo .github/workflows/publicar.yml de cada atlas-<cidade>, com "secrets: inherit".
+#
+#  - tag v* no município: edição numerada em /<slug>/edicoes/<tag>/ e versão principal em
+#    /<slug>/, mais um release (privado) com o PDF no repositório do município;
+#  - agendamento: versão principal a partir da main, com os dados versionados;
+#  - manual: versão (branch, tag ou commit), dados atuais ou versionados, destino.
+# O motor usado é o declarado no atlas.toml DAQUELA versão do município (reprodutível).
+name: Publicar atlas (reutilizável)
+
+on:
+  workflow_call:
+    inputs:
+      versao:
+        type: string
+        default: ""
+      dados_atuais:
+        type: boolean
+        default: false
+      destino:
+        type: string
+        default: ""
+    secrets:
+      ATLAS_CHAVE_PUBLICACAO:
+        required: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: publicar-${{ github.repository }}
+      cancel-in-progress: false
+    steps:
+      - name: Definir versão e destino
+        id: alvo
+        env:
+          EVENTO: ${{ github.event_name }}
+          TAG: ${{ github.ref_name }}
+          VERSAO: ${{ inputs.versao }}
+          DESTINO: ${{ inputs.destino }}
+          BAIXAR: ${{ inputs.dados_atuais }}
+        run: |
+          case "$EVENTO" in
+            push)     ref="$TAG";             destino="edicao";               baixar="false" ;;
+            schedule) ref="main";             destino="principal";            baixar="false" ;;
+            *)        ref="${VERSAO:-main}";  destino="${DESTINO:-principal}"; baixar="$BAIXAR" ;;
+          esac
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "destino=$destino" >> "$GITHUB_OUTPUT"
+          echo "baixar=$baixar" >> "$GITHUB_OUTPUT"
+          echo "pasta=$(echo "$ref" | tr '/' '-')" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.alvo.outputs.ref }}
+          path: local
+          fetch-depth: 0               # para o git describe (versão mostrada no atlas)
+      - name: Motor e slug declarados pelo município
+        id: local
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import tomllib
+          c = tomllib.load(open("local/atlas.toml", "rb"))
+          print(f"motor={c['motor']['versao']}")
+          print(f"slug={c['publicacao']['slug']}")
+          print(f"repositorio={c['publicacao'].get('repositorio', 'youthmappers-ufv/atlas')}")
+          PY
+      - uses: actions/checkout@v4
+        with:
+          repository: youthmappers-ufv/atlas-motor
+          ref: ${{ steps.local.outputs.motor }}
+          path: motor
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: motor/requirements.txt
+      - run: pip install -r motor/requirements.txt
+      - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          tinytex: true
+
+      - name: Construir e renderizar (site e PDF)
+        env:
+          ATLAS_VERSAO: ${{ steps.alvo.outputs.ref }}
+        run: |
+          extra=""
+          if [ "${{ steps.alvo.outputs.baixar }}" = "true" ]; then extra="--baixar"; fi
+          python motor/scripts/construir.py --local local --renderizar todos $extra
+
+      - name: PDF com a versão no nome
+        id: pdf
+        run: |
+          site=local/_construcao/livro/_site
+          nome="atlas-${{ steps.local.outputs.slug }}-${{ steps.alvo.outputs.pasta }}.pdf"
+          cp "$site/atlas-${{ steps.local.outputs.slug }}.pdf" "$site/$nome"
+          echo "nome=$nome" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar como versão principal
+        if: steps.alvo.outputs.destino == 'principal' || github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          deploy_key: ${{ secrets.ATLAS_CHAVE_PUBLICACAO }}
+          external_repository: ${{ steps.local.outputs.repositorio }}
+          publish_branch: gh-pages
+          publish_dir: local/_construcao/livro/_site
+          destination_dir: ${{ steps.local.outputs.slug }}
+          keep_files: true             # preserva as edições e os outros municípios
+          commit_message: "${{ steps.local.outputs.slug }}: atlas ${{ steps.alvo.outputs.ref }}"
+
+      - name: Publicar como edição numerada
+        if: steps.alvo.outputs.destino == 'edicao'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          deploy_key: ${{ secrets.ATLAS_CHAVE_PUBLICACAO }}
+          external_repository: ${{ steps.local.outputs.repositorio }}
+          publish_branch: gh-pages
+          publish_dir: local/_construcao/livro/_site
+          destination_dir: ${{ steps.local.outputs.slug }}/edicoes/${{ steps.alvo.outputs.pasta }}
+          keep_files: true
+          commit_message: "${{ steps.local.outputs.slug }}: edição ${{ steps.alvo.outputs.ref }}"
+
+      - name: Release com o PDF (só em tags)
+        if: github.event_name == 'push'
+        working-directory: local
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" "_construcao/livro/_site/${{ steps.pdf.outputs.nome }}" \
+            --title "Atlas ${{ github.ref_name }}" --notes-file _construcao/livro/_gerado/edicao.md
+
+      - name: Guardar site e PDF como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-${{ steps.local.outputs.slug }}-${{ github.run_number }}
+          path: local/_construcao/livro/_site
+          retention-days: 30

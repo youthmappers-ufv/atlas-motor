@@ -1,0 +1,59 @@
+# Workflow reutilizável: retrato do OpenStreetMap de um município, proposto por pull request.
+# Chamado pelo .github/workflows/atualizar-dados.yml de cada atlas-<cidade> (dia 1 de cada mês).
+# O chamador concede contents: write e pull-requests: write.
+# PRs abertos pelo GITHUB_TOKEN não disparam o Verificar; por isso a validação roda aqui.
+name: Atualizar dados do OSM (reutilizável)
+
+on:
+  workflow_call:
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: local
+      - name: Versão do motor declarada pelo município
+        id: motor
+        run: echo "versao=$(python3 -c "import tomllib; print(tomllib.load(open('local/atlas.toml','rb'))['motor']['versao'])")" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: youthmappers-ufv/atlas-motor
+          ref: ${{ steps.motor.outputs.versao }}
+          path: motor
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Baixar o retrato do OSM
+        run: python motor/scripts/baixar_osm.py --local local
+      - name: Validar
+        run: python motor/scripts/validar.py --local local
+      - name: Abrir pull request, se algo mudou
+        working-directory: local
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$(git status --porcelain -- dados/osm)" ]; then
+            echo "Nada mudou no OSM desde o último retrato."
+            exit 0
+          fi
+          base=$(python -c "import json; print(json.load(open('dados/osm/retrato.json'))['base_osm'][:10])")
+          ramo="dados/osm-$base"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898273+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$ramo"
+          git add dados/osm
+          git commit -m "[DADOS] Retrato do OSM de $base"
+          git push --force -u origin "$ramo"
+          {
+            echo "Retrato mensal do OpenStreetMap (base de $base), gerado pelo atlas-motor ${{ steps.motor.outputs.versao }} e já validado."
+            echo
+            echo '```'
+            git diff --stat HEAD~1 -- dados/osm | tail -n 15
+            echo '```'
+            echo
+            echo "Revise as mudanças (feições novas, removidas ou alteradas) antes de mesclar."
+          } > "$RUNNER_TEMP/corpo-pr.md"
+          gh pr create --base main --head "$ramo" --title "[DADOS] Retrato do OSM de $base" --body-file "$RUNNER_TEMP/corpo-pr.md" \
+            || echo "Já existe um PR aberto para este ramo."
