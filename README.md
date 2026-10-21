@@ -14,7 +14,7 @@ youthmappers-ufv/youthmappers-ufv-docs  privado  parte institucional (propostas,
 ## O que tem aqui
 
 ```
-VERSAO, CHANGELOG.md    versão atual (vX.Y) e o que mudou em cada uma
+VERSAO, CHANGELOG.md    versão atual (vX.Y.Z) e o que mudou em cada uma
 catalogo/
   temas.toml            as pranchas (número, título, consulta, base de referência, recorte)
   consultas/            uma consulta Overpass por prancha ({{bbox}} = caixa do município)
@@ -64,7 +64,7 @@ Requisitos: Python 3.11+ (validação e testes só com a biblioteca padrão), `p
 
 ## Versões
 
-O município declara a versão em `atlas.toml` (`[motor] versao = "v1.0"`) e chama os workflows na mesma versão (`...@v1.0`); o validador confere que batem. Os workflows baixam o motor na versão declarada pelo município **na versão do município que está sendo publicada**: uma edição antiga é sempre regerada como foi. Política de versões e o que mudou: [CHANGELOG.md](CHANGELOG.md). Como mudar o motor: [CONTRIBUTING.md](CONTRIBUTING.md).
+O município declara a versão em `atlas.toml` (`[motor] versao = "v0.2.0"`) e chama os workflows na mesma versão (`...@v0.2.0`); o validador confere que batem. Os workflows baixam o motor na versão declarada pelo município **na versão do município que está sendo publicada**: uma edição antiga é sempre regerada como foi. Política de versões e o que mudou: [CHANGELOG.md](CHANGELOG.md). Como mudar o motor: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Licença
 

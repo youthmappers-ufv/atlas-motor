@@ -13,7 +13,7 @@ sede_bbox = @@SEDE_BBOX@@         # recorte dos mapas da sede; ajuste se precisa
 
 [motor]
 # Versão do atlas-motor usada por este município. Para atualizar:
-#   python ../atlas-motor/scripts/atualizar_motor.py --versao vX.Y
+#   python ../atlas-motor/scripts/atualizar_motor.py --versao vX.Y.Z
 # (troca aqui e nos workflows; o validador confere que batem).
 versao = "@@MOTOR@@"
 

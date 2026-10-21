@@ -10,7 +10,7 @@ Se a organização obtiver o plano Team (há benefício para professores pelo Gi
 
 ## Uma vez: motor e publicação
 
-1. **`youthmappers-ufv/atlas-motor`** (público): crie vazio, escolha a licença (veja o README) e faça o push da `main` e da tag `v1.0`. Em *Settings* > *Actions* > *General* > *Access*, nada a mudar (repositório público).
+1. **`youthmappers-ufv/atlas-motor`** (público): crie vazio, escolha a licença (veja o README) e faça o push da `main` e das tags (versões `v0.x.y` de pré-lançamento; `v1.0.0` é o lançamento oficial). Em *Settings* > *Actions* > *General* > *Access*, nada a mudar (repositório público).
 2. **`youthmappers-ufv/atlas`** (público, só saída):
    - README dizendo que o conteúdo é gerado automaticamente a partir dos repositórios dos municípios e que correções vão para o mapa (OSM) ou para o programa;
    - branch `gh-pages` com um `index.html` simples listando os municípios (`/rio-paranaiba/`, `/sao-gotardo/`, …);
