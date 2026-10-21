@@ -1,7 +1,7 @@
 """Verifica a integridade do repositório de um município (roda no CI em todo pull request).
 
 Confere:
-  - atlas.toml: município, hashtags, versão do motor (vX.Y), publicação (slug);
+  - atlas.toml: município, hashtags, versão do motor (vX.Y.Z), publicação (slug);
   - temas.toml: ids do catálogo ou pranchas próprias completas, situação e recorte válidos,
     consultas existentes e restritas ao município ({{bbox}});
   - workflows do município chamam o motor na mesma versão declarada no atlas.toml;
@@ -38,7 +38,7 @@ RE_EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+")
 # Só o CPF formatado: 11 dígitos seguidos não servem, pois identificadores de nós do OSM já têm 11 dígitos.
 RE_CPF = re.compile(r"\b\d{3}\.\d{3}\.\d{3}-\d{2}\b")
 RE_URL = re.compile(r"^https?://\S+$")
-RE_VERSAO = re.compile(r"^v\d+\.\d+(\.\d+)?$")
+RE_VERSAO = re.compile(r"^v\d+\.\d+\.\d+$")
 RE_SLUG = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 RE_CHAMADA = re.compile(r"uses:\s*youthmappers-ufv/atlas-motor/\.github/workflows/[\w.-]+@(\S+)")
 TIPOS = {"texto", "inteiro", "decimal", "data", "lista", "latitude", "longitude", "tema", "url"}
@@ -85,7 +85,7 @@ def verificar_config(local: Path, r: Relatorio) -> tuple[dict, list[Tema]]:
         if not str(config.get("hashtags", {}).get(chave, "")).startswith("#"):
             r.erro(f"[config] atlas.toml: hashtags.{chave} ausente ou sem '#'")
     if not RE_VERSAO.match(str(config.get("motor", {}).get("versao", ""))):
-        r.erro("[config] atlas.toml: motor.versao ausente ou fora do formato vX.Y")
+        r.erro("[config] atlas.toml: motor.versao ausente ou fora do formato vX.Y.Z (ex.: v0.2.0)")
     if not RE_SLUG.match(str(config.get("publicacao", {}).get("slug", ""))):
         r.erro("[config] atlas.toml: publicacao.slug ausente ou inválido (minúsculas, números e hífen)")
 

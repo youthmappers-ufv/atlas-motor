@@ -164,6 +164,10 @@ class ValidadorComDefeitosPlantados(unittest.TestCase):
         self.trocar(".github/workflows/verificar.yml", "verificar.yml@v", "verificar.yml@v9.9-", todas=False)
         self.assertAcusa("chama o motor em v9.9-")
 
+    def test_versao_do_motor_sem_tres_partes(self):
+        self.trocar("atlas.toml", 'versao = "v0.2.0"', 'versao = "v1.1"')
+        self.assertAcusa("vX.Y.Z")
+
     def test_slug_invalido(self):
         self.trocar("atlas.toml", 'slug = "exemplo"', 'slug = "Exemplo Cidade"')
         self.assertAcusa("publicacao.slug")

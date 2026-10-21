@@ -13,9 +13,9 @@ sede_bbox = [-19.21, -46.26, -19.19, -46.24]         # recorte dos mapas da sede
 
 [motor]
 # Versão do atlas-motor usada por este município. Para atualizar:
-#   python ../atlas-motor/scripts/atualizar_motor.py --versao vX.Y
+#   python ../atlas-motor/scripts/atualizar_motor.py --versao vX.Y.Z
 # (troca aqui e nos workflows; o validador confere que batem).
-versao = "v1.0"
+versao = "v0.2.0"
 
 [hashtags]
 # Toda edição no OSM feita para o atlas leva as duas, sempre juntas.

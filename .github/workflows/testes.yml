@@ -1,5 +1,5 @@
 # CI do próprio motor: testes e construção do município de exemplo (testes/exemplo/).
-# Uma mudança no motor só entra com isto verde; depois, uma tag vX.Y a disponibiliza
+# Uma mudança no motor só entra com isto verde; depois, uma tag vX.Y.Z a disponibiliza
 # para os municípios (que atualizam com scripts/atualizar_motor.py).
 name: Testes do motor
 

@@ -71,11 +71,11 @@ class Scripts(unittest.TestCase):
 
     def test_atualizar_motor(self):
         local = self.novo()
-        r = rodar("atualizar_motor.py", "--versao", "v9.1", "--local", str(local))
+        r = rodar("atualizar_motor.py", "--versao", "v9.1.0", "--local", str(local))
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertIn('versao = "v9.1"', (local / "atlas.toml").read_text(encoding="utf-8"))
+        self.assertIn('versao = "v9.1.0"', (local / "atlas.toml").read_text(encoding="utf-8"))
         for wf in (local / ".github" / "workflows").glob("*.yml"):
-            self.assertIn("@v9.1", wf.read_text(encoding="utf-8"))
+            self.assertIn("@v9.1.0", wf.read_text(encoding="utf-8"))
         self.assertFalse(any("chama o motor" in e for e in verificar(local).erros))
 
     def test_referencia_e_recorte_sobrescritos_pelo_municipio(self):
@@ -97,7 +97,7 @@ class ModeloCoerenteComMotor(unittest.TestCase):
                 self.assertIn("workflow_call", (MOTOR / ".github" / "workflows" / nome).read_text(encoding="utf-8"))
 
     def test_versao_no_formato(self):
-        self.assertRegex(versao_motor(), r"^v\d+\.\d+(\.\d+)?$")
+        self.assertRegex(versao_motor(), r"^v\d+\.\d+\.\d+$")
 
     def test_versao_registrada_no_changelog(self):
         self.assertIn(f"## {versao_motor()}", (MOTOR / "CHANGELOG.md").read_text(encoding="utf-8"))
