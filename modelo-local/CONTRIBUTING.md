@@ -28,6 +28,7 @@ Sem dado pessoal: nomes de profissionais, telefones pessoais, e-mails e CPF não
 
 - **Conferência em campo:** `levantamentos-campo.csv`, uma linha por item verificado (id `LC-AAAA-NNN`, data, tema, item, situação, objeto e *changeset* do OSM quando houver).
 - **Calendário de eventos:** `eventos-culturais.csv`.
+- **Atividades do atlas:** `atividades.csv`, uma linha por mapatona, oficina, saída de campo ou reunião com parceiro (id `AT-AAAA-NNN`, data, tipo, participantes, quantos eram novos no OSM, horas, *changesets*). Só números, nunca nomes. Registre no mesmo dia: esses dados alimentam os relatórios de extensão e as publicações do programa.
 - Os esquemas (colunas, tipos, valores aceitos) estão no catálogo do motor. Um conjunto de dados que só exista aqui ganha esquema em `dados/esquemas/`.
 
 Coordenadas em graus decimais (WGS 84), com ponto: `-19.1965`.
