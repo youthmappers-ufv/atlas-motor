@@ -17,6 +17,12 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
+## v0.3.1 — 2026-10-21
+
+Correção: `atualizar_motor.py --versao v0.3.1`.
+
+- `construir.py` apaga a pasta `_construcao` mesmo quando o Quarto ou o OneDrive deixam itens somente leitura (Windows); antes, a segunda construção local falhava com "Acesso negado". Não afeta o CI.
+
 ## v0.3.0 — 2026-10-21
 
 Compatível com v0.2.1: `atualizar_motor.py --versao v0.3.0`. Sem `publicacao.ativa` no `atlas.toml`, nada muda (vale `true`).
