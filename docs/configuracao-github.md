@@ -39,6 +39,8 @@ Se a organização obtiver o plano Team (há benefício para professores pelo Gi
    - `atlas-<slug>.pub` → `youthmappers-ufv/atlas` > *Settings* > *Deploy keys* > *Add deploy key* (título `atlas-<slug>`), com **Allow write access**;
    - `atlas-<slug>` (privada) → `youthmappers-ufv/atlas-<slug>` > *Settings* > *Secrets and variables* > *Actions*, segredo **`ATLAS_CHAVE_PUBLICACAO`**;
    - apague os dois arquivos do computador.
+
+   Município com `publicacao.ativa = false` no `atlas.toml` (sem parceria, como o canário) não precisa da chave: o workflow gera site e PDF só como artefato. Sem a chave, mesmo que alguém mude para `true` por engano, a publicação falha em vez de ir para o site.
 7. **Primeira publicação:** rode *Verificar* e depois *Publicar atlas* pelo botão (versão `main`, destino `principal`). Acrescente o município ao `index.html` do repositório `atlas`.
 
 ## Retirar um município

@@ -88,6 +88,8 @@ def verificar_config(local: Path, r: Relatorio) -> tuple[dict, list[Tema]]:
         r.erro("[config] atlas.toml: motor.versao ausente ou fora do formato vX.Y.Z (ex.: v0.2.0)")
     if not RE_SLUG.match(str(config.get("publicacao", {}).get("slug", ""))):
         r.erro("[config] atlas.toml: publicacao.slug ausente ou inválido (minúsculas, números e hífen)")
+    if not isinstance(config.get("publicacao", {}).get("ativa", True), bool):
+        r.erro("[config] atlas.toml: publicacao.ativa deve ser true ou false (sem aspas)")
 
     catalogo = {t["id"] for t in ler_toml(CATALOGO / "temas.toml")["tema"]}
     escolhas = {}

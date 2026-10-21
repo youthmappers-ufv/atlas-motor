@@ -36,6 +36,8 @@ similaridade_min = 0.6
 
 [publicacao]
 slug = "@@SLUG@@"                                     # pasta no site: /atlas/@@SLUG@@/
+ativa = true                                          # false: gera site e PDF só como artefato do workflow,
+                                                      # sem publicar no site público (ex.: município sem parceria)
 url_base = "https://youthmappers-ufv.github.io/atlas/"
 repositorio = "youthmappers-ufv/atlas"                # repositório público só de saída
 atribuicao = "© colaboradores do OpenStreetMap (ODbL)"

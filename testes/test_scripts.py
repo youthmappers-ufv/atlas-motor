@@ -107,6 +107,23 @@ class ModeloCoerenteComMotor(unittest.TestCase):
                 self.assertIn(nome, reutilizaveis, f"{wf.name} chama {nome}, que não existe no motor")
                 self.assertIn("workflow_call", (MOTOR / ".github" / "workflows" / nome).read_text(encoding="utf-8"))
 
+    def test_publicacao_respeita_ativa(self):
+        """Todo passo que envia ao site público depende de publicacao.ativa (direto, ou pela
+        falha de um passo que depende dela, no caso da segunda tentativa)."""
+        texto = (MOTOR / ".github" / "workflows" / "publicar.yml").read_text(encoding="utf-8")
+        passos = re.split(r"\n      - (?=name:|uses:)", texto)
+        guardados = {re.search(r"id: (\w+)", p).group(1) for p in passos
+                     if "actions-gh-pages" in p and "steps.local.outputs.ativa == 'true'" in p}
+        self.assertTrue(guardados)
+        for p in passos:
+            if "actions-gh-pages" in p:
+                cond = re.search(r"\n\s+if: (.+)", p)
+                self.assertIsNotNone(cond, f"passo sem condição: {p.splitlines()[0]}")
+                ok = "steps.local.outputs.ativa == 'true'" in cond.group(1) or \
+                     any(f"steps.{g}.outcome == 'failure'" in cond.group(1) for g in guardados)
+                self.assertTrue(ok, f"passo publica sem olhar publicacao.ativa: {p.splitlines()[0]}")
+        self.assertIn("print(f\"ativa=", texto)
+
     def test_versao_no_formato(self):
         self.assertRegex(versao_motor(), r"^v\d+\.\d+\.\d+$")
 

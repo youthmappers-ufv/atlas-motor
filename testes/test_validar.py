@@ -176,6 +176,14 @@ class ValidadorComDefeitosPlantados(unittest.TestCase):
         self.acrescentar("atlas/index.qmd", "<<<<<<< HEAD\nversão A\n=======\nversão B\n>>>>>>> outra")
         self.assertAcusa("marcas de conflito")
 
+    def test_publicacao_ativa_entre_aspas(self):
+        self.trocar("atlas.toml", "ativa = true", 'ativa = "false"')
+        self.assertAcusa("publicacao.ativa deve ser true ou false")
+
+    def test_publicacao_desativada_passa(self):
+        self.trocar("atlas.toml", "ativa = true", "ativa = false")
+        self.assertEqual(self.erros(), [])
+
     def test_hashtag_sem_cerquilha(self):
         self.trocar("atlas.toml", 'projeto = "#ymufv-atlas"', 'projeto = "ymufv-atlas"')
         self.assertAcusa("hashtags.projeto")

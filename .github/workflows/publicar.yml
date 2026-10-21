@@ -7,6 +7,8 @@
 #  - agendamento: versão principal a partir da main, com os dados versionados;
 #  - manual: versão (branch, tag ou commit), dados atuais ou versionados, destino.
 # O motor usado é o declarado no atlas.toml DAQUELA versão do município (reprodutível).
+# Com publicacao.ativa = false no atlas.toml, gera site e PDF só como artefato do workflow
+# (e o release privado, em tags): nada vai para o site público.
 name: Publicar atlas (reutilizável)
 
 on:
@@ -23,7 +25,7 @@ on:
         default: ""
     secrets:
       ATLAS_CHAVE_PUBLICACAO:
-        required: true
+        required: false        # dispensável com publicacao.ativa = false
 
 jobs:
   publicar:
@@ -64,6 +66,7 @@ jobs:
           c = tomllib.load(open("local/atlas.toml", "rb"))
           print(f"motor={c['motor']['versao']}")
           print(f"slug={c['publicacao']['slug']}")
+          print(f"ativa={str(c['publicacao'].get('ativa', True)).lower()}")
           print(f"repositorio={c['publicacao'].get('repositorio', 'youthmappers-ufv/atlas')}")
           PY
       - uses: actions/checkout@v4
@@ -103,7 +106,7 @@ jobs:
       # por isso, uma segunda tentativa depois de uma espera aleatória (o clone é refeito).
       - name: Publicar como versão principal
         id: principal
-        if: steps.alvo.outputs.destino == 'principal' || github.event_name == 'push'
+        if: steps.local.outputs.ativa == 'true' && (steps.alvo.outputs.destino == 'principal' || github.event_name == 'push')
         continue-on-error: true
         uses: peaceiris/actions-gh-pages@v4
         with:
@@ -131,7 +134,7 @@ jobs:
 
       - name: Publicar como edição numerada
         id: edicao
-        if: steps.alvo.outputs.destino == 'edicao'
+        if: steps.local.outputs.ativa == 'true' && steps.alvo.outputs.destino == 'edicao'
         continue-on-error: true
         uses: peaceiris/actions-gh-pages@v4
         with:
@@ -156,6 +159,11 @@ jobs:
           destination_dir: ${{ steps.local.outputs.slug }}/edicoes/${{ steps.alvo.outputs.pasta }}
           keep_files: true
           commit_message: "${{ steps.local.outputs.slug }}: edição ${{ steps.alvo.outputs.ref }}"
+
+      - name: Aviso de publicação desativada
+        if: steps.local.outputs.ativa != 'true'
+        run: |
+          echo "::notice::publicacao.ativa = false no atlas.toml: site e PDF só como artefato, nada foi para o site público."
 
       - name: Release com o PDF (só em tags)
         if: github.event_name == 'push'
