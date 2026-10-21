@@ -1,0 +1,9 @@
+# Gerados (reconstruídos a cada execução)
+_construcao/
+__pycache__/
+.quarto/
+
+# Sistema e editores
+.DS_Store
+Thumbs.db
+*.swp

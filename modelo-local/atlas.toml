@@ -1,0 +1,44 @@
+# Configuração do Atlas Colaborativo de @@NOME@@ (@@UF@@).
+# Criado em @@DATA@@ por atlas-motor/scripts/novo_local.py. Mudanças aqui passam por pull request.
+
+[municipio]
+nome = "@@NOME@@"
+uf = "@@UF@@"
+ibge = "@@IBGE@@"
+osm_relacao = @@RELACAO@@          # limite municipal no OpenStreetMap (admin_level=8)
+wikidata = "@@WIKIDATA@@"
+# Caixas envolventes: [sul, oeste, norte, leste], em graus (WGS 84)
+bbox = @@BBOX@@
+sede_bbox = @@SEDE_BBOX@@         # recorte dos mapas da sede; ajuste se precisar
+
+[motor]
+# Versão do atlas-motor usada por este município. Para atualizar:
+#   python ../atlas-motor/scripts/atualizar_motor.py --versao vX.Y
+# (troca aqui e nos workflows; o validador confere que batem).
+versao = "@@MOTOR@@"
+
+[hashtags]
+# Toda edição no OSM feita para o atlas leva as duas, sempre juntas.
+programa = "#youthmappersufv"
+projeto = "#ymufv-atlas"
+
+[overpass]
+servidores = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.openstreetmap.fr/api/interpreter",
+  "https://overpass.private.coffee/api/interpreter",
+]
+tempo_limite = 240
+
+[completude]
+distancia_max_m = 150
+similaridade_min = 0.6
+
+[publicacao]
+slug = "@@SLUG@@"                                     # pasta no site: /atlas/@@SLUG@@/
+url_base = "https://youthmappers-ufv.github.io/atlas/"
+repositorio = "youthmappers-ufv/atlas"                # repositório público só de saída
+atribuicao = "© colaboradores do OpenStreetMap (ODbL)"
+autoria = "Programa Youthmappers UFV"
+instituicao = "Universidade Federal de Viçosa — Campus Rio Paranaíba"
+registro = ""                                         # ex.: "RAEX PRJ-211/2026"
