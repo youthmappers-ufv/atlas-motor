@@ -1,0 +1,47 @@
+# Modelo do livro do atlas. construir.py troca os {{marcadores}} pelos dados do
+# atlas.toml do município e pela lista de pranchas ativas, e grava o resultado em
+# <município>/_construcao/livro/_quarto.yml. Não editar o arquivo gerado.
+project:
+  type: book
+  output-dir: _site
+  resources:
+    - _gerado/downloads/
+
+lang: pt-BR
+
+book:
+  title: "{{titulo}}"
+  subtitle: "Mapas abertos do município, a partir do OpenStreetMap"
+  author: "{{autoria}}"
+  publisher: "{{instituicao}}"
+  site-url: {{site_url}}
+  output-file: {{arquivo}}             # nome do PDF, sem acento (vai para URLs)
+  downloads: [pdf]
+  search: true
+  page-footer:
+    center: "{{rodape}}"
+  chapters:
+    - index.qmd
+    - metodo.qmd
+    - part: "Pranchas"
+      chapters:
+{{capitulos}}
+    - dados.qmd
+
+format:
+  html:
+    theme: [cosmo, estilo.scss]
+    toc: true
+    number-sections: false
+  pdf:
+    documentclass: scrreprt
+    papersize: a4
+    pdf-engine: xelatex
+    number-sections: false
+    toc: true
+    fig-pos: "H"
+    geometry:
+      - top=2.5cm
+      - bottom=2.5cm
+      - left=2.5cm
+      - right=2.5cm
