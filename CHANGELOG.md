@@ -1,15 +1,25 @@
 # Mudanças do atlas-motor
 
-Versões no formato `vMAIOR.MENOR`:
+Versionamento semântico, `vMAIOR.MENOR.CORREÇÃO`:
 
-- **MENOR** (v1.0 → v1.1): compatível. Novos indicadores, temas no catálogo, correções. O município atualiza só a versão (`scripts/atualizar_motor.py`).
-- **MAIOR** (v1.x → v2.0): exige mudança nos repositórios dos municípios (formato do `atlas.toml`, do `temas.toml`, dos dados ou dos textos). A entrada diz o que fazer.
+- **CORREÇÃO** (v1.2.0 → v1.2.1): conserto sem mudança de comportamento esperado.
+- **MENOR** (v1.2 → v1.3): compatível. Novos indicadores, temas no catálogo, scripts. O município atualiza só a versão (`scripts/atualizar_motor.py`).
+- **MAIOR** (v1 → v2): exige mudança nos repositórios dos municípios (formato do `atlas.toml`, do `temas.toml`, dos dados ou dos textos). A entrada diz o que fazer.
+
+**Pré-lançamento (`v0.y.z`).** Enquanto o motor não é lançado oficialmente, qualquer versão MENOR pode exigir mudança nos municípios; a entrada diz quando. **`v1.0.0` é o lançamento oficial**, e só a partir dele vale a garantia de compatibilidade dentro da mesma versão MAIOR. Critérios propostos para o lançamento, a confirmar pela coordenação:
+
+- licença definida e repositórios públicos no GitHub;
+- CI verde no GitHub (testes do motor e verificação, atualização e publicação de um município);
+- primeiro atlas de Rio Paranaíba publicado pelo workflow, com pelo menos uma base oficial carregada (INEP);
+- `novo_local.py` usado para um segundo município, de ponta a ponta.
 
 Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* verde. Os municípios escolhem quando atualizar; uma edição publicada continua reproduzível com a versão que a gerou.
 
-## v1.1 — 2026-10-21
+As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
-Compatível com v1.0: basta `atualizar_motor.py --versao v1.1`.
+## v0.2.0 — 2026-10-21
+
+Compatível com v0.1.0: basta `atualizar_motor.py --versao v0.2.0`.
 
 - Registro para pesquisa e publicações (`pesquisa/`): decisões de arquitetura, diário, ideias de publicação, municípios atendidos e métricas do motor por versão.
 - `scripts/serie_historica.py`: série histórica dos indicadores de um município, refeita a partir dos retratos versionados no Git.
@@ -18,7 +28,7 @@ Compatível com v1.0: basta `atualizar_motor.py --versao v1.1`.
 - `ler_temas` aceita o formato antigo do `temas.toml` (lista `[[tema]]`), para a série histórica atravessar a migração para o motor.
 - `CITATION.cff` para citar o software.
 
-## v1.0 — 2026-10-21
+## v0.1.0 — 2026-10-21
 
 Primeira versão, separada do repositório de Rio Paranaíba.
 
