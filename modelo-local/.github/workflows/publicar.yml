@@ -10,7 +10,7 @@ on:
   push:
     tags: ["v*"]
   schedule:
-    - cron: "0 9 5 * *"
+    - cron: "@@MINUTO@@ @@HORA@@ 5 * *"      # dia 5; horário próprio, para não publicar junto com outro município
   workflow_dispatch:
     inputs:
       versao:

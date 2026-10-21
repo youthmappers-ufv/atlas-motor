@@ -57,6 +57,17 @@ class Scripts(unittest.TestCase):
                   "--destino", str(self.dir / "atlas-cidade-teste"))
         self.assertNotEqual(r.returncode, 0)
 
+    def test_agendamento_proprio_por_municipio(self):
+        from novo_local import horario
+        local = self.novo()
+        hora, minuto = horario("cidade-teste")
+        for wf in ("publicar.yml", "atualizar-dados.yml"):
+            texto = (local / ".github" / "workflows" / wf).read_text(encoding="utf-8")
+            self.assertRegex(texto, rf'cron: "{minuto} {hora} \d+ \* \*"')
+        horarios = {horario(s) for s in ("rio-paranaiba", "sao-gotardo", "carmo-do-paranaiba", "patos-de-minas")}
+        self.assertEqual(len(horarios), 4, "municípios da região não podem coincidir no agendamento")
+        self.assertTrue(all(8 <= h <= 11 and 0 <= m <= 59 for h, m in horarios))
+
     def test_ativar_tema(self):
         local = self.novo()
         r = rodar("ativar_tema.py", "saude", "--local", str(local))

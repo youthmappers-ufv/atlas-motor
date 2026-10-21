@@ -98,8 +98,27 @@ jobs:
           cp "$site/atlas-${{ steps.local.outputs.slug }}.pdf" "$site/$nome"
           echo "nome=$nome" >> "$GITHUB_OUTPUT"
 
+      # Vários municípios publicam no mesmo gh-pages e a concurrency não vale entre repositórios:
+      # se outro município publicar no mesmo instante, o push é recusado. Cada publicação tem,
+      # por isso, uma segunda tentativa depois de uma espera aleatória (o clone é refeito).
       - name: Publicar como versão principal
+        id: principal
         if: steps.alvo.outputs.destino == 'principal' || github.event_name == 'push'
+        continue-on-error: true
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          deploy_key: ${{ secrets.ATLAS_CHAVE_PUBLICACAO }}
+          external_repository: ${{ steps.local.outputs.repositorio }}
+          publish_branch: gh-pages
+          publish_dir: local/_construcao/livro/_site
+          destination_dir: ${{ steps.local.outputs.slug }}
+          keep_files: true             # preserva as edições e os outros municípios
+          commit_message: "${{ steps.local.outputs.slug }}: atlas ${{ steps.alvo.outputs.ref }}"
+      - name: Esperar para tentar de novo (versão principal)
+        if: steps.principal.outcome == 'failure'
+        run: sleep $((30 + RANDOM % 90))
+      - name: Publicar como versão principal (segunda tentativa)
+        if: steps.principal.outcome == 'failure'
         uses: peaceiris/actions-gh-pages@v4
         with:
           deploy_key: ${{ secrets.ATLAS_CHAVE_PUBLICACAO }}
@@ -111,7 +130,23 @@ jobs:
           commit_message: "${{ steps.local.outputs.slug }}: atlas ${{ steps.alvo.outputs.ref }}"
 
       - name: Publicar como edição numerada
+        id: edicao
         if: steps.alvo.outputs.destino == 'edicao'
+        continue-on-error: true
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          deploy_key: ${{ secrets.ATLAS_CHAVE_PUBLICACAO }}
+          external_repository: ${{ steps.local.outputs.repositorio }}
+          publish_branch: gh-pages
+          publish_dir: local/_construcao/livro/_site
+          destination_dir: ${{ steps.local.outputs.slug }}/edicoes/${{ steps.alvo.outputs.pasta }}
+          keep_files: true
+          commit_message: "${{ steps.local.outputs.slug }}: edição ${{ steps.alvo.outputs.ref }}"
+      - name: Esperar para tentar de novo (edição)
+        if: steps.edicao.outcome == 'failure'
+        run: sleep $((30 + RANDOM % 90))
+      - name: Publicar como edição numerada (segunda tentativa)
+        if: steps.edicao.outcome == 'failure'
         uses: peaceiris/actions-gh-pages@v4
         with:
           deploy_key: ${{ secrets.ATLAS_CHAVE_PUBLICACAO }}

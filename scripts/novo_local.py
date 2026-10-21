@@ -19,6 +19,7 @@ import shutil
 import subprocess
 import sys
 import unicodedata
+import zlib
 from datetime import date
 from pathlib import Path
 
@@ -33,6 +34,13 @@ SERVIDORES = {"overpass": {"servidores": ["https://overpass-api.de/api/interpret
 def slug(nome: str) -> str:
     t = unicodedata.normalize("NFKD", nome).encode("ascii", "ignore").decode().lower()
     return re.sub(r"[^a-z0-9]+", "-", t).strip("-")
+
+
+def horario(s: str) -> tuple[int, int]:
+    """Hora (8h a 11h UTC) e minuto fixos por município, tirados do slug: os agendamentos
+    de municípios diferentes não coincidem (Overpass e gh-pages do repositório público)."""
+    n = zlib.crc32(s.encode())
+    return 8 + n // 60 % 4, n % 60
 
 
 def caixa(valor: str) -> list[float]:
@@ -118,11 +126,13 @@ def main() -> int:
                 dados[chave] = getattr(args, chave)
     if destino.exists():
         destino.rmdir()
+    hora, minuto = horario(s)
     criar(destino, {
         "@@NOME@@": args.nome, "@@UF@@": args.uf, "@@IBGE@@": args.ibge, "@@SLUG@@": s,
         "@@RELACAO@@": str(dados["relacao"]), "@@WIKIDATA@@": dados["wikidata"],
         "@@BBOX@@": str(dados["bbox"]), "@@SEDE_BBOX@@": str(dados["sede_bbox"]),
         "@@MOTOR@@": versao_motor(), "@@DATA@@": date.today().isoformat(),
+        "@@HORA@@": str(hora), "@@MINUTO@@": str(minuto),
     })
     print(f"Criado: {destino}")
     if args.baixar:

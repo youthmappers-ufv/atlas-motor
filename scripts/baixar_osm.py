@@ -27,7 +27,7 @@ from pathlib import Path
 from comum import (aneis_externos, argumento_local, caminho_consulta, dentro, escrever_json, ler_config, ler_temas,
                    ponto_representativo)
 
-USER_AGENT = "atlas-rio-paranaiba (Programa Youthmappers UFV)"
+USER_AGENT = "atlas-motor (Programa Youthmappers UFV)"
 CHAVES_AREA = ("building", "landuse", "leisure", "natural", "amenity", "place", "tourism",
                "historic", "healthcare", "office", "area")
 
