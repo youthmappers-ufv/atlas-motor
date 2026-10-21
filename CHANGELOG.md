@@ -17,6 +17,14 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
+## v0.2.1 — 2026-10-21
+
+Correção, a partir do teste com um segundo município (São Gotardo). Compatível: `atualizar_motor.py --versao v0.2.1`; nos municípios já criados, trocar à mão o horário dos agendamentos (ver abaixo).
+
+- `novo_local.py` dá a cada município hora (8h a 11h UTC) e minuto próprios nos agendamentos de `atualizar-dados.yml` e `publicar.yml`, tirados do slug; antes, todos baixavam do Overpass e publicavam no mesmo minuto. Rio Paranaíba: `25 8`; São Gotardo: `7 11`.
+- `publicar.yml`: segunda tentativa, depois de uma espera aleatória, se o push no `gh-pages` for recusado porque outro município publicou ao mesmo tempo (a `concurrency` não vale entre repositórios).
+- `baixar_osm.py`: User-Agent `atlas-motor`, não mais o nome do município-piloto.
+
 ## v0.2.0 — 2026-10-21
 
 Compatível com v0.1.0: basta `atualizar_motor.py --versao v0.2.0`.
