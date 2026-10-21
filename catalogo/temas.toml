@@ -1,0 +1,82 @@
+# Catálogo de pranchas do atlas, comum a todos os municípios.
+# Cada município, no seu temas.toml, só diz a situação de cada prancha (e, se quiser,
+# troca a base de referência ou o recorte). Pranchas não citadas ficam "planejado".
+#
+#   id          identificador (nome dos arquivos de dados, da consulta e da prancha)
+#   numero      ordem da prancha
+#   titulo      título da prancha
+#   consulta    arquivo em catalogo/consultas/ (Overpass QL; {{bbox}} = caixa do município)
+#   referencia  base oficial padrão (pasta em dados/oficiais/ do município) ou "interno"
+#   recorte     municipio | sede | ambos (mapas gerados)
+
+[[tema]]
+id = "localizacao"
+numero = 1
+titulo = "Localização e limites"
+consulta = "localizacao.overpassql"
+referencia = "interno"
+recorte = "municipio"
+
+[[tema]]
+id = "sistema-viario"
+numero = 2
+titulo = "Sistema viário"
+consulta = "sistema-viario.overpassql"
+referencia = "interno"
+recorte = "ambos"
+
+[[tema]]
+id = "educacao"
+numero = 3
+titulo = "Educação"
+consulta = "educacao.overpassql"
+referencia = "inep"
+recorte = "ambos"
+
+[[tema]]
+id = "saude"
+numero = 4
+titulo = "Saúde"
+consulta = "saude.overpassql"
+referencia = "cnes"
+recorte = "ambos"
+
+[[tema]]
+id = "equipamentos"
+numero = 5
+titulo = "Equipamentos e serviços públicos"
+consulta = "equipamentos.overpassql"
+referencia = "interno"
+recorte = "sede"
+
+[[tema]]
+id = "meio-ambiente"
+numero = 6
+titulo = "Meio ambiente"
+consulta = "meio-ambiente.overpassql"
+referencia = "interno"
+recorte = "municipio"
+
+[[tema]]
+id = "mobilidade"
+numero = 7
+titulo = "Mobilidade e acessibilidade"
+consulta = "mobilidade.overpassql"
+referencia = "interno"
+recorte = "sede"
+
+[[tema]]
+id = "area-rural"
+numero = 8
+titulo = "Área rural"
+consulta = "area-rural.overpassql"
+referencia = "interno"
+recorte = "municipio"
+
+[[tema]]
+id = "cultura-turismo"
+numero = 9
+titulo = "Cultura, turismo e lazer"
+consulta = "cultura-turismo.overpassql"
+referencia = "interno"
+recorte = "ambos"

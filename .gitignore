@@ -1,0 +1,11 @@
+# Gerados
+_construcao/
+.quarto/
+__pycache__/
+*.pyc
+.venv/
+
+# Sistema e editores
+.DS_Store
+Thumbs.db
+*.swp
