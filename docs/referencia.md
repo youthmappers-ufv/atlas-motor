@@ -41,7 +41,7 @@ instituicao = "Universidade Federal de Viçosa — Campus Rio Paranaíba"
 registro = "RAEX PRJ-211/2026"   # opcional, no rodapé
 ```
 
-O validador exige `municipio` (nome, uf, ibge, osm_relacao, bbox, sede_bbox), `motor.versao` no formato `vX.Y.Z` e igual à dos workflows, as duas hashtags com `#`, `publicacao.slug` em minúsculas e hífen, `hospedagem` válida e `url` válida com `pages`.
+O validador exige `municipio` (nome, uf, ibge, osm_relacao, bbox, sede_bbox), `motor.versao` no formato `vX.Y.Z` e igual à dos workflows, as duas hashtags com `#`, `publicacao.slug` em minúsculas e hífen, `hospedagem` válida e `url` válida com `pages`. Também avisa se falta o `CITATION.cff` ou se ele não traz o título do atlas e o sobrenome da coordenação.
 
 ## `temas.toml` (município)
 
@@ -150,7 +150,8 @@ Em `_construcao/livro/_gerado/` (fora do Git, refeito a cada construção):
 | `<tema>/legenda.md`, `indicadores.md`, `lacunas.md`, `fonte.md` | legenda, tabela de indicadores, lacunas da base oficial (com o motivo provável), fonte e atribuição |
 | `figuras/<tema>-municipio.png`, `figuras/<tema>-sede.png` | mapas (PNG, 200 dpi) |
 | `edicao.md`, `pranchas.md`, `downloads.md` | versão e data dos dados com o botão de baixar o PDF (só no site), lista de pranchas, links dos dados |
-| `citacao.md` | referência do atlas no formato da ABNT (NBR 6023), para "Como usar e citar" |
+| `citacao.md` | referência do atlas no formato da ABNT (NBR 6023), para "Como usar e citar"; no site, também a entrada BibLaTeX (estilo `abnt` do biblatex-abnt) |
+| `downloads/atlas-<slug>.bib` | a entrada BibLaTeX para baixar |
 | `pdf.md`, `notas.md` | só o botão do PDF (página "Dados para download"); só a versão e a data (notas do release) |
 | `downloads/<tema>.geojson` | dados de cada prancha para baixar |
 

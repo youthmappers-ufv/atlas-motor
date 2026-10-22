@@ -17,6 +17,13 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
+## Próxima versão (não lançada)
+
+**Ao atualizar o município:** acrescente o `CITATION.cff` e a seção "Como citar" do README (modelos em `modelo-local/`, com os marcadores preenchidos pelo `novo_local.py` num município novo); sem o `CITATION.cff`, o validador avisa.
+
+- Citação também em BibLaTeX: no site, abaixo da referência ABNT, a entrada para copiar e o arquivo `atlas-<slug>.bib` para baixar. Com o estilo `abnt` do biblatex-abnt, a entrada dá a mesma referência (coordenação como editor com `editortype = coordinator`, que imprime "(coord.)"); conferido compilando o `.bib` gerado. O PDF continua só com a ABNT.
+- Citação nos repositórios: `CITATION.cff` (botão *Cite this repository* do GitHub; tipo dataset, coordenação e programa como autores, licenças ODbL, CC BY 4.0 e MIT) e seção "Como citar" no README, com ABNT e BibLaTeX, geradas pelo `novo_local.py` com as mesmas funções da citação do site. O validador avisa se o `CITATION.cff` faltar ou não bater com o `atlas.toml` (título, coordenação).
+
 ## v0.8.0 — 2026-10-22
 
 **Ao atualizar o município** (opcional): na página inicial (`atlas/index.qmd`), em "Como usar e citar", acrescente `Para citar o atlas (ABNT):` seguido de `{{< include _gerado/citacao.md >}}` (texto atual em `modelo-local/atlas/index.qmd`). Rio Paranaíba e São Gotardo têm a citação escrita à mão, para valer já na v0.7.0; troquem pelo include.
