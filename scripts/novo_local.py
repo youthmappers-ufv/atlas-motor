@@ -92,7 +92,9 @@ def criar(destino: Path, trocas: dict[str, str]) -> None:
                          "@@TEXTO@@": f"{trocas['@@NOME@@']} fica em {trocas['@@UF@@']}. O mapa mostra o limite do "
                                       "município no OpenStreetMap, a sede e os distritos, povoados e localidades registrados."}.items():
         prancha = prancha.replace(marca, valor)
-    (destino / "atlas" / "pranchas" / "01-localizacao.qmd").write_text(prancha, encoding="utf-8", newline="\n")
+    pranchas = destino / "atlas" / "pranchas"      # pasta vazia no modelo: o Git não a guarda
+    pranchas.mkdir(parents=True, exist_ok=True)
+    (pranchas / "01-localizacao.qmd").write_text(prancha, encoding="utf-8", newline="\n")
 
 
 def main() -> int:

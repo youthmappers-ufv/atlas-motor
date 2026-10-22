@@ -21,6 +21,8 @@ As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renum
 
 - `scripts/preparar_base.py`: converte uma base oficial como baixada do órgão (formato `inep`: Catálogo de Escolas, lista detalhada) para `dados/oficiais/<base>/`, com o `fonte.toml`: filtra o município e as escolas paralisadas, tira telefone e colunas não usadas, aceita vírgula ou ponto e vírgula, UTF-8 ou Latin-1 e vírgula decimal, e lista itens sem coordenada ou fora da área. Roda direto do clone do motor, em qualquer versão declarada pelo município.
 - Completude: a semelhança de nomes passa a considerar também as palavras distintivas (sem as genéricas, como "escola", "municipal", "colégio", e sem as do nome do município). Um nome contido no outro vale 0,95: "Alegria de Saber" (OSM) corresponde a "INSTITUTO EDUCACIONAL EQUIPE SG - ALEGRIA DE SABER" (INEP). A distância máxima não muda. Efeito: São Gotardo, educação, C_t de 13,3% para 16,7%; Rio Paranaíba sem mudança.
+- `novo_local.py` falhava num clone novo do motor: a pasta vazia `modelo-local/atlas/pranchas/` não é guardada pelo Git; o script passa a criá-la. Afeta só a criação de município (os workflows não usam o script); a correção vale assim que o clone do motor for atualizado.
+- Testes no CI: o teste do gancho de pre-push usa o validador do motor atual, sem depender das tags (o checkout do CI não as baixa).
 
 ## v0.7.0 — 2026-10-22
 
