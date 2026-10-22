@@ -55,7 +55,13 @@ Nos comandos, troque `<cidade>` pelo slug do município (ex.: `rio-paranaiba`).
    ```
 
    Endereço: `https://youthmappers-ufv.github.io/atlas-<cidade>/` (o `publicacao.url` do `atlas.toml`).
-6. **Proteger a `main`:** abra um PR qualquer para ver o nome exato do check do *Verificar* (em geral `verificar / verificar`) e crie a regra que exige PR e esse check antes do merge:
+6. **Proteger a `main`:** a regra exige PR e os dois checks do *Verificar* antes do merge. Cada check se chama `<job do município> / <nome do job no motor>`: `verificar / Validação` e `verificar / Construção do site`. Confira os nomes no último commit da `main` (o push do passo 2 já rodou o *Verificar*); um nome que não existe faz a regra esperar por um check que nunca roda e trava todo PR:
+
+   ```bash
+   gh api repos/youthmappers-ufv/atlas-<cidade>/commits/main/check-runs --jq '.check_runs[].name'
+   ```
+
+   O `publicar / publicar` que aparece na lista não entra na regra: só roda na `main`, nunca em PR.
 
    ```bash
    gh api -X POST repos/youthmappers-ufv/atlas-<cidade>/rulesets --input - <<'JSON'
@@ -66,7 +72,8 @@ Nos comandos, troque `<cidade>` pelo slug do município (ex.: `rio-paranaiba`).
                "dismiss_stale_reviews_on_push": false, "require_code_owner_review": false,
                "require_last_push_approval": false, "required_review_thread_resolution": false}},
               {"type": "required_status_checks", "parameters": {"strict_required_status_checks_policy": false,
-               "required_status_checks": [{"context": "verificar / verificar"}]}}]}
+               "required_status_checks": [{"context": "verificar / Validação"},
+                                          {"context": "verificar / Construção do site"}]}}]}
    JSON
    ```
 
