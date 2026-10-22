@@ -29,7 +29,7 @@ import tomllib
 from datetime import date
 from pathlib import Path
 
-from comum import (CATALOGO, SITUACOES, Tema, argumento_local, caminho_consulta, coordenadas, ler_csv,
+from comum import (CATALOGO, MOTOR, SITUACOES, Tema, argumento_local, caminho_consulta, coordenadas, ler_csv,
                    ler_esquemas, ler_temas, ler_toml, usar_versao_declarada)
 
 RECORTES = {"municipio", "sede", "ambos"}
@@ -392,6 +392,42 @@ def verificar_arquivos(local: Path, r: Relatorio) -> None:
             r.aviso(f"[arquivos] {rel}: script no repositório do município; código comum vai para o atlas-motor")
 
 
+# Assinatura dos formatos de imagem aceitos no tema (o Typst e alguns visualizadores recusam
+# um JPEG com extensão .png, mesmo que o LaTeX o aceite).
+ASSINATURAS = {".png": (b"\x89PNG\r\n\x1a\n",), ".jpg": (b"\xff\xd8\xff",), ".jpeg": (b"\xff\xd8\xff",),
+               ".pdf": (b"%PDF",), ".svg": (b"<?xml", b"<svg")}
+RE_COR_TEMA = re.compile(r'"#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})"')
+RE_COR_QUALQUER = re.compile(r'"#([^"]*)"')
+RE_IMAGEM_TEMA = re.compile(r"[\w./-]+\.(?:png|jpe?g|svg|pdf)\b", re.IGNORECASE)
+
+
+def verificar_tema(local: Path, r: Relatorio) -> None:
+    """tema/ (opcional): _brand.yml do município e as imagens que ele cita. Só biblioteca padrão:
+    o _brand.yml é conferido por padrões de texto; a leitura completa é na construção."""
+    tema = local / "tema"
+    if not tema.is_dir():
+        return
+    marca = tema / "_brand.yml"
+    if not marca.is_file():                       # sem _brand.yml: tema padrão do motor
+        if any(f.suffix.lower() in ASSINATURAS for f in tema.rglob("*") if f.is_file()):
+            r.aviso("[tema] há imagens em tema/, mas falta tema/_brand.yml: vale o tema padrão do motor")
+        return
+    texto = marca.read_text(encoding="utf-8")
+    for valor in RE_COR_QUALQUER.findall(texto):
+        if not RE_COR_TEMA.fullmatch(f'"#{valor}"'):
+            r.erro(f"[tema] _brand.yml: cor '#{valor}' inválida (use #RRGGBB)")
+    for citado in sorted(set(RE_IMAGEM_TEMA.findall(texto))):
+        if not (tema / citado).is_file() and not (MOTOR / "livro" / citado).is_file():
+            r.erro(f"[tema] _brand.yml cita {citado}, que não existe em tema/")
+    for arq in tema.rglob("*"):
+        assinaturas = ASSINATURAS.get(arq.suffix.lower())
+        if arq.is_file() and assinaturas:
+            inicio = arq.read_bytes()[:16].lstrip()
+            if not any(inicio.startswith(a) for a in assinaturas):
+                r.erro(f"[tema] {arq.relative_to(local).as_posix()}: o conteúdo não é {arq.suffix.lower()[1:].upper()} "
+                       "(extensão trocada?)")
+
+
 def verificar(local: Path) -> Relatorio:
     r = Relatorio()
     config, temas = verificar_config(local, r)
@@ -400,6 +436,7 @@ def verificar(local: Path) -> Relatorio:
     verificar_oficiais(local, config, r)
     verificar_curados(local, config, temas, r)
     verificar_pranchas(local, temas, r)
+    verificar_tema(local, r)
     verificar_arquivos(local, r)
     return r
 

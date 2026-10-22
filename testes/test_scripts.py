@@ -20,7 +20,7 @@ from validar import verificar  # noqa: E402
 
 def rodar(script: str, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run([sys.executable, str(SCRIPTS / script), *args], capture_output=True, text=True,
-                          encoding="utf-8")
+                          encoding="utf-8", env={**__import__("os").environ, "PYTHONIOENCODING": "utf-8"})
 
 
 class Scripts(unittest.TestCase):

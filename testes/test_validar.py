@@ -217,6 +217,44 @@ class ValidadorComDefeitosPlantados(unittest.TestCase):
         self.trocar("atlas.toml", 'projeto = "#ymufv-atlas"', 'projeto = "ymufv-atlas"')
         self.assertAcusa("hashtags.projeto")
 
+    # ------------------------------------------------------------ tema/
+    def tema(self, brand: str, imagens: dict[str, bytes]) -> None:
+        (self.local / "tema" / "marca").mkdir(parents=True, exist_ok=True)
+        (self.local / "tema" / "_brand.yml").write_text(brand, encoding="utf-8")
+        for nome, conteudo in imagens.items():
+            (self.local / "tema" / nome).write_bytes(conteudo)
+
+    BRAND = 'meta:\n  name: Prefeitura X\nlogo:\n  images:\n    p: marca/pref.png\ncolor:\n  primary: "#1B6E3A"\n'
+    PNG = b"\x89PNG\r\n\x1a\n" + b"0" * 20
+    JPEG = b"\xff\xd8\xff\xe0" + b"0" * 20
+
+    def test_tema_valido_passa(self):
+        self.tema(self.BRAND, {"marca/pref.png": self.PNG})
+        self.assertEqual(self.erros(), [])
+
+    def test_tema_com_logo_do_motor_passa(self):
+        self.tema(self.BRAND.replace("marca/pref.png", "marca/ymufv_logo.png"), {})
+        self.assertEqual(self.erros(), [])
+
+    def test_tema_jpeg_com_extensao_png(self):
+        self.tema(self.BRAND, {"marca/pref.png": self.JPEG})
+        self.assertAcusa("o conteúdo não é PNG")
+
+    def test_tema_logo_inexistente(self):
+        self.tema(self.BRAND, {})
+        self.assertAcusa("cita marca/pref.png")
+
+    def test_tema_cor_invalida(self):
+        self.tema(self.BRAND.replace("#1B6E3A", "#1B6E3"), {"marca/pref.png": self.PNG})
+        self.assertAcusa("cor '#1B6E3' inválida")
+
+    def test_tema_imagens_sem_brand_avisa(self):
+        (self.local / "tema" / "marca").mkdir(parents=True, exist_ok=True)
+        (self.local / "tema" / "marca" / "pref.png").write_bytes(self.PNG)
+        r = verificar(self.local)
+        self.assertEqual(r.erros, [])
+        self.assertTrue(any("falta tema/_brand.yml" in a for a in r.avisos))
+
 
 if __name__ == "__main__":
     unittest.main()
