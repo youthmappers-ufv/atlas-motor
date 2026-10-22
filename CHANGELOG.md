@@ -17,6 +17,22 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
+## v0.7.0 — 2026-10-22
+
+**Exige mudança nos municípios que têm a pasta `tema/`** (pré-lançamento):
+
+1. `python ../atlas-motor/scripts/atualizar_motor.py --versao v0.7.0`;
+2. `git mv tema identidade` (o validador acusa erro enquanto a pasta antiga existir);
+3. no `README.md` e no `CONTRIBUTING.md` do município, troque `tema/` por `identidade/` (texto atual em `modelo-local/`).
+
+Pranchas e textos existentes não mudam: o include `_gerado/<tema>.md` continua gerando a prancha inteira.
+
+- **Pasta da identidade visual:** `tema/` passa a `identidade/` (o nome antigo se confundia com os temas das pranchas); `scripts/tema.py` passa a `scripts/identidade.py` e gera `identidade.tex`.
+- **Pranchas em partes:** além de `_gerado/<tema>.md`, o motor gera `_gerado/<tema>/{mapa-municipio,mapa-sede,legenda,indicadores,lacunas,fonte}.md`, para a equipe montar a prancha com texto, seções e figuras próprias entre as partes.
+- **Catálogo:** `cor`, `mapa` (`pontos` | `linhas`) e `indicadores` (`servico`, `vias`) de cada tema passam do código para `catalogo/temas.toml`; um tema novo deixa de exigir código. O município pode trocá-los no próprio `temas.toml` e nas pranchas próprias. O validador confere os valores.
+- PDF: moldura dos quadros (callouts) nas cores da identidade.
+- **Documentação** de uso e manutenção em `docs/` (guia do município, pranchas, novos temas, identidade visual, referência, manutenção, solução de problemas) e modelo de issue para propor tema novo.
+
 ## v0.6.0 — 2026-10-22
 
 Compatível com v0.5.1: `atualizar_motor.py --versao v0.6.0`. Sem `tema/`, o atlas usa a identidade do programa.
