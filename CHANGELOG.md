@@ -17,6 +17,13 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
+## v0.10.1 — 2026-10-22
+
+**Ao atualizar o município:** troque `@book` por `@dataset` na entrada BibLaTeX da seção "Como citar" do README.
+
+- Citação dos atlas em BibLaTeX como `@dataset` (antes `@book`), o mesmo tipo do `CITATION.cff`: o atlas são mapas e dados abertos. Com o estilo `abnt` do biblatex-abnt, a referência impressa não muda.
+- "Como citar" no README do motor, com a referência ABNT e a entrada `@software`. O estilo `abnt` ignora o campo `version`; a versão vai em `edition` ("Versão vX.Y.Z"), que ele imprime logo após o título, como pede a NBR 6023 para programa de computador. Um teste confere versão e ano com `VERSAO` e `CITATION.cff` a cada lançamento.
+
 ## v0.10.0 — 2026-10-22
 
 **Ao atualizar o município:** acrescente a fileira de badges logo abaixo do título do README. Para gerá-la, da pasta do município: `python -c "import sys, tomllib; sys.path.insert(0, '../atlas-motor/scripts'); from novo_local import linha_badges; print(linha_badges(tomllib.load(open('atlas.toml', 'rb')), 'youthmappers-ufv'))"`. Num município novo, o `novo_local.py` já a põe.
