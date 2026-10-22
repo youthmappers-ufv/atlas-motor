@@ -164,13 +164,34 @@ class ValidadorComDefeitosPlantados(unittest.TestCase):
         self.acrescentar("atlas/index.qmd", "<<<<<<< HEAD\nversão A\n=======\nversão B\n>>>>>>> outra")
         self.assertAcusa("marcas de conflito")
 
-    def test_publicacao_ativa_entre_aspas(self):
-        self.trocar("atlas.toml", "ativa = true", 'ativa = "false"')
-        self.assertAcusa("publicacao.ativa deve ser true ou false")
+    def test_hospedagem_desconhecida(self):
+        self.trocar("atlas.toml", 'hospedagem = "pages"', 'hospedagem = "ftp"')
+        self.assertAcusa("publicacao.hospedagem deve ser")
 
-    def test_publicacao_desativada_passa(self):
-        self.trocar("atlas.toml", "ativa = true", "ativa = false")
+    def test_hospedagem_artefato_sem_url_passa(self):
+        self.trocar("atlas.toml", 'hospedagem = "pages"', 'hospedagem = "artefato"')
+        self.trocar("atlas.toml", 'url = "https://youthmappers-ufv.github.io/atlas-exemplo/"', 'url = ""')
         self.assertEqual(self.erros(), [])
+
+    def test_pages_sem_url(self):
+        self.trocar("atlas.toml", 'url = "https://youthmappers-ufv.github.io/atlas-exemplo/"', 'url = ""')
+        self.assertAcusa("publicacao.url deve ser")
+
+    def test_url_sem_barra_final(self):
+        self.trocar("atlas.toml", 'atlas-exemplo/"', 'atlas-exemplo"')
+        self.assertAcusa("publicacao.url deve ser")
+
+    def test_dominio_com_protocolo(self):
+        self.trocar("atlas.toml", 'dominio = ""', 'dominio = "https://atlas.exemplo.mg.gov.br/"')
+        self.assertAcusa("publicacao.dominio deve ser")
+
+    def test_dominio_valido_passa(self):
+        self.trocar("atlas.toml", 'dominio = ""', 'dominio = "atlas.exemplo.mg.gov.br"')
+        self.assertEqual(self.erros(), [])
+
+    def test_chave_antiga_de_publicacao(self):
+        self.acrescentar("atlas.toml", "ativa = true")
+        self.assertAcusa("publicacao.ativa saiu na v0.5.0")
 
     def test_hashtag_sem_cerquilha(self):
         self.trocar("atlas.toml", 'projeto = "#ymufv-atlas"', 'projeto = "ymufv-atlas"')

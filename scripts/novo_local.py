@@ -9,7 +9,9 @@ Uso (da pasta que contém o atlas-motor):
   python atlas-motor/scripts/novo_local.py --nome "São Gotardo" --ibge 3162104
   python atlas-motor/scripts/novo_local.py --nome "São Gotardo" --ibge 3162104 --baixar --git
 Opções: --uf (padrão MG), --slug (padrão: nome sem acentos), --destino (padrão: ../atlas-<slug>
-ao lado do motor), --baixar (primeiro retrato do OSM), --git (git init e primeiro commit).
+ao lado do motor), --baixar (primeiro retrato do OSM), --git (git init e primeiro commit),
+--organizacao (dona do repositório no GitHub; padrão youthmappers-ufv), --privado (repositório
+privado: o atlas sai só como artefato do workflow, sem GitHub Pages).
 """
 from __future__ import annotations
 
@@ -107,6 +109,8 @@ def main() -> int:
     ap.add_argument("--wikidata", default="")
     ap.add_argument("--baixar", action="store_true", help="baixar o primeiro retrato do OSM")
     ap.add_argument("--git", action="store_true", help="git init e primeiro commit")
+    ap.add_argument("--organizacao", default="youthmappers-ufv", help="dona do repositório no GitHub")
+    ap.add_argument("--privado", action="store_true", help="repositório privado: sem Pages, só artefato")
     args = ap.parse_args()
 
     if not re.fullmatch(r"\d{7}", args.ibge):
@@ -133,6 +137,8 @@ def main() -> int:
         "@@BBOX@@": str(dados["bbox"]), "@@SEDE_BBOX@@": str(dados["sede_bbox"]),
         "@@MOTOR@@": versao_motor(), "@@DATA@@": date.today().isoformat(),
         "@@HORA@@": str(hora), "@@MINUTO@@": str(minuto),
+        "@@HOSPEDAGEM@@": "artefato" if args.privado else "pages",
+        "@@URL@@": "" if args.privado else f"https://{args.organizacao}.github.io/atlas-{s}/",
     })
     print(f"Criado: {destino}")
     if args.baixar:
@@ -143,8 +149,9 @@ def main() -> int:
         subprocess.run(["git", "add", "-A"], cwd=destino, check=True)
         subprocess.run(["git", "commit", "-q", "-m", f"[CONFIG] Cria o atlas de {args.nome} (motor {versao_motor()})"],
                        cwd=destino, check=True)
+    visibilidade = "privado" if args.privado else "público, com GitHub Pages da branch gh-pages"
     print("Próximos passos: conferir atlas.toml (sede_bbox, registro), rodar validar.py, criar o repositório "
-          f"youthmappers-ufv/atlas-{s} (privado) e seguir docs/configuracao-github.md do motor.")
+          f"{args.organizacao}/atlas-{s} ({visibilidade}) e seguir docs/configuracao-github.md do motor.")
     return 0
 
 

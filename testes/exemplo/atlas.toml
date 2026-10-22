@@ -35,11 +35,14 @@ distancia_max_m = 150
 similaridade_min = 0.6
 
 [publicacao]
-slug = "exemplo"                                     # pasta no site: /atlas/exemplo/
-ativa = true                                          # false: gera site e PDF só como artefato do workflow,
-                                                      # sem publicar no site público (ex.: município sem parceria)
-url_base = "https://youthmappers-ufv.github.io/atlas/"
-repositorio = "youthmappers-ufv/atlas"                # repositório público só de saída
+# Onde o atlas é publicado:
+#   "pages"    = GitHub Pages deste repositório (que deve ser público), branch gh-pages;
+#   "artefato" = só artefato do workflow (e release, em tags), para baixar e hospedar onde quiser
+#                ou para repositório privado (ex.: município sem parceria).
+hospedagem = "pages"
+url = "https://youthmappers-ufv.github.io/atlas-exemplo/"   # endereço do site
+dominio = ""                                          # opcional: domínio próprio (ex.: "atlas.prefeitura.mg.gov.br")
+slug = "exemplo"                                     # nome do PDF: atlas-<slug>.pdf
 atribuicao = "© colaboradores do OpenStreetMap (ODbL)"
 autoria = "Programa Youthmappers UFV"
 instituicao = "Universidade Federal de Viçosa — Campus Rio Paranaíba"

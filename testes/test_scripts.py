@@ -44,11 +44,22 @@ class Scripts(unittest.TestCase):
         self.assertIn('nome = "Cidade Teste"', texto)
         self.assertIn(f'versao = "{versao_motor()}"', texto)
         self.assertIn('slug = "cidade-teste"', texto)
+        self.assertIn('hospedagem = "pages"', texto)
+        self.assertIn('url = "https://youthmappers-ufv.github.io/atlas-cidade-teste/"', texto)
         self.assertTrue((local / ".gitignore").exists())
         self.assertTrue((local / "atlas" / "pranchas" / "01-localizacao.qmd").exists())
         restos = [p for p in local.rglob("*") if p.is_file() and "@@" in p.read_text(encoding="utf-8", errors="ignore")]
         self.assertEqual(restos, [], "marcadores @@ não substituídos")
         self.assertEqual(verificar(local).erros, [])
+
+    def test_novo_local_privado_sem_pages(self):
+        destino = self.dir / "atlas-privado"
+        r = rodar("novo_local.py", "--nome", "Cidade Teste", "--ibge", "1234567", "--sem-rede", "--relacao", "42",
+                  "--bbox=-19.3,-46.4,-19.1,-46.2", "--sede-bbox=-19.21,-46.31,-19.19,-46.29",
+                  "--destino", str(destino), "--privado")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn('hospedagem = "artefato"', (destino / "atlas.toml").read_text(encoding="utf-8"))
+        self.assertEqual(verificar(destino).erros, [])
 
     def test_novo_local_nao_sobrescreve(self):
         self.novo()
@@ -117,22 +128,18 @@ class ModeloCoerenteComMotor(unittest.TestCase):
                 self.assertIn(nome, reutilizaveis, f"{wf.name} chama {nome}, que não existe no motor")
                 self.assertIn("workflow_call", (MOTOR / ".github" / "workflows" / nome).read_text(encoding="utf-8"))
 
-    def test_publicacao_respeita_ativa(self):
-        """Todo passo que envia ao site público depende de publicacao.ativa (direto, ou pela
-        falha de um passo que depende dela, no caso da segunda tentativa)."""
+    def test_publicacao_respeita_hospedagem(self):
+        """Todo passo que envia ao gh-pages depende de publicacao.hospedagem = "pages" e usa o
+        token do próprio repositório (nada de chave de deploy nem repositório externo)."""
         texto = (MOTOR / ".github" / "workflows" / "publicar.yml").read_text(encoding="utf-8")
-        passos = re.split(r"\n      - (?=name:|uses:)", texto)
-        guardados = {re.search(r"id: (\w+)", p).group(1) for p in passos
-                     if "actions-gh-pages" in p and "steps.local.outputs.ativa == 'true'" in p}
-        self.assertTrue(guardados)
+        passos = [p for p in re.split(r"\n      - (?=name:|uses:)", texto) if "actions-gh-pages" in p]
+        self.assertEqual(len(passos), 2)
         for p in passos:
-            if "actions-gh-pages" in p:
-                cond = re.search(r"\n\s+if: (.+)", p)
-                self.assertIsNotNone(cond, f"passo sem condição: {p.splitlines()[0]}")
-                ok = "steps.local.outputs.ativa == 'true'" in cond.group(1) or \
-                     any(f"steps.{g}.outcome == 'failure'" in cond.group(1) for g in guardados)
-                self.assertTrue(ok, f"passo publica sem olhar publicacao.ativa: {p.splitlines()[0]}")
-        self.assertIn("print(f\"ativa=", texto)
+            self.assertIn("steps.local.outputs.hospedagem == 'pages'", re.search(r"\n\s+if: (.+)", p).group(1))
+            self.assertIn("github_token:", p)
+            self.assertNotIn("external_repository", p)
+            self.assertNotIn("deploy_key", p)
+        self.assertIn("print(f\"hospedagem=", texto)
 
     def test_versao_no_formato(self):
         self.assertRegex(versao_motor(), r"^v\d+\.\d+\.\d+$")

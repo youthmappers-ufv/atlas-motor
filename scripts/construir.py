@@ -81,7 +81,7 @@ def escrever_quarto(livro: Path, config: dict, ativos: list) -> None:
         "{{titulo}}": f"Atlas Colaborativo de {mun['nome']}",
         "{{autoria}}": pub.get("autoria", "Programa Youthmappers UFV"),
         "{{instituicao}}": pub.get("instituicao", "Universidade Federal de Viçosa — Campus Rio Paranaíba"),
-        "{{site_url}}": pub["url_base"].rstrip("/") + f"/{pub['slug']}/",
+        "{{site_url}}": f"https://{pub['dominio']}/" if pub.get("dominio") else pub.get("url", ""),
         "{{arquivo}}": f"atlas-{pub['slug']}",
         "{{rodape}}": rodape.replace('"', "'"),
         "{{capitulos}}": capitulos,

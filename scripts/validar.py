@@ -1,7 +1,7 @@
 """Verifica a integridade do repositório de um município (roda no CI em todo pull request).
 
 Confere:
-  - atlas.toml: município, hashtags, versão do motor (vX.Y.Z), publicação (slug);
+  - atlas.toml: município, hashtags, versão do motor (vX.Y.Z), publicação (hospedagem, url, domínio, slug);
   - temas.toml: ids do catálogo ou pranchas próprias completas, situação e recorte válidos,
     consultas existentes e restritas ao município ({{bbox}});
   - workflows do município chamam o motor na mesma versão declarada no atlas.toml;
@@ -40,6 +40,9 @@ RE_CPF = re.compile(r"\b\d{3}\.\d{3}\.\d{3}-\d{2}\b")
 RE_URL = re.compile(r"^https?://\S+$")
 RE_VERSAO = re.compile(r"^v\d+\.\d+\.\d+$")
 RE_SLUG = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
+RE_URL_SITE = re.compile(r"^https://[^\s/]+(/[^\s]*)?/$")
+RE_DOMINIO = re.compile(r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$")
+HOSPEDAGENS = ("pages", "artefato")
 RE_CHAMADA = re.compile(r"uses:\s*youthmappers-ufv/atlas-motor/\.github/workflows/[\w.-]+@(\S+)")
 TIPOS = {"texto", "inteiro", "decimal", "data", "lista", "latitude", "longitude", "tema", "url"}
 IGNORAR = {".git", "_site", "_gerado", "_construcao", ".quarto", "__pycache__", "_freeze", ".venv"}
@@ -88,8 +91,18 @@ def verificar_config(local: Path, r: Relatorio) -> tuple[dict, list[Tema]]:
         r.erro("[config] atlas.toml: motor.versao ausente ou fora do formato vX.Y.Z (ex.: v0.2.0)")
     if not RE_SLUG.match(str(config.get("publicacao", {}).get("slug", ""))):
         r.erro("[config] atlas.toml: publicacao.slug ausente ou inválido (minúsculas, números e hífen)")
-    if not isinstance(config.get("publicacao", {}).get("ativa", True), bool):
-        r.erro("[config] atlas.toml: publicacao.ativa deve ser true ou false (sem aspas)")
+    pub = config.get("publicacao", {})
+    for antigo in ("ativa", "url_base", "repositorio"):
+        if antigo in pub:
+            r.erro(f"[config] atlas.toml: publicacao.{antigo} saiu na v0.5.0 do motor; use hospedagem, url e dominio "
+                   "(ver o CHANGELOG do motor)")
+    if pub.get("hospedagem") not in HOSPEDAGENS:
+        r.erro(f"[config] atlas.toml: publicacao.hospedagem deve ser {' ou '.join(HOSPEDAGENS)}")
+    if pub.get("hospedagem") == "pages" and not RE_URL_SITE.match(str(pub.get("url", ""))):
+        r.erro("[config] atlas.toml: publicacao.url deve ser o endereço do site, com https:// e / no fim")
+    if pub.get("dominio") and not RE_DOMINIO.match(str(pub["dominio"])):
+        r.erro("[config] atlas.toml: publicacao.dominio deve ser só o nome (ex.: atlas.prefeitura.mg.gov.br), "
+               "sem https:// nem barra")
 
     catalogo = {t["id"] for t in ler_toml(CATALOGO / "temas.toml")["tema"]}
     escolhas = {}
