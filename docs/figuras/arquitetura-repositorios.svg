@@ -9,26 +9,26 @@
 <text class="s" x="335" y="82" text-anchor="middle" fill="#534AB7">público · código · tags vX.Y.Z</text>
 <rect x="470" y="40" width="170" height="56" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
 <text class="t" x="555" y="62" text-anchor="middle" fill="#444441">youthmappers-ufv-docs</text>
-<text class="s" x="555" y="82" text-anchor="middle" fill="#5F5E5A">parte institucional</text>
+<text class="s" x="555" y="82" text-anchor="middle" fill="#5F5E5A">institucional e pesquisa</text>
 <line x1="132" y1="98" x2="190" y2="164" stroke="#5F5E5A" stroke-width="1.2" marker-end="url(#a)"/>
 <line x1="300" y1="98" x2="250" y2="164" stroke="#5F5E5A" stroke-width="1.2" marker-end="url(#a)"/>
 <line x1="370" y1="98" x2="450" y2="164" stroke="#5F5E5A" stroke-width="1.2" marker-end="url(#a)"/>
 <rect x="120" y="168" width="200" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
 <text class="t" x="220" y="190" text-anchor="middle" fill="#085041">atlas-rio-paranaiba</text>
-<text class="s" x="220" y="210" text-anchor="middle" fill="#0F6E56">privado · produção</text>
+<text class="s" x="220" y="210" text-anchor="middle" fill="#0F6E56">público · produção</text>
 <rect x="380" y="168" width="200" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
 <text class="t" x="480" y="190" text-anchor="middle" fill="#085041">atlas-sao-gotardo</text>
 <text class="s" x="480" y="210" text-anchor="middle" fill="#0F6E56">privado · canário</text>
 <line x1="220" y1="226" x2="220" y2="284" stroke="#5F5E5A" stroke-width="1.2" marker-end="url(#a)"/>
 <line x1="480" y1="226" x2="480" y2="284" stroke="#5F5E5A" stroke-width="1.2" marker-end="url(#a)"/>
 <rect x="120" y="288" width="200" height="56" rx="8" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
-<text class="t" x="220" y="310" text-anchor="middle" fill="#712B13">atlas (GitHub Pages)</text>
-<text class="s" x="220" y="330" text-anchor="middle" fill="#993C1D">público · /rio-paranaiba/</text>
+<text class="t" x="220" y="310" text-anchor="middle" fill="#712B13">GitHub Pages próprio</text>
+<text class="s" x="220" y="330" text-anchor="middle" fill="#993C1D">gh-pages · domínio opcional</text>
 <rect x="380" y="288" width="200" height="56" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.8" stroke-dasharray="4 3"/>
 <text class="t" x="480" y="310" text-anchor="middle" fill="#444441">Artefato do workflow</text>
-<text class="s" x="480" y="330" text-anchor="middle" fill="#5F5E5A">publicacao.ativa = false</text>
-<rect x="60" y="374" width="12" height="12" rx="2" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/><text class="s" x="78" y="384" fill="#5F5E5A">código público</text>
-<rect x="200" y="374" width="12" height="12" rx="2" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/><text class="s" x="218" y="384" fill="#5F5E5A">dados privados</text>
-<rect x="340" y="374" width="12" height="12" rx="2" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/><text class="s" x="358" y="384" fill="#5F5E5A">saída pública</text>
-<rect x="470" y="374" width="12" height="12" rx="2" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/><text class="s" x="488" y="384" fill="#5F5E5A">externo ou interno</text>
+<text class="s" x="480" y="330" text-anchor="middle" fill="#5F5E5A">hospedagem = artefato</text>
+<rect x="40" y="374" width="12" height="12" rx="2" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/><text class="s" x="58" y="384" fill="#5F5E5A">código público</text>
+<rect x="180" y="374" width="12" height="12" rx="2" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/><text class="s" x="198" y="384" fill="#5F5E5A">repositório do município</text>
+<rect x="370" y="374" width="12" height="12" rx="2" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/><text class="s" x="388" y="384" fill="#5F5E5A">site publicado</text>
+<rect x="500" y="374" width="12" height="12" rx="2" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/><text class="s" x="518" y="384" fill="#5F5E5A">externo ou interno</text>
 </svg>

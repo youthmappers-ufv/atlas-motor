@@ -5,7 +5,7 @@ O motor serve a vários municípios ao mesmo tempo; uma mudança aqui chega a to
 1. **Issue** descrevendo a mudança e para que serve (vale para todos os municípios?). Uma necessidade de um município só costuma caber no repositório dele (consulta ou esquema próprio, prancha própria).
 2. **Branch** a partir da `main` e **commits pequenos**, um por passo (`[CODIGO] …`, `[CATALOGO] …`, `[LIVRO] …`, `[CI] …`, `[DOC] …`).
 3. **Testes:** toda regra nova do validador ganha um teste em `testes/test_validar.py` com o defeito plantado numa cópia do município de exemplo; todo script novo, um teste em `testes/test_scripts.py`. Se a mudança precisar de dados novos no exemplo, ajuste `testes/exemplo/` no mesmo PR.
-4. Antes do PR: `python -m unittest discover -s testes` e `python scripts/construir.py --local testes/exemplo --renderizar html`.
+4. Antes do PR: `python -m unittest discover -s testes` e `python scripts/construir.py --local testes/exemplo --renderizar html`. Para testar a mudança num município real, que declara outra versão do motor, use `--motor-atual` (sem ele, os scripts rodam na versão declarada pelo município).
 5. **Pull request** com o workflow *Testes do motor* verde; a coordenação revisa e mescla.
 
 ## Publicar uma versão

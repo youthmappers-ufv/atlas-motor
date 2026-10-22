@@ -2,18 +2,17 @@
 
 Código e estrutura comuns do **Atlas Colaborativo** do Programa Youthmappers UFV: atlas municipais abertos, feitos a partir do OpenStreetMap, com medição de completude em relação às bases oficiais, publicados como site e PDF.
 
-Cada município tem o seu repositório (`atlas-<cidade>`), que guarda **só** configuração, dados e textos e usa este motor numa versão fixada. O código vive num lugar só: uma correção ou um indicador novo chega a todos os municípios, e nenhum repositório municipal diverge da estrutura.
+Cada município tem o seu repositório (`atlas-<cidade>`), que guarda **só** configuração, dados e textos, usa este motor numa versão fixada e publica o próprio site no GitHub Pages. O código vive num lugar só: uma correção ou um indicador novo chega a todos os municípios, e nenhum repositório municipal diverge da estrutura.
 
 ```
 youthmappers-ufv/atlas-motor        público    este repositório: código, catálogo, modelos, workflows
-youthmappers-ufv/atlas-<cidade>     privado    um por município: atlas.toml, temas.toml, dados/, atlas/
-youthmappers-ufv/atlas              público    só a saída: /<cidade>/ (site e PDF), via GitHub Pages
-youthmappers-ufv/youthmappers-ufv-docs  privado  parte institucional (propostas, relatórios à UFV)
+youthmappers-ufv/atlas-<cidade>     público    um por município: atlas.toml, temas.toml, dados/, atlas/;
+                                               publica o site no próprio GitHub Pages (só dados públicos)
 ```
 
 ![Arquitetura dos repositórios do atlas](docs/figuras/arquitetura-repositorios.svg)
 
-Detalhes, o ciclo mensal de um município e o papel de cada instância em [docs/arquitetura.md](docs/arquitetura.md).
+Detalhes e o ciclo mensal de um município em [docs/arquitetura.md](docs/arquitetura.md).
 
 ## O que tem aqui
 
@@ -33,6 +32,7 @@ scripts/
   mapas.py              mapas das pranchas (matplotlib)
   construir.py          monta o livro e renderiza site e PDF
   novo_local.py         cria o repositório de um município novo pelo código IBGE
+  instalar_ganchos.py   instala no município o gancho de pre-push com o validador
   ativar_tema.py        abre uma prancha num município
   atualizar_motor.py    muda a versão do motor usada por um município
   serie_historica.py    série histórica dos indicadores de um município, a partir do Git
@@ -50,12 +50,13 @@ Com o motor clonado numa pasta e os repositórios municipais ao lado dele:
 python atlas-motor/scripts/novo_local.py --nome "São Gotardo" --ibge 3162104 --baixar --git
 ```
 
-O script busca no OSM o limite (pelo `IBGE:GEOCODIGO`), a caixa envolvente, o Wikidata e a sede; preenche o modelo; baixa o primeiro retrato; e faz o primeiro commit em `../atlas-sao-gotardo`. Depois, siga [docs/configuracao-github.md](docs/configuracao-github.md) para criar o repositório, dar acesso à equipe e à prefeitura parceira e ligar a publicação.
+O script busca no OSM o limite (pelo `IBGE:GEOCODIGO`), a caixa envolvente, o Wikidata e a sede; preenche o modelo; baixa o primeiro retrato; e faz o primeiro commit em `../atlas-sao-gotardo`. Depois, siga [docs/configuracao-github.md](docs/configuracao-github.md) para criar o repositório (público), ligar o GitHub Pages, proteger a `main` e dar acesso à equipe e à prefeitura parceira. Município sem parceria: `--privado` (o atlas sai só como artefato).
 
 ## Uso num município
 
 ```bash
 cd atlas-rio-paranaiba
+python ../atlas-motor/scripts/instalar_ganchos.py    # uma vez por clone
 python ../atlas-motor/scripts/validar.py
 python ../atlas-motor/scripts/baixar_osm.py
 python ../atlas-motor/scripts/ativar_tema.py saude
@@ -67,7 +68,7 @@ Requisitos: Python 3.11+ (validação e testes só com a biblioteca padrão), `p
 
 ## Versões
 
-O município declara a versão em `atlas.toml` (`[motor] versao = "v0.2.0"`) e chama os workflows na mesma versão (`...@v0.2.0`); o validador confere que batem. Os workflows baixam o motor na versão declarada pelo município **na versão do município que está sendo publicada**: uma edição antiga é sempre regerada como foi. Política de versões e o que mudou: [CHANGELOG.md](CHANGELOG.md). Como mudar o motor: [CONTRIBUTING.md](CONTRIBUTING.md).
+O município declara a versão em `atlas.toml` (`[motor] versao = "vX.Y.Z"`) e chama os workflows na mesma versão (`...@vX.Y.Z`); o validador confere que batem. Os workflows baixam o motor na versão declarada pelo município **na versão do município que está sendo publicada**: uma edição antiga é sempre regerada como foi. Localmente, `construir.py`, `validar.py` e `baixar_osm.py` também rodam na versão declarada, extraída da tag do clone ao lado (`--motor-atual` usa o motor da pasta). As tags publicadas são protegidas e nunca mudam. Política de versões e o que mudou: [CHANGELOG.md](CHANGELOG.md). Como mudar o motor: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Licença
 
