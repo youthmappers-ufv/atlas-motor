@@ -72,7 +72,18 @@ Depois, escreva o texto em `atlas/pranchas/04-saude.qmd`. Tudo sobre pranchas, i
 
 ### Carregar uma base oficial
 
-1. Baixe da fonte oficial, filtre para o município (código IBGE) e salve em CSV UTF-8.
+**INEP (escolas):** no [Catálogo de Escolas](https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos/inep-data/catalogo-de-escolas), filtre o município e exporte a tabela "lista das escolas - Detalhado" em CSV. Depois, sem editar o arquivo:
+
+```bash
+python ../atlas-motor/scripts/preparar_base.py inep "<arquivo baixado>.csv"
+python ../atlas-motor/scripts/validar.py
+```
+
+O script fica com as escolas do município em funcionamento (`--todas` mantém as paralisadas), tira telefone e as colunas que o atlas não usa, limpa as coordenadas, grava `dados/oficiais/inep/` com o `fonte.toml` e lista as escolas sem coordenada ou fora da área. Base nova por cima da antiga: `--substituir`; data do download diferente de hoje: `--data AAAA-MM-DD`. Confira a licença no `fonte.toml` com a página da fonte.
+
+**Outras bases** (até o script conhecer o formato delas):
+
+1. Baixe da fonte oficial, filtre para o município (código IBGE) e salve em CSV UTF-8, sem colunas de telefone ou e-mail.
 2. Crie `dados/oficiais/<base>/` com o CSV e o `fonte.toml` (formato em [Referência](referencia.md#base-oficial-fontetoml)).
 3. Se o nome da pasta for o que o catálogo espera (`inep`, `cnes`), a completude aparece sozinha; senão, aponte `referencia` no `temas.toml`.
 

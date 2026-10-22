@@ -17,6 +17,10 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
+## Próxima versão (não lançada)
+
+- `scripts/preparar_base.py`: converte uma base oficial como baixada do órgão (formato `inep`: Catálogo de Escolas, lista detalhada) para `dados/oficiais/<base>/`, com o `fonte.toml`: filtra o município e as escolas paralisadas, tira telefone e colunas não usadas, aceita vírgula ou ponto e vírgula, UTF-8 ou Latin-1 e vírgula decimal, e lista itens sem coordenada ou fora da área. Roda direto do clone do motor, em qualquer versão declarada pelo município.
+
 ## v0.7.0 — 2026-10-22
 
 **Exige mudança nos municípios que têm a pasta `tema/`** (pré-lançamento):

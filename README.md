@@ -36,6 +36,7 @@ scripts/
   novo_local.py         cria o repositório de um município novo pelo código IBGE
   instalar_ganchos.py   instala no município o gancho de pre-push com o validador
   ativar_tema.py        abre uma prancha num município
+  preparar_base.py      converte uma base oficial baixada (INEP) para dados/oficiais/ do município
   atualizar_motor.py    muda a versão do motor usada por um município
   serie_historica.py    série histórica dos indicadores de um município, a partir do Git
 .github/workflows/      reutilizáveis (verificar, atualizar-dados, publicar) e os testes do motor
