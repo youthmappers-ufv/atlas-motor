@@ -442,6 +442,36 @@ class ModeloCoerenteComMotor(unittest.TestCase):
     def test_versao_registrada_no_changelog(self):
         self.assertIn(f"## {versao_motor()}", (MOTOR / "CHANGELOG.md").read_text(encoding="utf-8"))
 
+    def test_release_automatico_so_em_versao_maior(self):
+        sys.path.insert(0, str(SCRIPTS))
+        from notas_versao import automatico
+        self.assertEqual([t for t in ("v1.0.0", "v2.0.0", "v10.0.0") if automatico(t)], ["v1.0.0", "v2.0.0", "v10.0.0"])
+        self.assertEqual([t for t in ("v0.0.0", "v0.9.0", "v0.10.0", "v1.1.0", "v1.0.1", "v1.0", "1.0.0", "v1.0.0-rc1")
+                          if automatico(t)], [])
+        self.assertEqual(rodar("notas_versao.py", "v1.0.0", "--automatico").returncode, 0)
+        self.assertEqual(rodar("notas_versao.py", "v0.9.0", "--automatico").returncode, 1)
+        self.assertEqual(rodar("notas_versao.py", "v1.0", "--automatico").returncode, 2)
+
+    def test_notas_da_versao_do_changelog(self):
+        from notas_versao import notas
+        changelog = "# CHANGELOG\n\n## v0.10.0 — 2026-10-22\n\n- novo\n\n## v0.9.0 — 2026-10-22\n\n- antigo\n"
+        self.assertEqual(notas("v0.10.0", changelog), "- novo\n")
+        self.assertEqual(notas("v0.9.0", changelog), "- antigo\n")
+        with self.assertRaises(LookupError):
+            notas("v0.1.0", "## v0.10.0 — x\n")                  # v0.1.0 não casa com v0.10.0
+        r = rodar("notas_versao.py", versao_motor())
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertNotIn("## v", r.stdout, "só a seção da versão")
+
+    def test_workflow_de_release(self):
+        texto = (MOTOR / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+        self.assertIn('tags: ["v*.*.*"]', texto)
+        self.assertIn("workflow_dispatch:", texto)
+        self.assertIn('if [ "$EVENTO" = "workflow_dispatch" ] || python scripts/notas_versao.py "$TAG" --automatico; then',
+                      texto, "à mão publica qualquer versão; pela tag, só as maiores")
+        self.assertIn('[ "$(cat VERSAO)" = "$TAG" ]', texto, "a tag precisa ser a versão do motor")
+        self.assertIn("if: steps.decisao.outputs.publicar == 'true'", texto)
+
     def test_citation_na_versao(self):
         self.assertIn(f"version: {versao_motor()}\n", (MOTOR / "CITATION.cff").read_text(encoding="utf-8"))
 

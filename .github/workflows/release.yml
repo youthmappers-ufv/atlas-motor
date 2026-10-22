@@ -1,0 +1,63 @@
+# Release do motor no GitHub, com as notas do CHANGELOG (e, com a integração do Zenodo ligada,
+# um DOI para a versão).
+#  - tag de versão maior (vX.0.0, X >= 1): release automático;
+#  - demais versões (menores e correções): à mão, quando fizer sentido
+#    (Actions > Release > Run workflow, informando a tag, que já precisa existir).
+# Regra e notas: scripts/notas_versao.py.
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag da versão (ex.: v0.10.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tag e regra
+        id: alvo
+        env:
+          EVENTO: ${{ github.event_name }}
+          TAG_PUSH: ${{ github.ref_name }}
+          TAG_MANUAL: ${{ inputs.tag }}
+        run: |
+          if [ "$EVENTO" = "push" ]; then tag="$TAG_PUSH"; else tag="$TAG_MANUAL"; fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ steps.alvo.outputs.tag }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Decidir se publica
+        id: decisao
+        env:
+          EVENTO: ${{ github.event_name }}
+          TAG: ${{ steps.alvo.outputs.tag }}
+        run: |
+          [ "$(cat VERSAO)" = "$TAG" ] || { echo "::error::VERSAO ($(cat VERSAO)) difere da tag $TAG"; exit 1; }
+          if [ "$EVENTO" = "workflow_dispatch" ] || python scripts/notas_versao.py "$TAG" --automatico; then
+            echo "publicar=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::$TAG não é versão maior: release só à mão (Actions > Release > Run workflow)."
+            echo "publicar=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Criar o release
+        if: steps.decisao.outputs.publicar == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.alvo.outputs.tag }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::notice::o release $TAG já existe"; exit 0
+          fi
+          python scripts/notas_versao.py "$TAG" > notas.md
+          gh release create "$TAG" --verify-tag --title "atlas-motor $TAG" --notes-file notas.md
