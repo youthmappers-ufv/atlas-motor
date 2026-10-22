@@ -1,5 +1,8 @@
 # atlas-motor
 
+[![versão](https://img.shields.io/github/v/tag/youthmappers-ufv/atlas-motor?sort=semver&label=vers%C3%A3o)](CHANGELOG.md) [![Testes do motor](https://github.com/youthmappers-ufv/atlas-motor/actions/workflows/testes.yml/badge.svg?branch=main)](https://github.com/youthmappers-ufv/atlas-motor/actions/workflows/testes.yml) [![código: MIT](https://img.shields.io/badge/c%C3%B3digo-MIT-blue)](LICENSE) [![textos: CC BY 4.0](https://img.shields.io/badge/textos-CC%20BY%204.0-lightgrey)](https://creativecommons.org/licenses/by/4.0/deed.pt-br) ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB) ![Quarto 1.10](https://img.shields.io/badge/Quarto-1.10-75AADB) [![documentação](https://img.shields.io/badge/documenta%C3%A7%C3%A3o-docs-informational)](docs/README.md)
+<!-- DOI: com a integração do Zenodo ligada, acrescente aqui o badge do DOI conceito (docs/configuracao-github.md). -->
+
 Código e estrutura comuns do **Atlas Colaborativo** do Programa Youthmappers UFV: atlas municipais abertos, feitos a partir do OpenStreetMap, com medição de completude em relação às bases oficiais, publicados como site e PDF.
 
 Cada município tem o seu repositório (`atlas-<cidade>`), que guarda **só** configuração, dados e textos, usa este motor numa versão fixada e publica o próprio site no GitHub Pages. O código vive num lugar só: uma correção ou um indicador novo chega a todos os municípios, e nenhum repositório municipal diverge da estrutura.
@@ -39,7 +42,8 @@ scripts/
   preparar_base.py      converte uma base oficial baixada (INEP) para dados/oficiais/ do município
   atualizar_motor.py    muda a versão do motor usada por um município
   serie_historica.py    série histórica dos indicadores de um município, a partir do Git
-.github/workflows/      reutilizáveis (verificar, atualizar-dados, publicar) e os testes do motor
+  notas_versao.py       notas de uma versão (do CHANGELOG) e a regra do release automático
+.github/workflows/      reutilizáveis (verificar, atualizar-dados, publicar), os testes e o release do motor
 testes/                 testes, com o município sintético testes/exemplo/
 docs/                   documentação de uso e manutenção (índice em docs/README.md; diagramas em figuras/)
 CITATION.cff            como citar o software

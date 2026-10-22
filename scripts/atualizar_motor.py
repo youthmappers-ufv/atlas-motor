@@ -36,7 +36,15 @@ def main() -> int:
         if k:
             wf.write_text(t, encoding="utf-8", newline="\n")
             trocados += k
-    print(f"Motor {args.versao}: atlas.toml e {trocados} chamada(s) nos workflows. Rode validar.py e abra o PR.")
+    readme, no_readme = local / "README.md", ""    # badge fixo da versão (município privado)
+    if readme.exists():
+        t, k = re.subn(r"(img\.shields\.io/badge/motor-)v\d+\.\d+\.\d+(-)", rf"\g<1>{args.versao}\g<2>",
+                       readme.read_text(encoding="utf-8"))
+        if k:
+            t = re.sub(r"\[!\[motor v\d+\.\d+\.\d+\]", f"[![motor {args.versao}]", t)
+            readme.write_text(t, encoding="utf-8", newline="\n")
+            no_readme = " e o badge do README"
+    print(f"Motor {args.versao}: atlas.toml, {trocados} chamada(s) nos workflows{no_readme}. Rode validar.py e abra o PR.")
     return 0
 
 

@@ -6,6 +6,7 @@ project:
   output-dir: _site
   resources:
     - _gerado/downloads/
+    - _gerado/badges/                    # badges do README (endpoint do shields.io)
 
 lang: pt-BR
 

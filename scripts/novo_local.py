@@ -23,6 +23,7 @@ import sys
 import unicodedata
 import zlib
 from datetime import date
+from urllib.parse import quote
 from pathlib import Path
 
 from comum import MOTOR, versao_motor
@@ -96,6 +97,50 @@ def criar(destino: Path, trocas: dict[str, str]) -> None:
     pranchas.mkdir(parents=True, exist_ok=True)
     (pranchas / "01-localizacao.qmd").write_text(prancha, encoding="utf-8", newline="\n")
     preencher_citacao(destino)
+    preencher_badges(destino, trocas["@@ORGANIZACAO@@"])
+
+
+def estatico(rotulo: str, mensagem: str, cor: str) -> str:
+    """Badge fixo do shields.io (hífen e sublinhado se escrevem dobrados no caminho)."""
+    def esc(s: str) -> str:
+        return quote(s.replace("-", "--").replace("_", "__"), safe="")
+    return f"https://img.shields.io/badge/{esc(rotulo)}-{esc(mensagem)}-{cor}"
+
+
+def linha_badges(config: dict, organizacao: str) -> str:
+    """Fileira de badges do README. Público, com site: os dinâmicos leem o atlas publicado
+    (_gerado/badges/*.json, gerados pelo construir.py). Privado: o shields.io não lê o repositório,
+    então só os do GitHub Actions (visíveis a quem tem acesso) e fixos; o da versão do motor é
+    trocado pelo atualizar_motor.py."""
+    from construir import dados_citacao
+    repo = f"https://github.com/{organizacao}/atlas-{config['publicacao']['slug']}"
+    site = dados_citacao(config)["site"]
+    def acoes(wf: str, nome: str, ramo: str = "") -> str:
+        return f"[![{nome}]({repo}/actions/workflows/{wf}/badge.svg{ramo})]({repo}/actions/workflows/{wf})"
+    def endpoint(nome: str) -> str:
+        return "https://img.shields.io/endpoint?url=" + quote(f"{site}_gerado/badges/{nome}.json", safe="")
+    licencas = [f"[![dados: ODbL 1.0]({estatico('dados', 'ODbL 1.0', 'brightgreen')})](LICENCAS.md)",
+                f"[![textos: CC BY 4.0]({estatico('textos', 'CC BY 4.0', 'lightgrey')})](LICENCAS.md)"]
+    publicacao = [acoes("publicar.yml", "Publicar atlas"), acoes("verificar.yml", "Verificar", "?branch=main")]
+    if not site:
+        motor = config["motor"]["versao"]
+        return " ".join(publicacao + [
+            f"[![motor {motor}]({estatico('motor', motor, 'informational')})](https://github.com/youthmappers-ufv/atlas-motor)",
+            f"![atlas: só artefato (privado)]({estatico('atlas', 'só artefato (privado)', 'lightgrey')})"] + licencas)
+    return " ".join([f"[![site do atlas]({estatico('atlas', 'site', 'blue')})]({site})"] + publicacao + [
+        f"[![dados do OSM]({endpoint('dados')})]({site}dados.html)",
+        f"[![completude]({endpoint('completude')})]({site})",
+        f"[![motor]({endpoint('motor')})](https://github.com/youthmappers-ufv/atlas-motor)",
+        f"[![edição](https://img.shields.io/github/v/release/{organizacao}/atlas-{config['publicacao']['slug']}"
+        f"?label=edi%C3%A7%C3%A3o)]({repo}/releases)"] + licencas)
+
+
+def preencher_badges(destino: Path, organizacao: str) -> None:
+    import tomllib
+    config = tomllib.loads((destino / "atlas.toml").read_text(encoding="utf-8"))
+    readme = destino / "README.md"
+    readme.write_text(readme.read_text(encoding="utf-8").replace("@@BADGES@@", linha_badges(config, organizacao)),
+                      encoding="utf-8", newline="\n")
 
 
 def preencher_citacao(destino: Path) -> None:

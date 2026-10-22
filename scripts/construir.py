@@ -152,6 +152,30 @@ def trecho_citacao(config: dict, ano: str) -> str:
             f"```bibtex\n{bibtex(config, ano)}```\n:::\n")
 
 
+def cor_completude(c: float | None) -> str:
+    if c is None:
+        return "lightgrey"
+    return "red" if c < 25 else "orange" if c < 50 else "yellow" if c < 75 else "green"
+
+
+def badges(resumo: list, base_osm: str) -> dict[str, dict]:
+    """Badges do README (formato endpoint do shields.io), publicados com o site em _gerado/badges/:
+    leem o atlas publicado, não o repositório. Completude: C_t de cada tema com base oficial."""
+    medidas = [(t.titulo, res["completude"]["C_t"]) for t, res in resumo if res.get("completude")]
+    def fmt(c):
+        return f"{c:.1f}".replace(".", ",").removesuffix(",0") + "%" if c is not None else "—"
+    media = (sum(c for _, c in medidas if c is not None) / len([c for _, c in medidas if c is not None])
+             if any(c is not None for _, c in medidas) else None)
+    def badge(rotulo, mensagem, cor):
+        return {"schemaVersion": 1, "label": rotulo, "message": mensagem, "color": cor}
+    return {
+        "completude": badge("completude", " · ".join(f"{titulo.lower()} {fmt(c)}" for titulo, c in medidas)
+                            or "sem base oficial", cor_completude(media)),
+        "dados": badge("dados do OSM", base_osm, "blue"),
+        "motor": badge("motor", versao_motor(), "informational"),
+    }
+
+
 def escrever_quarto(livro: Path, config: dict, ativos: list, edicao: str = "") -> None:
     mun, pub = config["municipio"], config["publicacao"]
     capitulos = "\n".join(f"        - pranchas/{t.prancha}" for t in ativos) or "        - index.qmd"
@@ -316,6 +340,9 @@ def main() -> int:
     ano = base_osm[:4] if base_osm[:4].isdigit() else str(date.today().year)
     (gerado / "citacao.md").write_text(trecho_citacao(config, ano), encoding="utf-8")  # Como usar e citar
     (gerado / "downloads" / f"atlas-{config['publicacao']['slug']}.bib").write_text(bibtex(config, ano), encoding="utf-8")
+    (gerado / "badges").mkdir(exist_ok=True)
+    for nome, dados in badges(resumo, base_osm).items():
+        (gerado / "badges" / f"{nome}.json").write_text(json.dumps(dados, ensure_ascii=False), encoding="utf-8")
     escrever_quarto(livro, config, ativos,
                     f"Versão {versao_local(local)} · motor {versao_motor()} · dados do OpenStreetMap de {base_osm}")
     print(f"Livro montado em {livro.relative_to(local)}.")

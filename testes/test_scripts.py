@@ -246,6 +246,52 @@ class Scripts(ComMunicipio):
             self.assertIn("@v9.1.0", wf.read_text(encoding="utf-8"))
         self.assertFalse(any("chama o motor" in e for e in verificar(local).erros))
 
+    def test_badges_do_municipio_publico(self):
+        local = self.novo()
+        linha = (local / "README.md").read_text(encoding="utf-8").splitlines()[2]
+        site = "https%3A%2F%2Fyouthmappers-ufv.github.io%2Fatlas-cidade-teste%2F"
+        for nome in ("dados", "completude", "motor"):
+            self.assertIn(f"img.shields.io/endpoint?url={site}_gerado%2Fbadges%2F{nome}.json", linha)
+        for wf in ("publicar.yml", "verificar.yml"):
+            self.assertIn(f"github.com/youthmappers-ufv/atlas-cidade-teste/actions/workflows/{wf}/badge.svg", linha)
+        self.assertIn("github/v/release/youthmappers-ufv/atlas-cidade-teste", linha)
+        self.assertIn("(LICENCAS.md)", linha)
+        self.assertIn("_gerado/badges/", (MOTOR / "livro" / "_quarto.modelo.yml").read_text(encoding="utf-8"),
+                      "os JSON dos badges precisam ir para o site")
+
+    def test_badges_do_municipio_privado_e_atualizar_motor(self):
+        destino = self.dir / "atlas-privado"
+        r = rodar("novo_local.py", "--nome", "Cidade Teste", "--ibge", "1234567", "--sem-rede", "--relacao", "42",
+                  "--bbox=-19.3,-46.4,-19.1,-46.2", "--sede-bbox=-19.21,-46.31,-19.19,-46.29",
+                  "--destino", str(destino), "--privado")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        linha = (destino / "README.md").read_text(encoding="utf-8").splitlines()[2]
+        self.assertNotIn("endpoint", linha, "o shields.io não lê repositório privado")
+        self.assertIn(f"[![motor {versao_motor()}](https://img.shields.io/badge/motor-{versao_motor()}-", linha)
+        r = rodar("atualizar_motor.py", "--versao", "v9.1.0", "--local", str(destino))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        linha = (destino / "README.md").read_text(encoding="utf-8").splitlines()[2]
+        self.assertIn("[![motor v9.1.0](https://img.shields.io/badge/motor-v9.1.0-", linha)
+        self.assertNotIn(versao_motor(), linha)
+
+    def test_badges_json(self):
+        from comum import Tema
+        from construir import badges
+        def tema(titulo):
+            return Tema(id=titulo.lower(), numero=3, titulo=titulo, situacao="em-andamento", consulta="",
+                        referencia="inep", recorte="ambos")
+        resumo = [(tema("Educação"), {"completude": {"C_t": 16.7}}), (tema("Saúde"), {"completude": {"C_t": 60.0}}),
+                  (tema("Vias"), {"completude": None})]
+        b = badges(resumo, "2026-10-21")
+        self.assertEqual(b["completude"], {"schemaVersion": 1, "label": "completude",
+                                           "message": "educação 16,7% · saúde 60%", "color": "orange"})
+        self.assertEqual(b["dados"]["message"], "2026-10-21")
+        self.assertEqual(b["motor"]["message"], versao_motor())
+        self.assertEqual(badges([(tema("Vias"), {})], "x")["completude"]["message"], "sem base oficial")
+        cores = [badges([(tema("Educação"), {"completude": {"C_t": c}})], "x")["completude"]["color"]
+                 for c in (10.0, 30.0, 60.0, 80.0)]
+        self.assertEqual(cores, ["red", "orange", "yellow", "green"])
+
     def test_referencia_e_recorte_sobrescritos_pelo_municipio(self):
         local = self.novo()
         with (local / "temas.toml").open("a", encoding="utf-8") as f:
@@ -471,6 +517,14 @@ class ModeloCoerenteComMotor(unittest.TestCase):
                       texto, "à mão publica qualquer versão; pela tag, só as maiores")
         self.assertIn('[ "$(cat VERSAO)" = "$TAG" ]', texto, "a tag precisa ser a versão do motor")
         self.assertIn("if: steps.decisao.outputs.publicar == 'true'", texto)
+
+    def test_badges_do_readme_do_motor(self):
+        readme = (MOTOR / "README.md").read_text(encoding="utf-8")
+        for wf in re.findall(r"actions/workflows/([\w.-]+)/badge\.svg", readme):
+            self.assertTrue((MOTOR / ".github" / "workflows" / wf).is_file(), wf)
+        quarto = re.search(r"version: (\d+\.\d+)\.\d+", (MOTOR / ".github" / "workflows" / "testes.yml").read_text(
+            encoding="utf-8"))[1]
+        self.assertIn(f"badge/Quarto-{quarto}-", readme, "badge do Quarto igual à versão testada no CI")
 
     def test_citation_na_versao(self):
         self.assertIn(f"version: {versao_motor()}\n", (MOTOR / "CITATION.cff").read_text(encoding="utf-8"))

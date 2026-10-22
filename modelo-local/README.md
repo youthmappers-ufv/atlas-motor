@@ -1,5 +1,7 @@
 # Atlas Colaborativo de @@NOME@@ (@@UF@@)
 
+@@BADGES@@
+
 Repositório do atlas de **@@NOME@@** (IBGE @@IBGE@@), do Programa Youthmappers UFV. Guarda só o que é deste município: configuração, dados e textos. O código e a estrutura comuns ficam no [atlas-motor](https://github.com/youthmappers-ufv/atlas-motor), na versão declarada em `atlas.toml` (`motor.versao`).
 
 - **Site e PDF:** @@SITE@@
