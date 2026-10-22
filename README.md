@@ -11,6 +11,10 @@ youthmappers-ufv/atlas              público    só a saída: /<cidade>/ (site e
 youthmappers-ufv/youthmappers-ufv-docs  privado  parte institucional (propostas, relatórios à UFV)
 ```
 
+![Arquitetura dos repositórios do atlas](docs/figuras/arquitetura-repositorios.svg)
+
+Detalhes, o ciclo mensal de um município e o papel de cada instância em [docs/arquitetura.md](docs/arquitetura.md).
+
 ## O que tem aqui
 
 ```
@@ -35,7 +39,7 @@ scripts/
   metricas_motor.py     métricas do motor por versão (pesquisa)
 .github/workflows/      reutilizáveis (verificar, atualizar-dados, publicar) e os testes do motor
 testes/                 testes, com o município sintético testes/exemplo/
-docs/                   configuração do GitHub
+docs/                   arquitetura (com diagramas em figuras/), instâncias e configuração do GitHub
 pesquisa/               registro para publicações: decisões, diário, métricas, municípios, ideias
 CITATION.cff            como citar o software
 ```
