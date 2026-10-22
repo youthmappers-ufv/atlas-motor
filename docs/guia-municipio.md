@@ -89,6 +89,22 @@ O script fica com as escolas do município em funcionamento (`--todas` mantém a
 
 As bases servem só para conferência: nada é copiado delas para o OSM.
 
+### Corrigir as lacunas
+
+A prancha lista os itens da base oficial sem correspondente no mapa, cada um com o **motivo provável** (também no terminal: `python ../atlas-motor/scripts/indicadores.py --tema educacao`). Um item tem correspondente quando há no OSM um objeto do tema a até `distancia_max_m` (150 m) com nome semelhante; o motivo diz qual das condições falhou e o que conferir:
+
+| Motivo | O que costuma ser | O que fazer |
+|---|---|---|
+| sem coordenada na base oficial (às vezes com "no OSM há …") | a fonte não tem a posição | conferir em campo se o objeto citado é o mesmo item |
+| coordenada oficial fora do município | posição errada na fonte | localizar pelo endereço; avisar o órgão (pela escola, secretaria) |
+| nome semelhante no OSM a N m | posição errada na fonte ou no mapa | conferir em campo qual está certa; corrigir o mapa se for ele |
+| "…" já corresponde a outro item da base | item repetido na base, ou dois lugares com um só objeto no mapa | conferir na fonte e em campo; mapear o que faltar |
+| objeto sem nome no OSM a N m | o lugar está no mapa sem nome | conferir em campo e pôr o nome |
+| "…" no OSM a N m, com nome diferente | nome antigo, apelido ou outro lugar vizinho | conferir em campo o nome correto |
+| nada deste tema no OSM até 150 m | não mapeado | mapear (mapatona ou campo) |
+
+O motivo é uma pista, não um diagnóstico: só a conferência em campo decide. Nunca se copia a posição ou o nome da base oficial para o OSM.
+
 ### Registrar a conferência em campo
 
 Uma linha por item verificado em `dados/curados/levantamentos-campo.csv` (id `LC-AAAA-NNN`, data, tema, item, situação, objeto e *changeset* do OSM). As colunas e os valores aceitos estão no esquema do catálogo ([Referência](referencia.md#esquemas-de-dados-curados)).

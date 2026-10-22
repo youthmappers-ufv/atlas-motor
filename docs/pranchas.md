@@ -42,7 +42,7 @@ O motor gera também cada parte em separado, em `_gerado/<tema>/`:
 | mapa da sede | `{{< include ../_gerado/educacao/mapa-sede.md >}}` | figura da área urbana da sede (largura total) |
 | legenda | `{{< include ../_gerado/educacao/legenda.md >}}` | "Pontos cheios: com nome; vazados: sem nome." |
 | indicadores | `{{< include ../_gerado/educacao/indicadores.md >}}` | tabela de indicadores (total, nome, endereço, horário, completude) |
-| lacunas | `{{< include ../_gerado/educacao/lacunas.md >}}` | itens da base oficial sem correspondente no mapa |
+| lacunas | `{{< include ../_gerado/educacao/lacunas.md >}}` | itens da base oficial sem correspondente no mapa, com o motivo provável |
 | fonte | `{{< include ../_gerado/educacao/fonte.md >}}` | data do retrato e atribuição ao OSM (obrigatória pela licença) |
 
 Uma parte que não se aplica fica vazia (ex.: o mapa da sede de um tema só com recorte do município, as lacunas de um tema sem base oficial); incluí-la não dá erro. Troque o include único pelas partes, na ordem que quiser, com o seu texto entre elas.

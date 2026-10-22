@@ -146,7 +146,7 @@ Em `_construcao/livro/_gerado/` (fora do Git, refeito a cada construção):
 |---|---|
 | `<tema>.md` | prancha gerada inteira (todas as partes) |
 | `<tema>/mapa-municipio.md`, `<tema>/mapa-sede.md` | figuras dos mapas |
-| `<tema>/legenda.md`, `indicadores.md`, `lacunas.md`, `fonte.md` | legenda, tabela de indicadores, lacunas da base oficial, fonte e atribuição |
+| `<tema>/legenda.md`, `indicadores.md`, `lacunas.md`, `fonte.md` | legenda, tabela de indicadores, lacunas da base oficial (com o motivo provável), fonte e atribuição |
 | `figuras/<tema>-municipio.png`, `figuras/<tema>-sede.png` | mapas (PNG, 200 dpi) |
 | `edicao.md`, `pranchas.md`, `downloads.md` | versão e data dos dados, lista de pranchas, links dos dados |
 | `downloads/<tema>.geojson` | dados de cada prancha para baixar |
@@ -164,7 +164,7 @@ Todos rodam de dentro do repositório do município (ou com `--local <pasta>`). 
 | `preparar_base.py <base> <arquivo>` | converte uma base oficial como baixada do órgão para `dados/oficiais/<base>/` (formatos: `inep`) | `--data`, `--todas`, `--substituir`, `--local` |
 | `atualizar_motor.py` | troca a versão do motor no `atlas.toml` e nos workflows | `--versao vX.Y.Z`, `--local` |
 | `instalar_ganchos.py` | instala o gancho de pre-push com o validador | `--local` |
-| `indicadores.py` | mostra os indicadores no terminal | `--tema`, `--local` |
+| `indicadores.py` | mostra os indicadores e as lacunas, com o motivo provável, no terminal | `--tema`, `--local` |
 | `mapas.py` | gera só os mapas | `--tema`, `--local` |
 | `serie_historica.py` | refaz a série dos indicadores a partir dos retratos no Git | `--saida <csv>`, `--local` |
 | `novo_local.py` | cria o repositório de um município novo | `--nome`, `--ibge`, `--uf`, `--slug`, `--destino`, `--baixar`, `--git`, `--organizacao`, `--privado`; sem rede: `--sem-rede --relacao --bbox= --sede-bbox= --wikidata` |
