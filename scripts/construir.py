@@ -128,7 +128,9 @@ def citacao(config: dict, ano: str) -> str:
 
 def bibtex(config: dict, ano: str) -> str:
     """A mesma referência em BibLaTeX: com o estilo abnt do biblatex-abnt sai igual à da ABNT
-    (a coordenação como editor com editortype = coordinator, que imprime "(coord.)")."""
+    (a coordenação como editor com editortype = coordinator, que imprime "(coord.)"). Tipo
+    @dataset, como no CITATION.cff: o atlas são mapas e dados abertos; sem o campo organization,
+    que o estilo abnt repetiria ao lado da editora."""
     d = dados_citacao(config)
     if d["coord"]:
         sobrenome, prenome = sobrenome_e_prenome(d["coord"])
@@ -140,7 +142,7 @@ def bibtex(config: dict, ano: str) -> str:
                       ("langid", "brazilian")]
     linhas = [f"  {k:<10} = {{{v}}}," for k, v in campos if v]
     acesso = "% Acrescente urldate = {AAAA-MM-DD}, a data do acesso.\n" if d["site"] else ""
-    return acesso + f"@book{{{d['chave']},\n" + "\n".join(linhas) + "\n}\n"
+    return acesso + f"@dataset{{{d['chave']},\n" + "\n".join(linhas) + "\n}\n"
 
 
 def trecho_citacao(config: dict, ano: str) -> str:

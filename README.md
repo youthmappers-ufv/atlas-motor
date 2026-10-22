@@ -77,6 +77,30 @@ Requisitos: Python 3.11+ (validação e testes só com a biblioteca padrão), `p
 
 O município declara a versão em `atlas.toml` (`[motor] versao = "vX.Y.Z"`) e chama os workflows na mesma versão (`...@vX.Y.Z`); o validador confere que batem. Os workflows baixam o motor na versão declarada pelo município **na versão do município que está sendo publicada**: uma edição antiga é sempre regerada como foi. Localmente, `construir.py`, `validar.py` e `baixar_osm.py` também rodam na versão declarada, extraída da tag do clone ao lado (`--motor-atual` usa o motor da pasta). As tags publicadas são protegidas e nunca mudam. Política de versões e o que mudou: [CHANGELOG.md](CHANGELOG.md). Como mudar o motor: [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Como citar
+
+Em trabalho acadêmico, cite a versão usada (a do `atlas.toml` do município):
+
+SMARZARO, Rodrigo; PROGRAMA YOUTHMAPPERS UFV. **atlas-motor**: motor aberto para atlas municipais colaborativos a partir do OpenStreetMap. Versão v0.10.0. Rio Paranaíba: Universidade Federal de Viçosa, 2026. Disponível em: <https://github.com/youthmappers-ufv/atlas-motor>. Acesso em: *data do acesso*.
+
+Em BibLaTeX (estilo `abnt` do pacote biblatex-abnt, que imprime a versão a partir de `edition`; acrescente `urldate = {AAAA-MM-DD}`):
+
+```bibtex
+@software{atlas-motor,
+  author    = {Smarzaro, Rodrigo and {Programa Youthmappers UFV}},
+  title     = {atlas-motor},
+  subtitle  = {motor aberto para atlas municipais colaborativos a partir do {OpenStreetMap}},
+  edition   = {Versão v0.10.0},
+  location  = {Rio Paranaíba},
+  publisher = {Universidade Federal de Viçosa},
+  year      = {2026},
+  url       = {https://github.com/youthmappers-ufv/atlas-motor},
+  langid    = {brazilian},
+}
+```
+
+O GitHub também oferece a citação pelo botão *Cite this repository* (`CITATION.cff`). Para citar um atlas (os mapas e dados de um município), use a referência da página inicial dele.
+
 ## Licença
 
 | Conteúdo | Licença |

@@ -190,7 +190,7 @@ class Scripts(ComMunicipio):
                                  "slug": "rio-paranaiba"}}
         self.assertEqual(bibtex(config, "2026"),
                          "% Acrescente urldate = {AAAA-MM-DD}, a data do acesso.\n"
-                         "@book{atlas-rio-paranaiba,\n"
+                         "@dataset{atlas-rio-paranaiba,\n"                         # mapas e dados: dataset
                          "  editor     = {Smarzaro, Rodrigo},\n"
                          "  editortype = {coordinator},\n"
                          "  title      = {Atlas Colaborativo de Rio Paranaíba},\n"
@@ -528,6 +528,20 @@ class ModeloCoerenteComMotor(unittest.TestCase):
 
     def test_citation_na_versao(self):
         self.assertIn(f"version: {versao_motor()}\n", (MOTOR / "CITATION.cff").read_text(encoding="utf-8"))
+
+    def test_como_citar_do_readme_na_versao(self):
+        """A citação do README acompanha cada versão: VERSAO e o ano do date-released do CITATION.cff,
+        na ABNT e no BibLaTeX (@software; o estilo abnt imprime a versão a partir de edition)."""
+        readme = (MOTOR / "README.md").read_text(encoding="utf-8")
+        secao = readme[readme.index("## Como citar"):readme.index("## Licença")]
+        ano = re.search(r"^date-released: (\d{4})-", (MOTOR / "CITATION.cff").read_text(encoding="utf-8"), re.M)[1]
+        abnt = next(l for l in secao.splitlines() if l.startswith("SMARZARO, Rodrigo; PROGRAMA YOUTHMAPPERS UFV."))
+        self.assertIn(f". Versão {versao_motor()}. Rio Paranaíba: Universidade Federal de Viçosa, {ano}.", abnt)
+        bib = re.search(r"```bibtex\n(.*?)```", secao, re.S)[1]
+        self.assertTrue(bib.startswith("@software{atlas-motor,\n"))
+        self.assertIn(f"  edition   = {{Versão {versao_motor()}}},\n", bib)
+        self.assertIn(f"  year      = {{{ano}}},\n", bib)
+        self.assertNotIn("version", bib, "o estilo abnt ignora version; a versão vai em edition")
 
 
 class SerieHistorica(unittest.TestCase):
