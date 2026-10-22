@@ -17,7 +17,7 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
-## Próxima versão (não lançada)
+## v0.8.0 — 2026-10-22
 
 **Ao atualizar o município** (opcional): na página inicial (`atlas/index.qmd`), em "Como usar e citar", acrescente `Para citar o atlas (ABNT):` seguido de `{{< include _gerado/citacao.md >}}` (texto atual em `modelo-local/atlas/index.qmd`). Rio Paranaíba e São Gotardo têm a citação escrita à mão, para valer já na v0.7.0; troquem pelo include.
 
