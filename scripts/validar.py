@@ -29,7 +29,7 @@ import tomllib
 from datetime import date
 from pathlib import Path
 
-from comum import (CATALOGO, MOTOR, SITUACOES, Tema, argumento_local, caminho_consulta, coordenadas, ler_csv,
+from comum import (CATALOGO, INDICADORES, MAPAS, MOTOR, SITUACOES, Tema, argumento_local, caminho_consulta, coordenadas, ler_csv,
                    ler_esquemas, ler_temas, ler_toml, usar_versao_declarada)
 
 RECORTES = {"municipio", "sede", "ambos"}
@@ -72,6 +72,22 @@ def dentro_caixa(lon: float, lat: float, bbox: list[float]) -> bool:
 
 
 # ---------------------------------------------------------------- Configuração
+RE_COR = re.compile(r"^#[0-9A-Fa-f]{6}$")
+
+
+def erros_visuais(tema: dict) -> list[str]:
+    """cor, mapa e indicadores de um tema (catálogo do motor ou temas.toml do município)."""
+    erros = []
+    if "cor" in tema and not RE_COR.match(str(tema["cor"])):
+        erros.append(f"cor '{tema['cor']}' (use #RRGGBB)")
+    if "mapa" in tema and tema["mapa"] not in MAPAS:
+        erros.append(f"mapa '{tema['mapa']}' (use {list(MAPAS)})")
+    for i in tema.get("indicadores", []):
+        if i not in INDICADORES:
+            erros.append(f"indicador '{i}' (use {list(INDICADORES)})")
+    return erros
+
+
 def verificar_config(local: Path, r: Relatorio) -> tuple[dict, list[Tema]]:
     try:
         config = ler_toml(local / "atlas.toml")
@@ -127,6 +143,8 @@ def verificar_config(local: Path, r: Relatorio) -> tuple[dict, list[Tema]]:
             faltam = {"numero", "titulo", "consulta"} - set(e)
             if faltam:
                 r.erro(f"[temas] {tid}: não está no catálogo do motor; prancha própria precisa de {sorted(faltam)}")
+        for msg in erros_visuais(e):
+            r.erro(f"[temas] {tid}: {msg}")
     temas = ler_temas(local)
     numeros = {}
     for t in temas:

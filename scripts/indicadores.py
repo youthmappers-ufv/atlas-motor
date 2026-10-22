@@ -5,8 +5,8 @@ Temas com base oficial (temas.toml: referencia = <pasta em dados/oficiais/>):
   Q_t = correspondidos com os atributos essenciais (nome e endereço) / correspondidos
   Correspondência: mesmo item a até distancia_max_m e similaridade de nome normalizado
   >= similaridade_min (atlas.toml), pareando cada objeto do OSM no máximo uma vez.
-Todos os temas: total de objetos, proporção com nome e com horário; para as vias,
-  comprimento total e proporção do comprimento com pavimento informado.
+Todos os temas: total de objetos e proporção com nome. Com indicadores = ["servico"] no catálogo:
+  endereço e horário; com ["vias"]: comprimento total e proporção com pavimento informado.
 
 Uso como módulo (construir.py) ou direto, para conferir no terminal:
   python <motor>/scripts/indicadores.py --local <município> [--tema educacao]
@@ -101,12 +101,12 @@ def calcular(local: Path, tema: Tema, config: dict) -> dict:
     com_nome = sum(1 for t in tags if t.get("name"))
     res["linhas"].append(("Objetos no OpenStreetMap", str(total)))
     res["linhas"].append(("Com nome", f"{com_nome} ({pct(com_nome, total)}%)" if total else "—"))
-    if tema.id in ("educacao", "saude", "equipamentos", "cultura-turismo"):
+    if "servico" in tema.indicadores:
         com_horario = sum(1 for t in tags if t.get("opening_hours"))
         com_endereco = sum(1 for t in tags if t.get("addr:street"))
         res["linhas"].append(("Com endereço (rua)", f"{com_endereco} ({pct(com_endereco, total)}%)" if total else "—"))
         res["linhas"].append(("Com horário de funcionamento", f"{com_horario} ({pct(com_horario, total)}%)" if total else "—"))
-    if tema.id in ("sistema-viario", "area-rural"):
+    if "vias" in tema.indicadores:
         vias = [f for f in feicoes if "highway" in f["properties"]["tags"]]
         km = sum(comprimento_m(f["geometry"]) for f in vias) / 1000
         km_pav = sum(comprimento_m(f["geometry"]) for f in vias if f["properties"]["tags"].get("surface")) / 1000

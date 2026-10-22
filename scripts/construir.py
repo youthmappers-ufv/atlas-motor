@@ -45,23 +45,34 @@ def tabela(linhas: list[tuple[str, str]]) -> str:
     return f"| Indicador | Valor |\n|:--|--:|\n{corpo}\n"
 
 
-def trecho_tema(tema, res: dict, figuras: list[tuple[str, str]], retrato: dict, config: dict) -> str:
-    partes = []
-    for arq, legenda in figuras:
-        partes.append(f"![{legenda}](../_gerado/figuras/{arq}){{fig-alt=\"{legenda}\" width=100%}}\n")
+TRECHOS = ("mapa-municipio", "mapa-sede", "legenda", "indicadores", "lacunas", "fonte")
+
+
+def trechos_tema(tema, res: dict, figuras: list[tuple[str, str, str]], retrato: dict, config: dict) -> dict[str, str]:
+    """Partes geradas de uma prancha, cada uma incluível sozinha (_gerado/<tema>/<parte>.md).
+    Partes que não se aplicam (ex.: mapa-sede num tema só do município) ficam vazias."""
+    t = dict.fromkeys(TRECHOS, "")
+    for arq, legenda, recorte in figuras:
+        t[f"mapa-{recorte}"] = f"![{legenda}](../_gerado/figuras/{arq}){{fig-alt=\"{legenda}\" width=100%}}\n"
     if figuras:
-        partes.append("Pontos cheios: objetos com nome no mapa; pontos vazados: sem nome.\n")
-    partes.append(tabela(res["linhas"]))
+        t["legenda"] = "Pontos cheios: objetos com nome no mapa; pontos vazados: sem nome.\n"
+    t["indicadores"] = tabela(res["linhas"])
     lacunas = res.get("lacunas") or []
     if lacunas:
-        partes.append(f"\n**Itens da base oficial sem correspondente no mapa** ({len(lacunas)}):\n")
-        partes.append("| Código | Nome |\n|:--|:--|\n" + "\n".join(f"| {o['id']} | {o['nome']} |" for o in lacunas[:60]) + "\n")
+        partes = [f"\n**Itens da base oficial sem correspondente no mapa** ({len(lacunas)}):\n",
+                  "| Código | Nome |\n|:--|:--|\n" + "\n".join(f"| {o['id']} | {o['nome']} |" for o in lacunas[:60]) + "\n"]
         if len(lacunas) > 60:
             partes.append(f"\n… e mais {len(lacunas) - 60}.\n")
+        t["lacunas"] = "\n".join(partes)
     base = retrato.get("temas", {}).get(tema.id, {}).get("base_osm") or retrato.get("base_osm", "")
-    partes.append(f"\n*Fonte: OpenStreetMap, dados de {base[:10] or 'data desconhecida'}. "
+    t["fonte"] = (f"\n*Fonte: OpenStreetMap, dados de {base[:10] or 'data desconhecida'}. "
                   f"{config['publicacao']['atribuicao']}.*\n")
-    return "\n".join(partes)
+    return t
+
+
+def trecho_tema(tema, res: dict, figuras: list[tuple[str, str, str]], retrato: dict, config: dict) -> str:
+    """A prancha gerada inteira (_gerado/<tema>.md): todas as partes, na ordem."""
+    return "\n".join(p for p in trechos_tema(tema, res, figuras, retrato, config).values() if p)
 
 
 def versao_local(local: Path) -> str:
@@ -208,8 +219,11 @@ def main() -> int:
             for rec in (("municipio", "sede") if t.recorte == "ambos" else (t.recorte,)):
                 arq = f"{t.id}-{rec}.png"
                 desenhar(local, t, rec, config, gerado / "figuras" / arq)
-                figuras.append((arq, f"{t.titulo}: {'sede do município' if rec == 'sede' else 'município'}"))
+                figuras.append((arq, f"{t.titulo}: {'sede do município' if rec == 'sede' else 'município'}", rec))
         (gerado / f"{t.id}.md").write_text(trecho_tema(t, res, figuras, retrato, config), encoding="utf-8")
+        (gerado / t.id).mkdir(exist_ok=True)
+        for parte, texto in trechos_tema(t, res, figuras, retrato, config).items():
+            (gerado / t.id / f"{parte}.md").write_text(texto, encoding="utf-8")
         origem = local / "dados" / "osm" / f"{t.id}.geojson"
         if origem.exists():
             shutil.copy2(origem, gerado / "downloads" / origem.name)

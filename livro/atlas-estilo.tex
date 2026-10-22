@@ -63,11 +63,12 @@
 \captionsetup{font={small,sf}, labelfont={bf,color=atlasprimaria}}
 \AtBeginDocument{\hypersetup{colorlinks=true, linkcolor=atlasprimaria, urlcolor=atlasprimaria,
   citecolor=atlasprimaria}}
-\colorlet{quarto-callout-note-color}{atlasprimaria}
-\colorlet{quarto-callout-tip-color}{atlasdestaque}
-\colorlet{quarto-callout-warning-color}{atlassecundaria}
-\colorlet{quarto-callout-important-color}{atlassecundaria}
-\colorlet{quarto-callout-caution-color}{atlassecundaria}
+\AtBeginDocument{%   o Quarto define as cores dos quadros depois deste preâmbulo
+  \colorlet{quarto-callout-note-color}{atlasprimaria}%
+  \colorlet{quarto-callout-tip-color}{atlasdestaque}%
+  \colorlet{quarto-callout-warning-color}{atlassecundaria}%
+  \colorlet{quarto-callout-important-color}{atlassecundaria}%
+  \colorlet{quarto-callout-caution-color}{atlassecundaria}}
 
 % Sumário
 \renewcommand*{\contentsname}{Sumário}

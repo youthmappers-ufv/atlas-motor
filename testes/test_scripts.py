@@ -130,6 +130,44 @@ class Scripts(unittest.TestCase):
         self.assertEqual((t.referencia, t.recorte, t.situacao), ("inep-2027", "sede", "planejado"))
 
 
+class CatalogoDeTemas(unittest.TestCase):
+    """Todo tema do catálogo traz o que o motor precisa para gerar a prancha sem código novo."""
+
+    def test_campos_completos_e_validos(self):
+        import tomllib
+        from validar import erros_visuais
+        catalogo = tomllib.loads((MOTOR / "catalogo" / "temas.toml").read_text(encoding="utf-8"))["tema"]
+        ids, numeros = set(), set()
+        for t in catalogo:
+            with self.subTest(tema=t.get("id")):
+                faltam = {"id", "numero", "titulo", "consulta", "referencia", "recorte", "cor", "mapa", "indicadores"} - set(t)
+                self.assertEqual(faltam, set())
+                self.assertEqual(erros_visuais(t), [])
+                self.assertTrue((MOTOR / "catalogo" / "consultas" / t["consulta"]).is_file())
+                self.assertNotIn(t["id"], ids)
+                self.assertNotIn(t["numero"], numeros)
+                self.assertLess(t["numero"], 20, "números 20 em diante são das pranchas próprias dos municípios")
+                ids.add(t["id"]); numeros.add(t["numero"])
+
+    def test_trechos_somam_a_prancha_inteira(self):
+        from comum import Tema
+        from construir import TRECHOS, trecho_tema, trechos_tema
+        tema = Tema(id="educacao", numero=3, titulo="Educação", situacao="em-andamento", consulta="",
+                    referencia="inep", recorte="ambos")
+        res = {"linhas": [("Objetos no OpenStreetMap", "3")], "lacunas": [{"id": "1", "nome": "E.E. X"}]}
+        figuras = [("educacao-municipio.png", "Educação: município", "municipio")]
+        config = {"publicacao": {"atribuicao": "© OSM"}}
+        partes = trechos_tema(tema, res, figuras, {}, config)
+        self.assertEqual(tuple(partes), TRECHOS)
+        self.assertEqual(partes["mapa-sede"], "", "recorte sem mapa fica vazio, para o include não falhar")
+        self.assertIn("educacao-municipio.png", partes["mapa-municipio"])
+        self.assertIn("E.E. X", partes["lacunas"])
+        inteira = trecho_tema(tema, res, figuras, {}, config)
+        self.assertEqual(inteira, "\n".join(p for p in partes.values() if p))
+        ordem = [inteira.index(x) for x in ("educacao-municipio.png", "Pontos cheios", "Indicador", "E.E. X", "Fonte:")]
+        self.assertEqual(ordem, sorted(ordem), "ordem da prancha: mapas, legenda, indicadores, lacunas, fonte")
+
+
 class ModeloCoerenteComMotor(unittest.TestCase):
     def test_chamadas_apontam_para_workflows_do_motor(self):
         reutilizaveis = {p.name for p in (MOTOR / ".github" / "workflows").glob("*.yml")}

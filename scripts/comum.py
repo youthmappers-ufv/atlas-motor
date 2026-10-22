@@ -42,6 +42,9 @@ class Tema:
     referencia: str
     recorte: str
     proprio: bool = False          # prancha só deste município (fora do catálogo)
+    cor: str = "#304068"           # cor dos objetos do tema no mapa
+    mapa: str = "pontos"           # pontos (objetos em destaque sobre as vias) | linhas (rede: vias, estradas)
+    indicadores: tuple = ()        # além de total e nome: "servico" (endereço, horário), "vias" (km, pavimento)
 
     @property
     def prancha(self) -> str:
@@ -50,6 +53,17 @@ class Tema:
     @property
     def ativo(self) -> bool:
         return self.situacao != "planejado"
+
+
+MAPAS = ("pontos", "linhas")
+INDICADORES = ("servico", "vias")
+
+
+def _visual(base: dict, escolha: dict) -> dict:
+    """cor, mapa e indicadores de um tema: do catálogo, trocáveis pelo município."""
+    return {"cor": escolha.get("cor", base.get("cor", "#304068")),
+            "mapa": escolha.get("mapa", base.get("mapa", "pontos")),
+            "indicadores": tuple(escolha.get("indicadores", base.get("indicadores", ())))}
 
 
 def ler_toml(arquivo: Path) -> dict:
@@ -159,13 +173,13 @@ def ler_temas(local: Path) -> list[Tema]:
         temas.append(Tema(id=tid, numero=base["numero"], titulo=e.get("titulo", base["titulo"]),
                           situacao=e.get("situacao", "planejado"), consulta=base["consulta"],
                           referencia=e.get("referencia", base["referencia"]),
-                          recorte=e.get("recorte", base["recorte"])))
+                          recorte=e.get("recorte", base["recorte"]), **_visual(base, e)))
     for tid, e in escolhas.items():
         if tid not in catalogo:
             temas.append(Tema(id=tid, numero=e.get("numero", 0), titulo=e.get("titulo", tid),
                               situacao=e.get("situacao", "planejado"), consulta=e.get("consulta", ""),
                               referencia=e.get("referencia", "interno"), recorte=e.get("recorte", "municipio"),
-                              proprio=True))
+                              proprio=True, **_visual({}, e)))
     return sorted(temas, key=lambda t: t.numero)
 
 

@@ -144,6 +144,15 @@ class ValidadorComDefeitosPlantados(unittest.TestCase):
         self.arq("dados/osm/retrato.json").write_text(json.dumps(retrato), encoding="utf-8")
         self.assertEqual(self.erros(), [])
 
+    def test_prancha_propria_com_cor_mapa_e_indicadores(self):
+        self.acrescentar("temas.toml", '\n[tema.feiras]\nnumero = 20\ntitulo = "Feiras"\nconsulta = "feiras.overpassql"\n'
+                                      'cor = "#7A1C1C"\nmapa = "linhas"\nindicadores = ["servico", "voos"]')
+        self.assertAcusa("indicador 'voos'")
+
+    def test_cor_invalida_no_tema(self):
+        self.acrescentar("temas.toml", '\n[tema.saude]\ncor = "vermelho"')
+        self.assertAcusa("cor 'vermelho'")
+
     def test_consulta_propria_sem_bbox(self):
         self.arq("consultas/educacao.overpassql").write_text('(nwr(-20,-47,-19,-46)[amenity=school];);\n', encoding="utf-8")
         self.assertAcusa("não usa {{bbox}}")

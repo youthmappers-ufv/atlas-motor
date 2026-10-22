@@ -8,6 +8,10 @@
 #   consulta    arquivo em catalogo/consultas/ (Overpass QL; {{bbox}} = caixa do município)
 #   referencia  base oficial padrão (pasta em dados/oficiais/ do município) ou "interno"
 #   recorte     municipio | sede | ambos (mapas gerados)
+#   cor         cor dos objetos do tema no mapa (#RRGGBB)
+#   mapa        pontos (objetos sobre as vias de fundo) | linhas (o próprio tema é uma rede: vias, estradas)
+#   indicadores além de total e nome: "servico" (endereço e horário), "vias" (km e pavimento)
+# Como propor um tema novo: docs/novos-temas.md.
 
 [[tema]]
 id = "localizacao"
@@ -16,6 +20,9 @@ titulo = "Localização e limites"
 consulta = "localizacao.overpassql"
 referencia = "interno"
 recorte = "municipio"
+cor = "#7A1C1C"
+mapa = "pontos"
+indicadores = []
 
 [[tema]]
 id = "sistema-viario"
@@ -24,6 +31,9 @@ titulo = "Sistema viário"
 consulta = "sistema-viario.overpassql"
 referencia = "interno"
 recorte = "ambos"
+cor = "#303030"
+mapa = "linhas"
+indicadores = ["vias"]
 
 [[tema]]
 id = "educacao"
@@ -32,6 +42,9 @@ titulo = "Educação"
 consulta = "educacao.overpassql"
 referencia = "inep"
 recorte = "ambos"
+cor = "#304068"
+mapa = "pontos"
+indicadores = ["servico"]
 
 [[tema]]
 id = "saude"
@@ -40,6 +53,9 @@ titulo = "Saúde"
 consulta = "saude.overpassql"
 referencia = "cnes"
 recorte = "ambos"
+cor = "#7A1C1C"
+mapa = "pontos"
+indicadores = ["servico"]
 
 [[tema]]
 id = "equipamentos"
@@ -48,6 +64,9 @@ titulo = "Equipamentos e serviços públicos"
 consulta = "equipamentos.overpassql"
 referencia = "interno"
 recorte = "sede"
+cor = "#304068"
+mapa = "pontos"
+indicadores = ["servico"]
 
 [[tema]]
 id = "meio-ambiente"
@@ -56,6 +75,9 @@ titulo = "Meio ambiente"
 consulta = "meio-ambiente.overpassql"
 referencia = "interno"
 recorte = "municipio"
+cor = "#2E7D32"
+mapa = "pontos"
+indicadores = []
 
 [[tema]]
 id = "mobilidade"
@@ -64,6 +86,9 @@ titulo = "Mobilidade e acessibilidade"
 consulta = "mobilidade.overpassql"
 referencia = "interno"
 recorte = "sede"
+cor = "#BC9C38"
+mapa = "pontos"
+indicadores = []
 
 [[tema]]
 id = "area-rural"
@@ -72,6 +97,9 @@ titulo = "Área rural"
 consulta = "area-rural.overpassql"
 referencia = "interno"
 recorte = "municipio"
+cor = "#6D4C41"
+mapa = "linhas"
+indicadores = ["vias"]
 
 [[tema]]
 id = "cultura-turismo"
@@ -80,3 +108,6 @@ titulo = "Cultura, turismo e lazer"
 consulta = "cultura-turismo.overpassql"
 referencia = "interno"
 recorte = "ambos"
+cor = "#7A1C1C"
+mapa = "pontos"
+indicadores = ["servico"]

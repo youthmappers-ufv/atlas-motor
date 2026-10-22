@@ -18,10 +18,8 @@ import matplotlib.pyplot as plt  # noqa: E402
 from comum import Tema, argumento_local, ler_config, ler_limite, ler_temas  # noqa: E402
 from indicadores import ler_feicoes  # noqa: E402
 
-AZUL, BORDO, DOURADO, CINZA, CLARO = "#304068", "#7A1C1C", "#BC9C38", "#303030", "#F4F1E8"
-COR_TEMA = {"localizacao": BORDO, "sistema-viario": CINZA, "educacao": AZUL, "saude": BORDO,
-            "equipamentos": AZUL, "meio-ambiente": "#2E7D32", "mobilidade": DOURADO,
-            "area-rural": "#6D4C41", "cultura-turismo": BORDO}
+# Cores fixas do mapa (fundo, limite, textos); a cor dos objetos vem do tema (catálogo: cor).
+BORDO, CINZA, CLARO = "#7A1C1C", "#303030", "#F4F1E8"
 
 
 def caixa(recorte: str, config: dict) -> tuple[float, float, float, float]:
@@ -47,7 +45,7 @@ def desenhar(local: Path, tema: Tema, recorte: str, config: dict, saida: Path) -
         ax.plot(xs, ys, color=BORDO, lw=1.2, ls=(0, (5, 2)), zorder=6)
 
     # fundo de referência: vias (do retrato do sistema viário) e, no município, nomes das localidades
-    if tema.id not in ("sistema-viario", "area-rural"):
+    if tema.mapa != "linhas":
         for f in ler_feicoes(local, "sistema-viario"):
             g, hw = f["geometry"], f["properties"]["tags"].get("highway", "")
             if g["type"] != "LineString" or (recorte != "sede" and not hw.startswith(
@@ -63,7 +61,7 @@ def desenhar(local: Path, tema: Tema, recorte: str, config: dict, saida: Path) -
                 ax.text(x, y + (n - s) * 0.012, nome, ha="center", va="bottom", fontsize=6.5, color=CINZA,
                         style="italic", zorder=8)
 
-    cor = COR_TEMA.get(tema.id, AZUL)
+    cor = tema.cor
     pontos_x, pontos_y, vazios_x, vazios_y = [], [], [], []
     for f in ler_feicoes(local, tema.id):
         g, tags = f["geometry"], f["properties"]["tags"]
@@ -73,7 +71,7 @@ def desenhar(local: Path, tema: Tema, recorte: str, config: dict, saida: Path) -
                 ax.plot(xs, ys, color="#3A7BD5", lw=0.7, zorder=2)
             else:
                 principal = tags.get("highway", "").startswith(("trunk", "primary", "secondary"))
-                ax.plot(xs, ys, color=cor if tema.id in ("sistema-viario", "area-rural") else "#9E9E9E",
+                ax.plot(xs, ys, color=cor if tema.mapa == "linhas" else "#9E9E9E",
                         lw=1.1 if principal else 0.4, zorder=3)
         elif g["type"] == "Polygon":
             xs, ys = zip(*g["coordinates"][0])
