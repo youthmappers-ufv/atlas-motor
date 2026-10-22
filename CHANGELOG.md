@@ -17,6 +17,13 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
+## v0.4.0 — 2026-10-21
+
+Compatível com v0.3.1: `atualizar_motor.py --versao v0.4.0`.
+
+- `construir.py --previa`: monta o livro e abre o `quarto preview`; enquanto ele estiver aberto, os textos salvos em `atlas/` são copiados para o livro e o navegador recarrega (opções `--porta` e `--sem-navegador`).
+- O livro em `_construcao/livro` é atualizado no lugar, preservando `.quarto`, `_site` e `_freeze`: rodar `construir.py` de novo com a prévia aberta (depois de mudar dados ou temas) não falha mais por arquivo em uso.
+
 ## v0.3.1 — 2026-10-21
 
 Correção: `atualizar_motor.py --versao v0.3.1`.
