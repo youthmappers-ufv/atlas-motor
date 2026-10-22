@@ -6,7 +6,7 @@ Nos comandos, troque `<cidade>` pelo slug do município (ex.: `rio-paranaiba`).
 
 ## Uma vez: motor e organização
 
-1. **`youthmappers-ufv/atlas-motor`** (público): escolha a licença (veja o README), crie o repositório e envie a `main` e as tags:
+1. **`youthmappers-ufv/atlas-motor`** (público): com a licença já definida (MIT, `LICENSE`; textos em CC BY 4.0, veja o README), crie o repositório e envie a `main` e as tags:
 
    ```bash
    gh repo create youthmappers-ufv/atlas-motor --public --source atlas-motor --remote origin --push

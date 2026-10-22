@@ -74,4 +74,11 @@ O município declara a versão em `atlas.toml` (`[motor] versao = "vX.Y.Z"`) e c
 
 ## Licença
 
-A definir pelo coordenador do programa (proposta: MIT para o código; CC BY 4.0 para os textos do modelo). Por ser público, o repositório precisa da licença antes do primeiro push. O logo do programa (`livro/marca/`) é marca do Programa Youthmappers UFV e não entra na licença do código.
+| Conteúdo | Licença |
+|---|---|
+| Código (`scripts/`, `testes/`, workflows), catálogo (`catalogo/`), modelos de configuração e o município sintético de testes (`testes/exemplo/`) | [MIT](LICENSE) |
+| Textos: documentação (`docs/`, READMEs), páginas do livro (`livro/*.qmd`) e textos do modelo de município | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.pt-br) |
+
+O motor não guarda dados do OpenStreetMap; os retratos de cada município, sob a [ODbL 1.0](https://opendatacommons.org/licenses/odbl/), ficam nos repositórios municipais.
+
+O logo do programa (`livro/marca/`) é marca do Programa Youthmappers UFV e não entra em nenhuma dessas licenças. Cada município declara as licenças dos próprios dados e textos no `LICENCAS.md` do seu repositório (modelo em `modelo-local/LICENCAS.md`).
