@@ -17,6 +17,7 @@ Procedimento completo no [CONTRIBUTING.md](../CONTRIBUTING.md#publicar-uma-vers�
 
 1. Na `main` do motor, com *Testes do motor* verde: decida o tipo (correção, menor, maior; em pré-lançamento `v0.y.z`, uma versão menor pode exigir mudança nos municípios e o CHANGELOG diz qual).
 2. Atualize `VERSAO`, `CITATION.cff` e `CHANGELOG.md`; commit `[VERSAO] vX.Y.Z`, tag `vX.Y.Z` e push da tag. As tags são protegidas: não podem ser movidas nem apagadas.
+   Release no GitHub (e DOI, com o Zenodo): automático só em versão maior (`vX.0.0`); as demais, à mão em *Actions* > *Release* > *Run workflow*, quando a versão merecer um DOI próprio (por exemplo, citada num artigo).
 3. **Canário primeiro:** no município canário, `atualizar_motor.py --versao vX.Y.Z` num PR e rode à mão os três workflows (*Verificar*, *Atualizar dados*, *Publicar atlas*). Com tudo verde, a versão está liberada.
 4. **Demais municípios:** um PR de atualização em cada um (`[CONFIG] Motor vX.Y.Z`), seguindo as instruções de migração do CHANGELOG, se houver; até o ciclo mensal seguinte.
 5. Registre as métricas da versão e as decisões de arquitetura no registro de pesquisa do projeto (fora deste repositório).

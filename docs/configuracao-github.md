@@ -24,7 +24,8 @@ Nos comandos, troque `<cidade>` pelo slug do município (ex.: `rio-paranaiba`).
    ```
 
    Confira em *Settings* > *Rules* > *Rulesets*.
-3. **Permissão base da organização:** *Settings* > *Member privileges* > *Base permissions* = **No permission**: membros só escrevem nos repositórios a que forem adicionados. Donos (*owners*) podem tudo: mantenha como dono só a coordenação.
+3. **DOI (Zenodo), quando for usar:** em https://zenodo.org, entre com a conta do GitHub, autorize a organização `youthmappers-ufv` e ligue o `atlas-motor` em *GitHub* (lista de repositórios). Daí em diante, cada **release** do GitHub (não cada tag) é arquivado e ganha DOI; o workflow *Release* cria o release sozinho nas versões maiores e, nas outras, à mão. Com o primeiro DOI, acrescente ao README o badge do DOI conceito (aponta sempre para a versão mais recente; o Zenodo mostra o código do badge) e o campo `doi` no `CITATION.cff`. O mesmo vale para um município público, cujos releases são as edições numeradas.
+4. **Permissão base da organização:** *Settings* > *Member privileges* > *Base permissions* = **No permission**: membros só escrevem nos repositórios a que forem adicionados. Donos (*owners*) podem tudo: mantenha como dono só a coordenação.
 
 ## Para cada município (público)
 

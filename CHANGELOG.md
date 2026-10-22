@@ -17,6 +17,13 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
+## Próxima versão (não lançada)
+
+**Ao atualizar o município:** acrescente a fileira de badges logo abaixo do título do README. Para gerá-la, da pasta do município: `python -c "import sys, tomllib; sys.path.insert(0, '../atlas-motor/scripts'); from novo_local import linha_badges; print(linha_badges(tomllib.load(open('atlas.toml', 'rb')), 'youthmappers-ufv'))"`. Num município novo, o `novo_local.py` já a põe.
+
+- Badges nos READMEs. Motor: versão (última tag), testes, licenças, Python, Quarto e documentação. Município público: site, *Publicar atlas*, *Verificar*, data dos dados do OSM, completude, versão do motor, edição (último release) e licenças; os de dados, completude e motor leem o atlas publicado (`_gerado/badges/*.json`, no formato *endpoint* do shields.io), não o repositório. Município privado: só os do GitHub Actions e fixos (o shields.io não lê repositório privado); o da versão do motor é trocado pelo `atualizar_motor.py`.
+- Workflow *Release* do motor: release no GitHub com as notas do CHANGELOG (`scripts/notas_versao.py`). Sai sozinho só com a tag de versão maior (`vX.0.0`, a partir da `v1.0.0`); as demais, à mão (*Run workflow*). Preparado para o DOI do Zenodo (passos em `docs/configuracao-github.md`).
+
 ## v0.9.0 — 2026-10-22
 
 **Ao atualizar o município:** acrescente o `CITATION.cff` e a seção "Como citar" do README (modelos em `modelo-local/`, com os marcadores preenchidos pelo `novo_local.py` num município novo); sem o `CITATION.cff`, o validador avisa.

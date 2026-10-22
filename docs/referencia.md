@@ -152,6 +152,7 @@ Em `_construcao/livro/_gerado/` (fora do Git, refeito a cada construção):
 | `edicao.md`, `pranchas.md`, `downloads.md` | versão e data dos dados com o botão de baixar o PDF (só no site), lista de pranchas, links dos dados |
 | `citacao.md` | referência do atlas no formato da ABNT (NBR 6023), para "Como usar e citar"; no site, também a entrada BibLaTeX (estilo `abnt` do biblatex-abnt) |
 | `downloads/atlas-<slug>.bib` | a entrada BibLaTeX para baixar |
+| `badges/completude.json`, `dados.json`, `motor.json` | badges do README (formato *endpoint* do shields.io): C_t de cada tema com base oficial, data dos dados do OSM e versão do motor do atlas publicado |
 | `pdf.md`, `notas.md` | só o botão do PDF (página "Dados para download"); só a versão e a data (notas do release) |
 | `downloads/<tema>.geojson` | dados de cada prancha para baixar |
 
@@ -171,6 +172,7 @@ Todos rodam de dentro do repositório do município (ou com `--local <pasta>`). 
 | `indicadores.py` | mostra os indicadores e as lacunas, com o motivo provável, no terminal | `--tema`, `--local` |
 | `mapas.py` | gera só os mapas | `--tema`, `--local` |
 | `serie_historica.py` | refaz a série dos indicadores a partir dos retratos no Git | `--saida <csv>`, `--local` |
+| `notas_versao.py <tag>` | (motor) notas da versão tiradas do CHANGELOG; diz se a tag dispara o release sozinha | `--automatico` |
 | `novo_local.py` | cria o repositório de um município novo | `--nome`, `--ibge`, `--uf`, `--slug`, `--destino`, `--baixar`, `--git`, `--organizacao`, `--privado`; sem rede: `--sem-rede --relacao --bbox= --sede-bbox= --wikidata` |
 
 Variáveis de ambiente: `ATLAS_MOTOR_CACHE` (pasta do cache de versões), `ATLAS_MOTOR_ATUAL=1` (o mesmo que `--motor-atual`), `ATLAS_VERSAO` (texto da versão na capa; o CI usa a tag).

@@ -13,8 +13,9 @@ O motor serve a vários municípios ao mesmo tempo; uma mudança aqui chega a to
 1. Na `main`, com tudo verde, decida se a versão é de **correção**, **menor** (compatível) ou **maior** (exige mudança nos municípios); veja a política no [CHANGELOG.md](CHANGELOG.md). Até o lançamento oficial (`v1.0.0`), as versões são `v0.y.z`.
 2. Atualize `VERSAO`, a `version` e a `date-released` do `CITATION.cff`, e acrescente a entrada no `CHANGELOG.md` (para versão maior, com as instruções de migração).
 3. Os testes `test_versao_registrada_no_changelog` e `test_citation_na_versao` falham se algo faltar. A coordenação registra as métricas da versão e as decisões de arquitetura no registro de pesquisa do projeto, que fica fora deste repositório.
-4. Commit `[VERSAO] vX.Y.Z`, tag `vX.Y.Z` e push da tag.
-5. Em cada município, num PR próprio: `python ../atlas-motor/scripts/atualizar_motor.py --versao vX.Y.Z`.
+4. Commit `[VERSAO] vX.Y.Z`, tag anotada `vX.Y.Z` e push da tag.
+5. **Release no GitHub** (workflow *Release*, notas tiradas do CHANGELOG; com o Zenodo ligado, cada release ganha DOI): sai sozinho com a tag de uma **versão maior** (`vX.0.0`, a partir da `v1.0.0`); as versões menores e as correções só ganham release quando alguém pedir, em *Actions* > *Release* > *Run workflow*, informando a tag.
+6. Em cada município, num PR próprio: `python ../atlas-motor/scripts/atualizar_motor.py --versao vX.Y.Z`.
 
 ## Tags
 
