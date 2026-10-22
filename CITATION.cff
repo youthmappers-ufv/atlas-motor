@@ -6,7 +6,9 @@ authors:
   - family-names: Smarzaro
     given-names: Rodrigo
     affiliation: "Universidade Federal de Viçosa, Campus Rio Paranaíba"
+    orcid: "https://orcid.org/0000-0002-4783-8383"
   - name: "Programa Youthmappers UFV"
+doi: "10.5281/zenodo.23573341"
 license: MIT
 version: v0.11.0
 date-released: 2026-10-22

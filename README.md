@@ -1,7 +1,7 @@
 # atlas-motor
 
 [![versão](https://img.shields.io/github/v/tag/youthmappers-ufv/atlas-motor?sort=semver&label=vers%C3%A3o)](CHANGELOG.md) [![Testes do motor](https://github.com/youthmappers-ufv/atlas-motor/actions/workflows/testes.yml/badge.svg?branch=main)](https://github.com/youthmappers-ufv/atlas-motor/actions/workflows/testes.yml) [![código: MIT](https://img.shields.io/badge/c%C3%B3digo-MIT-blue)](LICENSE) [![textos: CC BY 4.0](https://img.shields.io/badge/textos-CC%20BY%204.0-lightgrey)](https://creativecommons.org/licenses/by/4.0/deed.pt-br) ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB) ![Quarto 1.10](https://img.shields.io/badge/Quarto-1.10-75AADB) [![documentação](https://img.shields.io/badge/documenta%C3%A7%C3%A3o-docs-informational)](docs/README.md)
-<!-- DOI: com a integração do Zenodo ligada, acrescente aqui o badge do DOI conceito (docs/configuracao-github.md). -->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23573341.svg)](https://doi.org/10.5281/zenodo.23573341)
 
 Código e estrutura comuns do **Atlas Colaborativo** do Programa Youthmappers UFV: atlas municipais abertos, feitos a partir do OpenStreetMap, com medição de completude em relação às bases oficiais, publicados como site e PDF.
 
@@ -43,6 +43,7 @@ scripts/
   atualizar_motor.py    muda a versão do motor usada por um município
   serie_historica.py    série histórica dos indicadores de um município, a partir do Git
   notas_versao.py       notas de uma versão (do CHANGELOG) e a regra do release automático
+  citacao_repositorio.py CITATION.cff, .zenodo.json, badges e "Como citar" do município, do atlas.toml
 .github/workflows/      reutilizáveis (verificar, atualizar-dados, publicar), os testes e o release do motor
 testes/                 testes, com o município sintético testes/exemplo/
 docs/                   documentação de uso e manutenção (índice em docs/README.md; diagramas em figuras/)
@@ -79,9 +80,9 @@ O município declara a versão em `atlas.toml` (`[motor] versao = "vX.Y.Z"`) e c
 
 ## Como citar
 
-Em trabalho acadêmico, cite a versão usada (a do `atlas.toml` do município):
+Em trabalho acadêmico, cite a versão usada (a do `atlas.toml` do município). O DOI abaixo é o conceito (todas as versões); o de cada versão está no [Zenodo](https://doi.org/10.5281/zenodo.23573341).
 
-SMARZARO, Rodrigo; PROGRAMA YOUTHMAPPERS UFV. **atlas-motor**: motor aberto para atlas municipais colaborativos a partir do OpenStreetMap. Versão v0.11.0. Rio Paranaíba: Universidade Federal de Viçosa, 2026. Disponível em: <https://github.com/youthmappers-ufv/atlas-motor>. Acesso em: *data do acesso*.
+SMARZARO, Rodrigo; PROGRAMA YOUTHMAPPERS UFV. **atlas-motor**: motor aberto para atlas municipais colaborativos a partir do OpenStreetMap. Versão v0.11.0. Rio Paranaíba: Universidade Federal de Viçosa, 2026. DOI: 10.5281/zenodo.23573341. Disponível em: <https://github.com/youthmappers-ufv/atlas-motor>. Acesso em: *data do acesso*.
 
 Em BibLaTeX (estilo `abnt` do pacote biblatex-abnt, que imprime a versão a partir de `edition`; acrescente `urldate = {AAAA-MM-DD}`):
 
@@ -94,6 +95,7 @@ Em BibLaTeX (estilo `abnt` do pacote biblatex-abnt, que imprime a versão a part
   location  = {Rio Paranaíba},
   publisher = {Universidade Federal de Viçosa},
   year      = {2026},
+  doi       = {10.5281/zenodo.23573341},
   url       = {https://github.com/youthmappers-ufv/atlas-motor},
   langid    = {brazilian},
 }
