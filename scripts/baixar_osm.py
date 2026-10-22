@@ -25,7 +25,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from comum import (aneis_externos, argumento_local, caminho_consulta, dentro, escrever_json, ler_config, ler_temas,
-                   ponto_representativo)
+                   ponto_representativo, usar_versao_declarada)
 
 USER_AGENT = "atlas-motor (Programa Youthmappers UFV)"
 CHAVES_AREA = ("building", "landuse", "leisure", "natural", "amenity", "place", "tourism",
@@ -98,6 +98,7 @@ def gravar_geojson(arquivo: Path, lista: list[dict]) -> None:
 
 
 def main() -> int:
+    usar_versao_declarada("baixar_osm.py")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--tema", action="append", help="baixar só este tema (pode repetir)")
     argumento_local(ap)

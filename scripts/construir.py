@@ -31,7 +31,8 @@ import sys
 import time
 from pathlib import Path
 
-from comum import MOTOR, argumento_local, ler_config, ler_temas, versao_motor
+from comum import (MOTOR, argumento_local, ler_config, ler_temas, tirar_somente_leitura, usar_versao_declarada,
+                   versao_motor)
 from indicadores import calcular
 from validar import verificar
 
@@ -92,13 +93,6 @@ def escrever_quarto(livro: Path, config: dict, ativos: list) -> None:
     (livro / "_quarto.yml").write_text(texto, encoding="utf-8", newline="\n")
 
 
-def tirar_somente_leitura(funcao, caminho, _info) -> None:
-    """No Windows (e em pastas do OneDrive), o Quarto deixa itens somente leitura que o
-    rmtree não apaga: tira o atributo e tenta de novo."""
-    os.chmod(caminho, 0o700)
-    funcao(caminho)
-
-
 def limpar(livro: Path) -> None:
     """Esvazia o livro montado, mas mantém o que o Quarto usa entre execuções (.quarto, _site,
     _freeze): apagar a pasta inteira falha com o quarto preview aberto, que segura o cache."""
@@ -145,6 +139,7 @@ def previa(local: Path, livro: Path, porta: int, navegador: bool = True) -> int:
 
 
 def main() -> int:
+    usar_versao_declarada("construir.py")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     argumento_local(ap)
     ap.add_argument("--baixar", action="store_true", help="baixar um retrato novo do OSM antes")

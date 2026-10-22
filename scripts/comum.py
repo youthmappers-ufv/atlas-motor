@@ -12,9 +12,15 @@ from __future__ import annotations
 
 import argparse
 import csv
+import io
 import json
 import math
+import os
 import re
+import shutil
+import subprocess
+import sys
+import tarfile
 import tomllib
 import unicodedata
 from dataclasses import dataclass
@@ -62,6 +68,78 @@ def argumento_local(ap: argparse.ArgumentParser) -> None:
 
 def ler_config(local: Path) -> dict:
     return ler_toml(local / "atlas.toml")
+
+
+# ---------------------------------------------------------------- Versão declarada
+CACHE_VERSOES = Path(os.environ.get("ATLAS_MOTOR_CACHE", Path.home() / ".cache" / "atlas-motor"))
+
+
+def tirar_somente_leitura(funcao, caminho, _info) -> None:
+    """No Windows (e em pastas do OneDrive), o Quarto deixa itens somente leitura que o
+    rmtree não apaga: tira o atributo e tenta de novo."""
+    os.chmod(caminho, 0o700)
+    funcao(caminho)
+
+
+def _local_dos_argumentos(argv: list[str]) -> Path:
+    for i, a in enumerate(argv):
+        if a == "--local" and i + 1 < len(argv):
+            return Path(argv[i + 1])
+        if a.startswith("--local="):
+            return Path(a.split("=", 1)[1])
+    return Path.cwd()
+
+
+def _extrair_versao(versao: str, destino: Path) -> None:
+    """Extrai a tag do clone local do motor para o cache (as tags do motor nunca mudam)."""
+    r = subprocess.run(["git", "-C", str(MOTOR), "archive", "--format=tar", f"refs/tags/{versao}"],
+                       capture_output=True)
+    if r.returncode:
+        sys.exit(f"O atlas.toml declara o motor {versao}, que não está no clone do motor em {MOTOR}.\n"
+                 f"Rode: git -C \"{MOTOR}\" fetch --tags   (ou use --motor-atual para usar o motor desta pasta)")
+    temporario = destino.with_name(destino.name + ".parcial")
+    shutil.rmtree(temporario, ignore_errors=True)
+    temporario.mkdir(parents=True)
+    with tarfile.open(fileobj=io.BytesIO(r.stdout)) as tar:
+        if hasattr(tarfile, "data_filter"):               # Python 3.11.4+
+            tar.extractall(temporario, filter="data")
+        else:
+            tar.extractall(temporario)
+    temporario.replace(destino)
+
+
+def usar_versao_declarada(script: str) -> None:
+    """Roda o script na versão do motor declarada no atlas.toml do município.
+
+    Localmente, o motor ao lado pode estar em outra versão; neste caso, a versão declarada é
+    extraída da tag (cache em ~/.cache/atlas-motor/) e o script dela roda no lugar deste.
+    No CI o motor já vem na versão declarada e nada muda. --motor-atual (ou ATLAS_MOTOR_ATUAL=1)
+    força o motor desta pasta, para desenvolver o próprio motor."""
+    if "--motor-atual" in sys.argv:
+        sys.argv.remove("--motor-atual")
+        return
+    if os.environ.get("ATLAS_MOTOR_ATUAL"):
+        return
+    argv = sys.argv[1:]
+    local = _local_dos_argumentos(argv).resolve()
+    if local == MOTOR or MOTOR in local.parents:          # município de exemplo dos testes
+        return
+    try:
+        declarada = ler_config(local)["motor"]["versao"]
+    except (OSError, KeyError, tomllib.TOMLDecodeError):
+        return                                             # o próprio script reporta o problema
+    if declarada == versao_motor():
+        return
+    pasta = CACHE_VERSOES / declarada
+    if not (pasta / "scripts" / script).exists():
+        _extrair_versao(declarada, pasta)
+    if script == "construir.py" and (local / "_construcao").exists():
+        # versões antigas apagam _construcao sem tratar itens somente leitura
+        shutil.rmtree(local / "_construcao", onerror=tirar_somente_leitura)
+    print(f"O atlas.toml declara o motor {declarada}; usando essa versão (este motor é {versao_motor()}; "
+          "--motor-atual usa este).", file=sys.stderr, flush=True)
+    env = dict(os.environ, ATLAS_MOTOR_ATUAL="1")
+    sys.exit(subprocess.run([sys.executable, str(pasta / "scripts" / script), *argv], env=env).returncode)
 
 
 def ler_temas(local: Path) -> list[Tema]:

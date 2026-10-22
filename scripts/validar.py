@@ -30,7 +30,7 @@ from datetime import date
 from pathlib import Path
 
 from comum import (CATALOGO, SITUACOES, Tema, argumento_local, caminho_consulta, coordenadas, ler_csv,
-                   ler_esquemas, ler_temas, ler_toml)
+                   ler_esquemas, ler_temas, ler_toml, usar_versao_declarada)
 
 RECORTES = {"municipio", "sede", "ambos"}
 COLUNAS_PROIBIDAS = {"cpf", "rg", "email", "e-mail", "telefone_pessoal", "celular", "matricula", "endereco_residencial"}
@@ -395,6 +395,7 @@ def verificar(local: Path) -> Relatorio:
 
 
 def main() -> int:
+    usar_versao_declarada("validar.py")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     argumento_local(ap)
     args = ap.parse_args()

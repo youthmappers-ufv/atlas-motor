@@ -180,5 +180,57 @@ class SerieHistorica(unittest.TestCase):
         self.assertEqual([l["C_t"] for l in linhas], [66.7, 100.0], "a escola rural nova completa a base oficial")
 
 
+def tag_disponivel(tag: str) -> bool:
+    return subprocess.run(["git", "-C", str(MOTOR), "rev-parse", "--verify", "-q", f"refs/tags/{tag}"],
+                          capture_output=True).returncode == 0
+
+
+class VersaoDeclarada(unittest.TestCase):
+    """Localmente, os scripts rodam na versão do motor declarada no atlas.toml do município."""
+    ANTIGA = "v0.3.0"                    # qualquer tag anterior à versão atual
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self._tmp.name)
+        self.local = self.dir / "atlas-exemplo"
+        shutil.copytree(MOTOR / "testes" / "exemplo", self.local, ignore=shutil.ignore_patterns("_construcao"))
+        self.env = {**__import__("os").environ, "ATLAS_MOTOR_CACHE": str(self.dir / "cache"),
+                    "PYTHONIOENCODING": "utf-8"}
+        self.env.pop("ATLAS_MOTOR_ATUAL", None)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def declarar(self, versao: str) -> None:
+        arq = self.local / "atlas.toml"
+        arq.write_text(re.sub(r'(?m)^versao = "[^"]+"', f'versao = "{versao}"', arq.read_text(encoding="utf-8")),
+                       encoding="utf-8")
+
+    def validar(self, *extra: str) -> subprocess.CompletedProcess:
+        return subprocess.run([sys.executable, str(SCRIPTS / "validar.py"), "--local", str(self.local), *extra],
+                              capture_output=True, text=True, encoding="utf-8", env=self.env)
+
+    def test_versao_antiga_vem_da_tag(self):
+        if not tag_disponivel(self.ANTIGA):
+            self.skipTest(f"tag {self.ANTIGA} ausente (checkout raso)")
+        self.declarar(self.ANTIGA)
+        r = self.validar()
+        self.assertIn(f"declara o motor {self.ANTIGA}", r.stderr)
+        self.assertTrue((self.dir / "cache" / self.ANTIGA / "scripts" / "validar.py").exists())
+        self.assertEqual((self.dir / "cache" / self.ANTIGA / "VERSAO").read_text(encoding="utf-8").strip(), self.ANTIGA)
+
+    def test_motor_atual_ignora_a_declarada(self):
+        self.declarar(self.ANTIGA)
+        r = self.validar("--motor-atual")
+        self.assertNotIn("declara o motor", r.stderr)
+        self.assertFalse((self.dir / "cache").exists())
+
+    def test_tag_inexistente_explica_o_que_fazer(self):
+        self.declarar("v9.9.9")
+        r = self.validar()
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("fetch --tags", r.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
