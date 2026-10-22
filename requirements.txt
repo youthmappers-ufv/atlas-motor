@@ -1,2 +1,4 @@
-# Só para gerar os mapas (scripts/mapas.py). Validação e testes usam só a biblioteca padrão.
+# Só para construir o atlas: mapas (scripts/mapas.py) e tema (scripts/tema.py lê o _brand.yml).
+# Validação e testes usam só a biblioteca padrão.
 matplotlib>=3.8
+PyYAML>=6.0

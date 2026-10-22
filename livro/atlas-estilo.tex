@@ -1,0 +1,75 @@
+% Estilo do PDF do atlas, no padrão visual dos documentos do Programa Youthmappers UFV.
+% Não define cor nem fonte: usa só os nomes de tema.tex, que construir.py gera a partir do
+% _brand.yml (atlasprimaria, atlassecundaria, atlasdestaque, atlasclaro, atlastexto,
+% \atlaslogos, \atlasmarca). Entra no preâmbulo pelo include-in-header do _quarto.yml.
+\usepackage{fontspec}
+\input{tema.tex}
+\usepackage{tikz}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{scrlayer-scrpage}
+\usepackage{colortbl}
+
+\color{atlastexto}
+\KOMAoptions{parskip=half}
+\setlength{\emergencystretch}{3em}
+\frenchspacing
+\hyphenation{OpenStreetMap}
+
+% Títulos: sem serifa, na cor principal, com filete na cor de destaque
+\setkomafont{disposition}{\sffamily\bfseries\color{atlasprimaria}}
+\addtokomafont{chapter}{\huge}
+\addtokomafont{section}{\Large}
+\addtokomafont{subsection}{\large}
+\RedeclareSectionCommand[beforeskip=0pt, afterskip=1.2\baselineskip]{chapter}
+\RedeclareSectionCommand[beforeskip=-1.2\baselineskip, afterskip=0.5\baselineskip]{section}
+
+% "Parte" (Pranchas): faixa na cor principal acima do capítulo seguinte, sem página própria
+\newif\ifatlasparte
+\newcommand{\atlasparte}{}
+\renewcommand{\part}[2][]{\clearpage\global\atlaspartetrue\gdef\atlasparte{#2}%
+  \addcontentsline{toc}{part}{#2}}
+\newcommand{\atlasfaixaparte}{%
+  \ifatlasparte
+    \colorbox{atlasprimaria}{\parbox{\dimexpr\linewidth-2\fboxsep}{%
+      \vspace{3pt}\normalsize\sffamily\bfseries\color{white}\MakeUppercase{\atlasparte}\vspace{3pt}}}%
+    \par\vspace{0.8\baselineskip}\global\atlaspartefalse
+  \fi}
+\renewcommand*{\chapterlinesformat}[3]{\atlasfaixaparte#2#3\par\vspace{-4pt}%
+  {\color{atlasdestaque}\rule{\linewidth}{1.2pt}}}
+
+% Cabeçalho (título do atlas e nome da marca) e número da página
+\clearpairofpagestyles
+\KOMAoptions{headsepline=0.4pt}
+\setkomafont{headsepline}{\color{atlasdestaque}}
+\addtokomafont{pagehead}{\sffamily\footnotesize\color{atlastexto!75}\upshape}
+\addtokomafont{pagefoot}{\sffamily\footnotesize}
+\ihead{\atlastitulo}
+\ohead{\atlasmarca}
+\cfoot*{\pagemark}
+\pagestyle{scrheadings}
+\renewcommand*{\chapterpagestyle}{scrheadings}
+
+% Listas: marcador triangular na cor de destaque, números na cor secundária
+\setlist{itemsep=2pt, topsep=3pt, parsep=0pt}
+\setlist[itemize]{label=\textcolor{atlasdestaque}{\small$\blacktriangleright$}}
+\setlist[enumerate]{label=\textcolor{atlassecundaria}{\sffamily\bfseries\arabic*.}}
+
+% Tabelas: sem serifa, menores, filetes na cor principal
+\AtBeginEnvironment{longtable}{\sffamily\small\arrayrulecolor{atlasprimaria}}
+\renewcommand{\arraystretch}{1.25}
+
+% Legendas, links e quadros (callouts do Quarto)
+\captionsetup{font={small,sf}, labelfont={bf,color=atlasprimaria}}
+\AtBeginDocument{\hypersetup{colorlinks=true, linkcolor=atlasprimaria, urlcolor=atlasprimaria,
+  citecolor=atlasprimaria}}
+\colorlet{quarto-callout-note-color}{atlasprimaria}
+\colorlet{quarto-callout-tip-color}{atlasdestaque}
+\colorlet{quarto-callout-warning-color}{atlassecundaria}
+\colorlet{quarto-callout-important-color}{atlassecundaria}
+\colorlet{quarto-callout-caution-color}{atlassecundaria}
+
+% Sumário
+\renewcommand*{\contentsname}{Sumário}
+\setkomafont{chapterentry}{\sffamily\bfseries\color{atlasprimaria}}
+\setkomafont{partentry}{\sffamily\bfseries\color{atlassecundaria}}

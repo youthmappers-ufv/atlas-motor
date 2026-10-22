@@ -34,6 +34,7 @@ from pathlib import Path
 from comum import (MOTOR, argumento_local, ler_config, ler_temas, tirar_somente_leitura, usar_versao_declarada,
                    versao_motor)
 from indicadores import calcular
+from tema import gerar as gerar_tema
 from validar import verificar
 
 PRESERVAR = {".quarto", "_site", "_freeze"}
@@ -73,7 +74,7 @@ def versao_local(local: Path) -> str:
         return "desenvolvimento"
 
 
-def escrever_quarto(livro: Path, config: dict, ativos: list) -> None:
+def escrever_quarto(livro: Path, config: dict, ativos: list, edicao: str = "") -> None:
     mun, pub = config["municipio"], config["publicacao"]
     capitulos = "\n".join(f"        - pranchas/{t.prancha}" for t in ativos) or "        - index.qmd"
     rodape = " · ".join(x for x in (f"Dados {pub['atribuicao']}", pub.get("autoria", "Programa Youthmappers UFV"),
@@ -86,6 +87,7 @@ def escrever_quarto(livro: Path, config: dict, ativos: list) -> None:
         "{{arquivo}}": f"atlas-{pub['slug']}",
         "{{rodape}}": rodape.replace('"', "'"),
         "{{capitulos}}": capitulos,
+        "{{edicao}}": edicao.replace('"', "'"),
     }
     texto = (MOTOR / "livro" / "_quarto.modelo.yml").read_text(encoding="utf-8")
     if not trocas["{{site_url}}"]:              # hospedagem "artefato": sem endereço (o Quarto recusa vazio)
@@ -93,6 +95,22 @@ def escrever_quarto(livro: Path, config: dict, ativos: list) -> None:
     for marca, valor in trocas.items():
         texto = texto.replace(marca, str(valor))
     (livro / "_quarto.yml").write_text(texto, encoding="utf-8", newline="\n")
+
+
+def aplicar_tema(local: Path, livro: Path) -> None:
+    """Põe o tema do município (tema/: _brand.yml e imagens) sobre o padrão do motor e gera
+    o tema.tex do PDF. Os .md de tema/ (instruções) não entram no livro."""
+    origem = local / "tema"
+    if origem.is_dir():
+        for arq in origem.rglob("*"):
+            if arq.is_file() and arq.suffix.lower() != ".md":
+                destino = livro / arq.relative_to(origem)
+                destino.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(arq, destino)
+    faltam = gerar_tema(livro)
+    if faltam:
+        sys.exit("O _brand.yml cita logos que não existem: " + ", ".join(faltam)
+                 + " (caminhos relativos a tema/, ex.: marca/logo.png)")
 
 
 def limpar(livro: Path) -> None:
@@ -172,6 +190,7 @@ def main() -> int:
     limpar(livro)
     shutil.copytree(MOTOR / "livro", livro, ignore=shutil.ignore_patterns("_quarto.modelo.yml"), dirs_exist_ok=True)
     shutil.copytree(local / "atlas", livro, dirs_exist_ok=True)
+    aplicar_tema(local, livro)
     gerado = livro / "_gerado"
     (gerado / "downloads").mkdir(parents=True, exist_ok=True)
     retrato_arq = local / "dados" / "osm" / "retrato.json"
@@ -204,10 +223,12 @@ def main() -> int:
         f"- [{t.titulo}](_gerado/downloads/{t.id}.geojson)" for t, _ in resumo
         if (gerado / "downloads" / f"{t.id}.geojson").exists()]
     (gerado / "downloads.md").write_text("\n".join(itens) + "\n", encoding="utf-8")
+    base_osm = retrato.get("base_osm", "")[:10] or "data desconhecida"
     (gerado / "edicao.md").write_text(
         f"Versão **{versao_local(local)}** (motor {versao_motor()}), com dados do OpenStreetMap de "
-        f"**{retrato.get('base_osm', '')[:10] or 'data desconhecida'}**.\n", encoding="utf-8")
-    escrever_quarto(livro, config, ativos)
+        f"**{base_osm}**.\n", encoding="utf-8")
+    escrever_quarto(livro, config, ativos,
+                    f"Versão {versao_local(local)} · motor {versao_motor()} · dados do OpenStreetMap de {base_osm}")
     print(f"Livro montado em {livro.relative_to(local)}.")
 
     if args.renderizar:

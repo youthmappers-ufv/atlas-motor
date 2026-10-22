@@ -1,0 +1,19 @@
+% Capa do PDF do atlas (partial "before-body" do Quarto): faixas nas cores do tema, título,
+% autoria, edição e os logos do tema (\atlaslogos, de tema.tex).
+\begin{titlepage}
+\begin{tikzpicture}[remember picture, overlay]
+  \fill[atlasprimaria] (current page.north west) rectangle ([yshift=-11cm]current page.north east);
+  \fill[atlassecundaria] ([yshift=-11.3cm]current page.north west) rectangle ([yshift=-12.4cm]current page.north east);
+  \node[anchor=south west, text width=16.5cm, align=left, text=white]
+    at ([xshift=2.2cm, yshift=-10.2cm]current page.north west)
+    {\sffamily\bfseries\fontsize{28}{33}\selectfont $title$\par\vspace{8pt}
+     \mdseries\Large $subtitle$};
+  \node[anchor=north west, text width=16.5cm, align=left]
+    at ([xshift=2.2cm, yshift=-13.8cm]current page.north west)
+    {\sffamily\bfseries\large\color{atlasprimaria}$for(authors)$$it.name.literal$$sep$, $endfor$\par\vspace{4pt}
+     \mdseries\small\color{atlastexto!70}$if(atlas-edicao)$$atlas-edicao$$endif$};
+  \node[anchor=south] at ([yshift=2.2cm]current page.south) {\atlaslogos};
+  \fill[atlasdestaque] (current page.south west) rectangle ([yshift=0.5cm]current page.south east);
+\end{tikzpicture}
+\end{titlepage}
+\newcommand{\atlastitulo}{$title$}

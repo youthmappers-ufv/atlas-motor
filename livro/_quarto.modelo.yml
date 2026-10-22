@@ -30,13 +30,17 @@ book:
 
 format:
   html:
-    theme: [cosmo, estilo.scss]
+    theme: [cosmo, brand, estilo.scss]     # cores, fontes e logo do _brand.yml
     toc: true
     number-sections: false
   pdf:
     documentclass: scrreprt
     papersize: a4
     pdf-engine: xelatex
+    include-in-header: atlas-estilo.tex    # usa tema.tex, gerado do _brand.yml
+    template-partials: [before-body.tex]  # capa
+    toc-title: Sumário
+    atlas-edicao: "{{edicao}}"
     number-sections: false
     toc: true
     fig-pos: "H"

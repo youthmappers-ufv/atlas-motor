@@ -1,0 +1,41 @@
+# Tema padrão do atlas: identidade do Programa Youthmappers UFV.
+# Fonte única de cores, fontes e logos: o Quarto o aplica no site, e scripts/tema.py o traduz
+# para o PDF (tema.tex). Um município troca o tema com tema/_brand.yml no próprio repositório.
+#
+# Cores usadas pelo atlas: primary (títulos, faixas, links), secondary (segunda faixa da capa,
+# números), tertiary (filetes, marcadores), light (fundos claros), foreground (texto).
+# Logos: todos os de logo.images aparecem na capa do PDF, na ordem; medium vai para o site.
+meta:
+  name: Programa Youthmappers UFV
+
+logo:
+  images:
+    programa: marca/ymufv_logo.png
+  medium: programa
+
+color:
+  palette:
+    azul: "#304068"
+    bordo: "#7A1C1C"
+    dourado: "#BC9C38"
+    claro: "#F4F1E8"
+    grafite: "#222222"
+  primary: azul
+  secondary: bordo
+  tertiary: dourado
+  light: claro
+  foreground: grafite
+  background: "#FFFFFF"
+
+typography:
+  fonts:
+    - family: Source Sans 3
+      source: google
+    - family: Source Code Pro
+      source: google
+  base: Source Sans 3
+  headings:
+    family: Source Sans 3
+    weight: bold
+    color: primary
+  monospace: Source Code Pro
