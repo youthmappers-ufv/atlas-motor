@@ -88,6 +88,8 @@ def escrever_quarto(livro: Path, config: dict, ativos: list) -> None:
         "{{capitulos}}": capitulos,
     }
     texto = (MOTOR / "livro" / "_quarto.modelo.yml").read_text(encoding="utf-8")
+    if not trocas["{{site_url}}"]:              # hospedagem "artefato": sem endereço (o Quarto recusa vazio)
+        texto = "".join(l for l in texto.splitlines(keepends=True) if "{{site_url}}" not in l)
     for marca, valor in trocas.items():
         texto = texto.replace(marca, str(valor))
     (livro / "_quarto.yml").write_text(texto, encoding="utf-8", newline="\n")

@@ -79,6 +79,18 @@ class Scripts(unittest.TestCase):
         self.assertEqual(len(horarios), 4, "municípios da região não podem coincidir no agendamento")
         self.assertTrue(all(8 <= h <= 11 and 0 <= m <= 59 for h, m in horarios))
 
+    def test_quarto_sem_site_url_quando_hospedagem_artefato(self):
+        import tomllib
+        from construir import escrever_quarto
+        config = tomllib.loads((MOTOR / "testes" / "exemplo" / "atlas.toml").read_text(encoding="utf-8"))
+        escrever_quarto(self.dir, config, [])
+        self.assertIn("site-url: https://youthmappers-ufv.github.io/atlas-exemplo/",
+                      (self.dir / "_quarto.yml").read_text(encoding="utf-8"))
+        config["publicacao"].update(hospedagem="artefato", url="")
+        escrever_quarto(self.dir, config, [])
+        self.assertNotIn("site-url", (self.dir / "_quarto.yml").read_text(encoding="utf-8"),
+                         "o Quarto recusa site-url vazio")
+
     def test_limpar_preserva_cache_do_quarto(self):
         from construir import limpar
         livro = self.dir / "livro"
