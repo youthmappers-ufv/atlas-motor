@@ -11,7 +11,7 @@ Confere:
     colunas declaradas presentes no CSV;
   - dados/curados/*.csv: cada arquivo tem esquema (catálogo do motor ou dados/esquemas/)
     e o respeita (colunas, obrigatórias, tipos, valores, padrões, chave única, coordenadas);
-  - nenhum CSV com dado pessoal aparente (e-mail, CPF formatado) nem coluna proibida;
+  - nenhum CSV com dado pessoal aparente (e-mail, CPF formatado, telefone) nem coluna proibida;
   - atlas/: index.qmd e uma prancha atlas/pranchas/<nn>-<id>.qmd para cada tema ativo
     (fora de "planejado"), e nenhuma prancha sobrando;
   - arquivos de texto em UTF-8, sem marcas de conflito, nenhum arquivo acima de 25 MB.
@@ -37,6 +37,10 @@ COLUNAS_PROIBIDAS = {"cpf", "rg", "email", "e-mail", "telefone_pessoal", "celula
 RE_EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+")
 # Só o CPF formatado: 11 dígitos seguidos não servem, pois identificadores de nós do OSM já têm 11 dígitos.
 RE_CPF = re.compile(r"\b\d{3}\.\d{3}\.\d{3}-\d{2}\b")
+# Telefone com DDD e separador (ids do OSM, datas e intervalos de anos não casam) ou precedido
+# de "tel", "fone", "cel", "whats"... O repositório do município é público.
+RE_TELEFONE = re.compile(r"(?<![\w/.-])(?:\+?55[\s.-]?)?\(?\d{2}\)?[\s.-]?9?\d{4}[\s.-]\d{4}(?![\w-])")
+RE_TELEFONE_PALAVRA = re.compile(r"(?i)\b(tel|telefone|fone|cel|celular|whats(?:app)?|zap)\b\W{0,3}\d")
 RE_URL = re.compile(r"^https?://\S+$")
 RE_VERSAO = re.compile(r"^v\d+\.\d+\.\d+$")
 RE_SLUG = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
@@ -338,11 +342,17 @@ def verificar_dados_pessoais(rot: str, cab: list[str], linhas: list[dict], r: Re
             r.erro(f"[lgpd] {rot}: coluna '{col}' não é permitida (dado pessoal)")
     for n, linha in enumerate(linhas, 2):
         for col, valor in linha.items():
+            if col is None:                       # o csv junta os valores a mais numa lista
+                r.erro(f"[curados] {rot}:{n}: mais valores que colunas (texto com vírgula precisa de aspas)")
+                valor = ",".join(valor)
             valor = valor or ""
             if RE_EMAIL.search(valor):
                 r.erro(f"[lgpd] {rot}:{n}: '{col}' contém um e-mail")
             if RE_CPF.search(valor):
                 r.erro(f"[lgpd] {rot}:{n}: '{col}' parece conter um CPF")
+            if RE_TELEFONE.search(valor) or RE_TELEFONE_PALAVRA.search(valor):
+                r.erro(f"[lgpd] {rot}:{n}: '{col}' parece conter um telefone (contato não entra no repositório; "
+                       "telefone público de estabelecimento vai para o OSM)")
 
 
 # ---------------------------------------------------------------- Pranchas

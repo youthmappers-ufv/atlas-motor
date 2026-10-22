@@ -64,6 +64,26 @@ class ValidadorComDefeitosPlantados(unittest.TestCase):
         self.acrescentar("dados/curados/levantamentos-campo.csv", LINHA_OK[:-1] + "responsável 123.456.789-09")
         self.assertAcusa("parece conter um CPF")
 
+    def test_telefone_em_dado_curado(self):
+        for tel in ("(34) 99999-1234", "34 3855-1234", "+55 34 99999 1234", "fone 3855-1234", "whatsapp 999991234"):
+            with self.subTest(tel=tel):
+                self.tearDown()
+                self.setUp()
+                self.acrescentar("dados/curados/levantamentos-campo.csv", LINHA_OK + "ligar " + tel)
+                self.assertAcusa("parece conter um telefone")
+
+    def test_numeros_que_nao_sao_telefone_passam(self):
+        for txt in ("obras de 1990-2000", "CEP 38810-000", "cnes 2209411", "visto em 2027-02-10", '"R$ 1.234,56"'):
+            with self.subTest(txt=txt):
+                self.tearDown()
+                self.setUp()
+                self.acrescentar("dados/curados/levantamentos-campo.csv", LINHA_OK + txt)
+                self.assertEqual(self.erros(), [])
+
+    def test_virgula_sem_aspas(self):
+        self.acrescentar("dados/curados/levantamentos-campo.csv", LINHA_OK + "custo R$ 1.234,56")
+        self.assertAcusa("mais valores que colunas")
+
     def test_coluna_diferente_do_esquema(self):
         self.trocar("dados/curados/eventos-culturais.csv", "fonte,url", "fonte,email")
         self.assertAcusa("[curados] eventos-culturais.csv: colunas")
