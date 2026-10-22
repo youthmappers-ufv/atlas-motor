@@ -192,7 +192,7 @@ Se outros municípios quiserem a mesma prancha, proponha a entrada dela no catá
 
 ## Apresentação do atlas (`atlas/index.qmd`)
 
-A primeira página do atlas é do município: apresentação, parcerias, créditos da equipe. Os trechos `{{< include _gerado/edicao.md >}}` (versão e data dos dados) e `{{< include _gerado/pranchas.md >}}` (lista das pranchas) são gerados; mantenha-os. As páginas "Como o atlas é feito" e "Dados para download" vêm do motor e são iguais em todos os atlas.
+A primeira página do atlas é do município: apresentação, parcerias, créditos da equipe. Os trechos `{{< include _gerado/edicao.md >}}` (versão e data dos dados e, no site, o botão de baixar o PDF) e `{{< include _gerado/pranchas.md >}}` (lista das pranchas) são gerados; mantenha-os. As páginas "Como o atlas é feito" e "Dados para download" vêm do motor e são iguais em todos os atlas.
 
 ## Conferir antes do PR
 

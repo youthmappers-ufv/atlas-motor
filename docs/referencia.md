@@ -148,7 +148,8 @@ Em `_construcao/livro/_gerado/` (fora do Git, refeito a cada construção):
 | `<tema>/mapa-municipio.md`, `<tema>/mapa-sede.md` | figuras dos mapas |
 | `<tema>/legenda.md`, `indicadores.md`, `lacunas.md`, `fonte.md` | legenda, tabela de indicadores, lacunas da base oficial (com o motivo provável), fonte e atribuição |
 | `figuras/<tema>-municipio.png`, `figuras/<tema>-sede.png` | mapas (PNG, 200 dpi) |
-| `edicao.md`, `pranchas.md`, `downloads.md` | versão e data dos dados, lista de pranchas, links dos dados |
+| `edicao.md`, `pranchas.md`, `downloads.md` | versão e data dos dados com o botão de baixar o PDF (só no site), lista de pranchas, links dos dados |
+| `pdf.md`, `notas.md` | só o botão do PDF (página "Dados para download"); só a versão e a data (notas do release) |
 | `downloads/<tema>.geojson` | dados de cada prancha para baixar |
 
 ## Comandos
