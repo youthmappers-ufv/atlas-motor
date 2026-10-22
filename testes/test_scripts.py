@@ -354,7 +354,8 @@ class GanchoPrePush(unittest.TestCase):
             shutil.copytree(MOTOR / "testes" / "exemplo", local, ignore=shutil.ignore_patterns("_construcao"))
             env = {**os.environ, "PATH": str(Path(sys.executable).parent) + os.pathsep + os.environ["PATH"],
                    "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t",
-                   "GIT_COMMITTER_EMAIL": "t@t"}
+                   "GIT_COMMITTER_EMAIL": "t@t",
+                   "ATLAS_MOTOR_ATUAL": "1"}        # o validador deste motor, não o da versão do exemplo
             def git(*a):
                 return subprocess.run(["git", *a], cwd=local, capture_output=True, text=True, env=env)
             git("init", "-q", "-b", "main")
