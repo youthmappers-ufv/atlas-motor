@@ -12,14 +12,11 @@ O motor serve a vários municípios ao mesmo tempo; uma mudança aqui chega a to
 
 1. Na `main`, com tudo verde, decida se a versão é de **correção**, **menor** (compatível) ou **maior** (exige mudança nos municípios); veja a política no [CHANGELOG.md](CHANGELOG.md). Até o lançamento oficial (`v1.0.0`), as versões são `v0.y.z`.
 2. Atualize `VERSAO`, a `version` e a `date-released` do `CITATION.cff`, e acrescente a entrada no `CHANGELOG.md` (para versão maior, com as instruções de migração).
-3. Registre as métricas da versão: `python scripts/metricas_motor.py --registrar` (grava em `pesquisa/dados/metricas-versoes.csv`). Se a versão traz uma decisão de arquitetura, acrescente-a em `pesquisa/decisoes/`; anote no `pesquisa/diario.md` o que vale lembrar.
-   Os testes `test_versao_registrada_no_changelog`, `test_versao_com_metricas` e `test_citation_na_versao` falham se algo faltar.
+3. Os testes `test_versao_registrada_no_changelog` e `test_citation_na_versao` falham se algo faltar. A coordenação registra as métricas da versão e as decisões de arquitetura no registro de pesquisa do projeto, que fica fora deste repositório.
 4. Commit `[VERSAO] vX.Y.Z`, tag `vX.Y.Z` e push da tag.
 5. Em cada município, num PR próprio: `python ../atlas-motor/scripts/atualizar_motor.py --versao vX.Y.Z`.
 
-## Registro para pesquisa
-
-O desenvolvimento do motor é também objeto de pesquisa: decisões, diário, métricas e ideias de publicação ficam em [pesquisa/](pesquisa/README.md). Mudança de arquitetura entra com a sua decisão (`pesquisa/decisoes/NNNN-*.md`, a partir de `0000-modelo.md`) no mesmo PR.
+## Tags
 
 Nunca mova nem apague uma tag publicada: edições antigas dos municípios dependem dela para serem regeradas.
 

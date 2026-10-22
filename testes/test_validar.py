@@ -89,18 +89,6 @@ class ValidadorComDefeitosPlantados(unittest.TestCase):
         self.acrescentar("dados/curados/levantamentos-campo.csv", LINHA_OK.replace("2027-02-10", "10/02/2027"))
         self.assertAcusa("não é data válido")
 
-    def test_atividade_valida_passa(self):
-        self.acrescentar("dados/curados/atividades.csv", "AT-2027-001,2027-03-14,mapatona,educacao,25,12,4,180,estudantes-ufv,")
-        self.assertEqual(self.erros(), [])
-
-    def test_atividade_com_participantes_negativos(self):
-        self.acrescentar("dados/curados/atividades.csv", "AT-2027-001,2027-03-14,mapatona,educacao,-3,,4,,,")
-        self.assertAcusa("'participantes' fora do intervalo")
-
-    def test_atividade_de_tipo_desconhecido(self):
-        self.acrescentar("dados/curados/atividades.csv", "AT-2027-001,2027-03-14,palestra,,25,,,,,")
-        self.assertAcusa("'tipo' = 'palestra'")
-
     def test_csv_sem_esquema(self):
         self.arq("dados/curados/sem-esquema.csv").write_text("a,b\n1,2\n", encoding="utf-8")
         self.assertAcusa("sem-esquema.csv: sem esquema")

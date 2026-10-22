@@ -36,11 +36,9 @@ scripts/
   ativar_tema.py        abre uma prancha num município
   atualizar_motor.py    muda a versão do motor usada por um município
   serie_historica.py    série histórica dos indicadores de um município, a partir do Git
-  metricas_motor.py     métricas do motor por versão (pesquisa)
 .github/workflows/      reutilizáveis (verificar, atualizar-dados, publicar) e os testes do motor
 testes/                 testes, com o município sintético testes/exemplo/
-docs/                   arquitetura (com diagramas em figuras/), instâncias e configuração do GitHub
-pesquisa/               registro para publicações: decisões, diário, métricas, municípios, ideias
+docs/                   arquitetura (com diagramas em figuras/) e configuração do GitHub
 CITATION.cff            como citar o software
 ```
 
