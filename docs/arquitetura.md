@@ -15,6 +15,10 @@ O atlas fica em repositórios separados por papel: um **motor** público com o c
 
 **Versão fixada.** Cada município declara no `atlas.toml` a versão do motor que usa, e os workflows chamam o motor nessa tag (o validador confere que batem; `scripts/atualizar_motor.py` troca as duas juntas). Uma versão nova do motor não muda nada num município até ele atualizar, e uma edição antiga refeita hoje usa o mesmo motor de quando foi feita. As tags `v*` do motor são protegidas por uma regra do repositório: não podem ser movidas nem apagadas.
 
+## Identidade visual
+
+Um arquivo só, o `_brand.yml` (formato do Quarto), define cores, fontes e logos do site e do PDF. O motor traz o tema padrão do programa (`livro/_brand.yml`); um município troca a identidade com `tema/_brand.yml` e os logos ao lado, no próprio repositório. Na construção, o tema do município é posto sobre o padrão; o Quarto aplica o `_brand.yml` no site, e `scripts/tema.py` o traduz para o `tema.tex` do PDF (LaTeX), que o estilo do atlas (`livro/atlas-estilo.tex`) e a capa usam. Nem o estilo do site nem o do PDF definem cores ou fontes próprias: tudo vem do tema. As cores dos mapas são fixas por tema do atlas (leitura cartográfica e comparação entre municípios) e não mudam com a identidade.
+
 ## Ciclo mensal de um município
 
 ![Ciclo mensal de um município](figuras/ciclo-mensal.svg)

@@ -22,7 +22,8 @@ catalogo/
   temas.toml            as pranchas (número, título, consulta, base de referência, recorte)
   consultas/            uma consulta Overpass por prancha ({{bbox}} = caixa do município)
   esquemas/             esquemas dos CSV levantados pelas equipes
-livro/                  modelo do livro Quarto: método, dados, estilo, _quarto.modelo.yml
+livro/                  modelo do livro Quarto: método, dados, _quarto.modelo.yml, tema padrão (_brand.yml,
+                        marca/), estilo do site (estilo.scss) e do PDF (atlas-estilo.tex, capa)
 modelos/prancha.qmd     modelo de prancha (usado por ativar_tema.py)
 modelo-local/           modelo de repositório municipal (usado por novo_local.py)
 scripts/
@@ -31,6 +32,7 @@ scripts/
   indicadores.py        completude C_t e Q_t e indicadores internos
   mapas.py              mapas das pranchas (matplotlib)
   construir.py          monta o livro e renderiza site e PDF
+  tema.py               traduz o _brand.yml (identidade visual) para o PDF
   novo_local.py         cria o repositório de um município novo pelo código IBGE
   instalar_ganchos.py   instala no município o gancho de pre-push com o validador
   ativar_tema.py        abre uma prancha num município
@@ -64,7 +66,7 @@ python ../atlas-motor/scripts/construir.py --renderizar todos      # site e PDF 
 python ../atlas-motor/scripts/construir.py --previa                # prévia ao vivo (quarto preview)
 ```
 
-Requisitos: Python 3.11+ (validação e testes só com a biblioteca padrão), `pip install -r requirements.txt` (matplotlib, para os mapas) e [Quarto](https://quarto.org); para o PDF, TinyTeX (`quarto install tinytex`) ou MiKTeX.
+Requisitos: Python 3.11+ (validação e testes só com a biblioteca padrão), `pip install -r requirements.txt` (matplotlib, para os mapas; PyYAML, para o tema) e [Quarto](https://quarto.org); para o PDF, TinyTeX (`quarto install tinytex`) ou MiKTeX.
 
 ## Versões
 
@@ -72,4 +74,4 @@ O município declara a versão em `atlas.toml` (`[motor] versao = "vX.Y.Z"`) e c
 
 ## Licença
 
-A definir pelo coordenador do programa (proposta: MIT para o código; CC BY 4.0 para os textos do modelo). Por ser público, o repositório precisa da licença antes do primeiro push.
+A definir pelo coordenador do programa (proposta: MIT para o código; CC BY 4.0 para os textos do modelo). Por ser público, o repositório precisa da licença antes do primeiro push. O logo do programa (`livro/marca/`) é marca do Programa Youthmappers UFV e não entra na licença do código.
