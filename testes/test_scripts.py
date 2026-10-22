@@ -324,6 +324,18 @@ class ModeloCoerenteComMotor(unittest.TestCase):
             self.assertNotIn("deploy_key", p)
         self.assertIn("print(f\"hospedagem=", texto)
 
+    def test_pdf_com_versao_no_nome_so_em_edicoes(self):
+        """A versão principal do site fica com um PDF só (atlas-<slug>.pdf); a cópia com a versão no
+        nome é para as edições e o release, e é feita depois da publicação principal."""
+        texto = (MOTOR / ".github" / "workflows" / "publicar.yml").read_text(encoding="utf-8")
+        passos = re.split(r"\n      - (?=name:|uses:)", texto)
+        nomes = [re.match(r"name: (.+)", p).group(1) if p.startswith("name:") else "" for p in passos]
+        copia = passos[nomes.index("PDF com a versão no nome")]
+        self.assertIn("if: steps.alvo.outputs.destino == 'edicao'", copia)
+        self.assertLess(nomes.index("Publicar como versão principal"), nomes.index("PDF com a versão no nome"))
+        self.assertLess(nomes.index("PDF com a versão no nome"), nomes.index("Publicar como edição numerada"))
+        self.assertIn("steps.pdf.outputs.nome", passos[nomes.index("Release com o PDF (só em tags)")])
+
     def test_versao_no_formato(self):
         self.assertRegex(versao_motor(), r"^v\d+\.\d+\.\d+$")
 

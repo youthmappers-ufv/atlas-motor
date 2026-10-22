@@ -93,14 +93,6 @@ jobs:
           if [ "${{ steps.alvo.outputs.baixar }}" = "true" ]; then extra="--baixar"; fi
           python motor/scripts/construir.py --local local --renderizar todos $extra
 
-      - name: PDF com a versão no nome
-        id: pdf
-        run: |
-          site=local/_construcao/livro/_site
-          nome="atlas-${{ steps.local.outputs.slug }}-${{ steps.alvo.outputs.pasta }}.pdf"
-          cp "$site/atlas-${{ steps.local.outputs.slug }}.pdf" "$site/$nome"
-          echo "nome=$nome" >> "$GITHUB_OUTPUT"
-
       # A raiz do gh-pages é a versão principal; keep_files preserva as edições em /edicoes/.
       - name: Publicar como versão principal
         if: steps.local.outputs.hospedagem == 'pages' && (steps.alvo.outputs.destino == 'principal' || github.event_name == 'push')
@@ -112,6 +104,17 @@ jobs:
           keep_files: true
           cname: ${{ steps.local.outputs.dominio }}
           commit_message: "atlas ${{ steps.alvo.outputs.ref }}"
+
+      # Só para edições e release (depois da versão principal, que fica com um PDF só): quem baixa
+      # uma edição fica com um arquivo que diz qual é.
+      - name: PDF com a versão no nome
+        id: pdf
+        if: steps.alvo.outputs.destino == 'edicao'
+        run: |
+          site=local/_construcao/livro/_site
+          nome="atlas-${{ steps.local.outputs.slug }}-${{ steps.alvo.outputs.pasta }}.pdf"
+          cp "$site/atlas-${{ steps.local.outputs.slug }}.pdf" "$site/$nome"
+          echo "nome=$nome" >> "$GITHUB_OUTPUT"
 
       - name: Publicar como edição numerada
         if: steps.local.outputs.hospedagem == 'pages' && steps.alvo.outputs.destino == 'edicao'
