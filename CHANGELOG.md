@@ -17,7 +17,7 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
-## Próxima versão (não lançada)
+## v0.10.0 — 2026-10-22
 
 **Ao atualizar o município:** acrescente a fileira de badges logo abaixo do título do README. Para gerá-la, da pasta do município: `python -c "import sys, tomllib; sys.path.insert(0, '../atlas-motor/scripts'); from novo_local import linha_badges; print(linha_badges(tomllib.load(open('atlas.toml', 'rb')), 'youthmappers-ufv'))"`. Num município novo, o `novo_local.py` já a põe.
 
