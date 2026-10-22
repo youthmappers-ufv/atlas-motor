@@ -1,8 +1,8 @@
-"""Identidade visual do atlas: do _brand.yml para o tema.tex do PDF.
+"""Identidade visual do atlas: do _brand.yml para o identidade.tex do PDF.
 
 O _brand.yml é a fonte única de cores, fontes e logos. O Quarto o aplica no site; este módulo
-o traduz para o LaTeX (tema.tex), que livro/atlas-estilo.tex e a capa usam. O tema padrão
-(programa) fica em livro/_brand.yml; um município troca o tema com tema/_brand.yml.
+o traduz para o LaTeX (identidade.tex), que livro/atlas-estilo.tex e a capa usam. O tema padrão
+(programa) fica em livro/_brand.yml; um município troca a identidade com identidade/_brand.yml.
 
 Cores lidas: primary, secondary, tertiary, light, foreground (nome da paleta ou hexadecimal).
 Fontes: typography.base, headings e monospace, cada uma com reservas se não estiver instalada.
@@ -72,7 +72,7 @@ def logos(marca: dict) -> list[str]:
 def tex(marca: dict) -> str:
     def esc(s: str) -> str:
         return s.replace("\\", "").replace("{", "").replace("}", "").replace("&", "\\&").replace("%", "\\%")
-    linhas = ["% Gerado de _brand.yml por scripts/tema.py (atlas-motor); não editar."]
+    linhas = ["% Gerado de _brand.yml por scripts/identidade.py (atlas-motor); não editar."]
     linhas += [f"\\definecolor{{{nome}}}{{HTML}}{{{cor(marca, chave)}}}" for chave, (nome, _) in CORES.items()]
     base, titulos = familia(marca, "base"), familia(marca, "headings")
     linhas.append(fonte("setmainfont", [base, *RESERVAS_TEXTO]))
@@ -85,7 +85,7 @@ def tex(marca: dict) -> str:
 
 
 def gerar(livro: Path) -> list[str]:
-    """Grava livro/tema.tex e devolve os logos citados que não existem no livro."""
+    """Grava livro/identidade.tex e devolve os logos citados que não existem no livro."""
     marca = ler_marca(livro)
-    (livro / "tema.tex").write_text(tex(marca), encoding="utf-8", newline="\n")
+    (livro / "identidade.tex").write_text(tex(marca), encoding="utf-8", newline="\n")
     return [l for l in logos(marca) if not (livro / l).is_file()]

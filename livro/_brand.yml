@@ -1,6 +1,7 @@
-# Tema padrão do atlas: identidade do Programa Youthmappers UFV.
-# Fonte única de cores, fontes e logos: o Quarto o aplica no site, e scripts/tema.py o traduz
-# para o PDF (tema.tex). Um município troca o tema com tema/_brand.yml no próprio repositório.
+# Identidade visual padrão do atlas: a do Programa Youthmappers UFV.
+# Fonte única de cores, fontes e logos: o Quarto o aplica no site, e scripts/identidade.py o
+# traduz para o PDF (identidade.tex). Um município troca a identidade com identidade/_brand.yml
+# no próprio repositório (docs/identidade-visual.md do motor).
 #
 # Cores usadas pelo atlas: primary (títulos, faixas, links), secondary (segunda faixa da capa,
 # números), tertiary (filetes, marcadores), light (fundos claros), foreground (texto).

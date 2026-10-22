@@ -226,12 +226,12 @@ class ValidadorComDefeitosPlantados(unittest.TestCase):
         self.trocar("atlas.toml", 'projeto = "#ymufv-atlas"', 'projeto = "ymufv-atlas"')
         self.assertAcusa("hashtags.projeto")
 
-    # ------------------------------------------------------------ tema/
+    # ------------------------------------------------------------ identidade/
     def tema(self, brand: str, imagens: dict[str, bytes]) -> None:
-        (self.local / "tema" / "marca").mkdir(parents=True, exist_ok=True)
-        (self.local / "tema" / "_brand.yml").write_text(brand, encoding="utf-8")
+        (self.local / "identidade" / "marca").mkdir(parents=True, exist_ok=True)
+        (self.local / "identidade" / "_brand.yml").write_text(brand, encoding="utf-8")
         for nome, conteudo in imagens.items():
-            (self.local / "tema" / nome).write_bytes(conteudo)
+            (self.local / "identidade" / nome).write_bytes(conteudo)
 
     BRAND = 'meta:\n  name: Prefeitura X\nlogo:\n  images:\n    p: marca/pref.png\ncolor:\n  primary: "#1B6E3A"\n'
     PNG = b"\x89PNG\r\n\x1a\n" + b"0" * 20
@@ -257,12 +257,16 @@ class ValidadorComDefeitosPlantados(unittest.TestCase):
         self.tema(self.BRAND.replace("#1B6E3A", "#1B6E3"), {"marca/pref.png": self.PNG})
         self.assertAcusa("cor '#1B6E3' inválida")
 
+    def test_pasta_antiga_tema(self):
+        (self.local / "tema").mkdir()
+        self.assertAcusa("passou a se chamar identidade/")
+
     def test_tema_imagens_sem_brand_avisa(self):
-        (self.local / "tema" / "marca").mkdir(parents=True, exist_ok=True)
-        (self.local / "tema" / "marca" / "pref.png").write_bytes(self.PNG)
+        (self.local / "identidade" / "marca").mkdir(parents=True, exist_ok=True)
+        (self.local / "identidade" / "marca" / "pref.png").write_bytes(self.PNG)
         r = verificar(self.local)
         self.assertEqual(r.erros, [])
-        self.assertTrue(any("falta tema/_brand.yml" in a for a in r.avisos))
+        self.assertTrue(any("falta identidade/_brand.yml" in a for a in r.avisos))
 
 
 if __name__ == "__main__":

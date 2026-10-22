@@ -37,7 +37,7 @@ format:
     documentclass: scrreprt
     papersize: a4
     pdf-engine: xelatex
-    include-in-header: atlas-estilo.tex    # usa tema.tex, gerado do _brand.yml
+    include-in-header: atlas-estilo.tex    # usa identidade.tex, gerado do _brand.yml
     template-partials: [before-body.tex]  # capa
     toc-title: Sumário
     atlas-edicao: "{{edicao}}"

@@ -34,7 +34,7 @@ from pathlib import Path
 from comum import (MOTOR, argumento_local, ler_config, ler_temas, tirar_somente_leitura, usar_versao_declarada,
                    versao_motor)
 from indicadores import calcular
-from tema import gerar as gerar_tema
+from identidade import gerar as gerar_identidade
 from validar import verificar
 
 PRESERVAR = {".quarto", "_site", "_freeze"}
@@ -108,20 +108,20 @@ def escrever_quarto(livro: Path, config: dict, ativos: list, edicao: str = "") -
     (livro / "_quarto.yml").write_text(texto, encoding="utf-8", newline="\n")
 
 
-def aplicar_tema(local: Path, livro: Path) -> None:
-    """Põe o tema do município (tema/: _brand.yml e imagens) sobre o padrão do motor e gera
-    o tema.tex do PDF. Os .md de tema/ (instruções) não entram no livro."""
-    origem = local / "tema"
+def aplicar_identidade(local: Path, livro: Path) -> None:
+    """Põe a identidade visual do município (identidade/: _brand.yml e imagens) sobre a padrão do
+    motor e gera o identidade.tex do PDF. Os .md de identidade/ (instruções) não entram no livro."""
+    origem = local / "identidade"
     if origem.is_dir():
         for arq in origem.rglob("*"):
             if arq.is_file() and arq.suffix.lower() != ".md":
                 destino = livro / arq.relative_to(origem)
                 destino.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(arq, destino)
-    faltam = gerar_tema(livro)
+    faltam = gerar_identidade(livro)
     if faltam:
         sys.exit("O _brand.yml cita logos que não existem: " + ", ".join(faltam)
-                 + " (caminhos relativos a tema/, ex.: marca/logo.png)")
+                 + " (caminhos relativos a identidade/, ex.: marca/logo.png)")
 
 
 def limpar(livro: Path) -> None:
@@ -201,7 +201,7 @@ def main() -> int:
     limpar(livro)
     shutil.copytree(MOTOR / "livro", livro, ignore=shutil.ignore_patterns("_quarto.modelo.yml"), dirs_exist_ok=True)
     shutil.copytree(local / "atlas", livro, dirs_exist_ok=True)
-    aplicar_tema(local, livro)
+    aplicar_identidade(local, livro)
     gerado = livro / "_gerado"
     (gerado / "downloads").mkdir(parents=True, exist_ok=True)
     retrato_arq = local / "dados" / "osm" / "retrato.json"

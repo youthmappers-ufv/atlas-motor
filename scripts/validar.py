@@ -419,30 +419,32 @@ RE_COR_QUALQUER = re.compile(r'"#([^"]*)"')
 RE_IMAGEM_TEMA = re.compile(r"[\w./-]+\.(?:png|jpe?g|svg|pdf)\b", re.IGNORECASE)
 
 
-def verificar_tema(local: Path, r: Relatorio) -> None:
-    """tema/ (opcional): _brand.yml do município e as imagens que ele cita. Só biblioteca padrão:
+def verificar_identidade(local: Path, r: Relatorio) -> None:
+    """identidade/ (opcional): _brand.yml do município e as imagens que ele cita. Só biblioteca padrão:
     o _brand.yml é conferido por padrões de texto; a leitura completa é na construção."""
-    tema = local / "tema"
+    if (local / "tema").is_dir():
+        r.erro("[identidade] a pasta tema/ passou a se chamar identidade/ na v0.7.0 do motor: renomeie-a")
+    tema = local / "identidade"
     if not tema.is_dir():
         return
     marca = tema / "_brand.yml"
     if not marca.is_file():                       # sem _brand.yml: tema padrão do motor
         if any(f.suffix.lower() in ASSINATURAS for f in tema.rglob("*") if f.is_file()):
-            r.aviso("[tema] há imagens em tema/, mas falta tema/_brand.yml: vale o tema padrão do motor")
+            r.aviso("[identidade] há imagens em identidade/, mas falta identidade/_brand.yml: vale a identidade padrão do motor")
         return
     texto = marca.read_text(encoding="utf-8")
     for valor in RE_COR_QUALQUER.findall(texto):
         if not RE_COR_TEMA.fullmatch(f'"#{valor}"'):
-            r.erro(f"[tema] _brand.yml: cor '#{valor}' inválida (use #RRGGBB)")
+            r.erro(f"[identidade] _brand.yml: cor '#{valor}' inválida (use #RRGGBB)")
     for citado in sorted(set(RE_IMAGEM_TEMA.findall(texto))):
         if not (tema / citado).is_file() and not (MOTOR / "livro" / citado).is_file():
-            r.erro(f"[tema] _brand.yml cita {citado}, que não existe em tema/")
+            r.erro(f"[identidade] _brand.yml cita {citado}, que não existe em identidade/")
     for arq in tema.rglob("*"):
         assinaturas = ASSINATURAS.get(arq.suffix.lower())
         if arq.is_file() and assinaturas:
             inicio = arq.read_bytes()[:16].lstrip()
             if not any(inicio.startswith(a) for a in assinaturas):
-                r.erro(f"[tema] {arq.relative_to(local).as_posix()}: o conteúdo não é {arq.suffix.lower()[1:].upper()} "
+                r.erro(f"[identidade] {arq.relative_to(local).as_posix()}: o conteúdo não é {arq.suffix.lower()[1:].upper()} "
                        "(extensão trocada?)")
 
 
@@ -454,7 +456,7 @@ def verificar(local: Path) -> Relatorio:
     verificar_oficiais(local, config, r)
     verificar_curados(local, config, temas, r)
     verificar_pranchas(local, temas, r)
-    verificar_tema(local, r)
+    verificar_identidade(local, r)
     verificar_arquivos(local, r)
     return r
 

@@ -1,5 +1,5 @@
-"""Testes do tema: tradução do _brand.yml para o LaTeX (scripts/tema.py) e aplicação do tema do
-município na construção (construir.aplicar_tema)."""
+"""Testes da identidade visual: tradução do _brand.yml para o LaTeX (scripts/identidade.py) e
+aplicação da identidade do município na construção (construir.aplicar_identidade)."""
 from __future__ import annotations
 
 import importlib.util
@@ -12,7 +12,7 @@ from pathlib import Path
 MOTOR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(MOTOR / "scripts"))
 
-from tema import cor, fonte, logos, tex  # noqa: E402
+from identidade import cor, fonte, logos, tex  # noqa: E402
 
 TEM_YAML = importlib.util.find_spec("yaml") is not None
 
@@ -60,45 +60,45 @@ class TemaDoMunicipio(unittest.TestCase):
         base = Path(self._tmp.name)
         self.local, self.livro = base / "atlas-teste", base / "livro"
         shutil.copytree(MOTOR / "livro", self.livro)
-        (self.local / "tema" / "marca").mkdir(parents=True)
+        (self.local / "identidade" / "marca").mkdir(parents=True)
 
     def tearDown(self):
         self._tmp.cleanup()
 
     def test_padrao_do_motor_sem_tema(self):
-        from construir import aplicar_tema
-        aplicar_tema(self.local, self.livro)
-        t = (self.livro / "tema.tex").read_text(encoding="utf-8")
+        from construir import aplicar_identidade
+        aplicar_identidade(self.local, self.livro)
+        t = (self.livro / "identidade.tex").read_text(encoding="utf-8")
         self.assertIn("{304068}", t)
         self.assertIn("marca/ymufv_logo.png", t)
 
     def test_tema_do_municipio_substitui_o_padrao(self):
-        from construir import aplicar_tema
-        tema = self.local / "tema"
+        from construir import aplicar_identidade
+        tema = self.local / "identidade"
         (tema / "marca" / "pref.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"0" * 20)
         (tema / "LEIAME.md").write_text("instruções", encoding="utf-8")
         (tema / "_brand.yml").write_text(
             'meta:\n  name: Prefeitura X\nlogo:\n  images:\n    p: marca/pref.png\n'
             'color:\n  primary: "#1B6E3A"\n', encoding="utf-8")
-        aplicar_tema(self.local, self.livro)
-        t = (self.livro / "tema.tex").read_text(encoding="utf-8")
+        aplicar_identidade(self.local, self.livro)
+        t = (self.livro / "identidade.tex").read_text(encoding="utf-8")
         self.assertIn("{1B6E3A}", t)
         self.assertIn("{marca/pref.png}", t)
         self.assertTrue((self.livro / "marca" / "pref.png").exists())
-        self.assertFalse((self.livro / "LEIAME.md").exists(), "instruções de tema/ não entram no livro")
+        self.assertFalse((self.livro / "LEIAME.md").exists(), "instruções de identidade/ não entram no livro")
 
     def test_logo_inexistente_interrompe(self):
-        from construir import aplicar_tema
-        (self.local / "tema" / "_brand.yml").write_text(
+        from construir import aplicar_identidade
+        (self.local / "identidade" / "_brand.yml").write_text(
             "logo:\n  images:\n    p: marca/falta.png\n", encoding="utf-8")
         with self.assertRaises(SystemExit) as e:
-            aplicar_tema(self.local, self.livro)
+            aplicar_identidade(self.local, self.livro)
         self.assertIn("marca/falta.png", str(e.exception))
 
 
 class ModeloDoLivro(unittest.TestCase):
     def test_estilo_usa_so_cores_do_tema(self):
-        """atlas-estilo.tex e a capa não definem cor nem fonte: tudo vem de tema.tex."""
+        """atlas-estilo.tex e a capa não definem cor nem fonte: tudo vem de identidade.tex."""
         for nome in ("atlas-estilo.tex", "before-body.tex"):
             texto = (MOTOR / "livro" / nome).read_text(encoding="utf-8")
             self.assertNotIn(r"\definecolor", texto, nome)
