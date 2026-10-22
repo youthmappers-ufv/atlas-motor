@@ -17,6 +17,12 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
+## Próxima versão (não lançada)
+
+**Ao atualizar o município:** no `.github/workflows/publicar.yml`, acrescente a entrada `release` do botão e a linha `release: ${{ inputs.release || false }}` na chamada ao motor (texto atual em `modelo-local/`; mantenha o horário próprio do município). Sem isso o workflow continua funcionando, mas o release à mão fica indisponível. Na seção "Edições do atlas" do CONTRIBUTING, troque o parágrafo pelo do modelo.
+
+- *Publicar atlas*: o release com o PDF (e, com o Zenodo ligado, o DOI) sai sozinho só com tag de versão maior (`vX.0.0`, a partir da `v1.0.0`), a mesma regra do motor (`scripts/notas_versao.py`); as demais tags `v*` publicam a edição sem release. Release à mão: *Run workflow* com a tag em `versao` e `release` marcado (recusa o que não for tag). Antes, toda tag `v*` criava release, e em Rio Paranaíba, com o Zenodo ligado, cada uma geraria um DOI.
+
 ## v0.10.1 — 2026-10-22
 
 **Ao atualizar o município:** troque `@book` por `@dataset` na entrada BibLaTeX da seção "Como citar" do README.

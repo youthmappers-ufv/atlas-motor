@@ -30,7 +30,7 @@ O catálogo (`catalogo/temas.toml`) define as pranchas comuns: número, título,
 1. **Dia 1 — Atualizar dados:** baixa o retrato do OSM e abre um PR com a diferença.
 2. **Verificar:** roda em todo PR (validação de integridade e construção do site). A branch `main` é protegida e só aceita merge com ele verde.
 3. **Revisão e merge:** pela coordenação.
-4. **Dia 5 — Publicar:** gera site e PDF e publica no `gh-pages` do próprio repositório (ou só como artefato). Tags `v*` no município criam edições numeradas em `edicoes/<tag>/` e um release com o PDF.
+4. **Dia 5 — Publicar:** gera site e PDF e publica no `gh-pages` do próprio repositório (ou só como artefato). Tags `v*` no município criam edições numeradas em `edicoes/<tag>/`; o release com o PDF (e o DOI) sai sozinho só em versão maior (`vX.0.0`).
 
 Cada workflow roda **no repositório do município** (nos minutos e com as permissões dele), fazendo o checkout do município e do motor (na versão do `atlas.toml`) lado a lado. Hora e minuto dos agendamentos são próprios de cada município, para não sobrecarregar o Overpass.
 

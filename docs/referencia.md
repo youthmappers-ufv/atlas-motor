@@ -183,4 +183,4 @@ Variáveis de ambiente: `ATLAS_MOTOR_CACHE` (pasta do cache de versões), `ATLAS
 |---|---|---|
 | *Verificar* | todo PR e push na `main` | valida e constrói o site |
 | *Atualizar dados do OSM* | dia 1 de cada mês (horário próprio do município) ou manual | baixa o retrato, valida e abre um PR se algo mudou |
-| *Publicar atlas* | dia 5 de cada mês, tags `v*` ou manual (versão, dados atuais, destino) | gera site e PDF; publica no Pages (ou só artefato); em tags, edição numerada e release |
+| *Publicar atlas* | dia 5 de cada mês, tags `v*` ou manual (versão, dados atuais, destino, release) | gera site e PDF; publica no Pages (ou só artefato); em tags, edição numerada; release com o PDF (e DOI) sozinho só em versão maior (`vX.0.0`), nas demais à mão com `release` |

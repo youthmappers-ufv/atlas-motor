@@ -119,7 +119,7 @@ Quando a coordenação avisar: num PR próprio, `python ../atlas-motor/scripts/a
 
 ### Publicar uma edição
 
-A coordenação cria a tag quando uma etapa se fecha (`git tag v1.0 && git push origin v1.0`). O workflow *Publicar atlas* gera site e PDF daquela versão, publica em `edicoes/v1.0/` e como versão principal (se `publicacao.hospedagem = "pages"`) e anexa o PDF a um release. Relatórios citam números pela edição, para serem verificáveis.
+A coordenação cria a tag quando uma etapa se fecha (`git tag v1.0.0 && git push origin v1.0.0`). O workflow *Publicar atlas* gera site e PDF daquela versão e publica em `edicoes/v1.0.0/` e como versão principal (se `publicacao.hospedagem = "pages"`). Use tags de versão semântica (`vX.Y.Z`). Só uma **versão maior** (`v1.0.0`, `v2.0.0`...) ganha release com o PDF (e DOI, com o Zenodo ligado) sozinha; nas demais (`v1.1.0`, `v1.0.1`), a edição é publicada sem release, que pode ser criado depois em *Actions* > *Publicar atlas* > *Run workflow*, com a tag em `versao` e `release` marcado. Relatórios citam números pela edição, para serem verificáveis.
 
 ## Quando algo dá errado
 
