@@ -30,7 +30,7 @@ from datetime import date
 from pathlib import Path
 
 from comum import (CATALOGO, INDICADORES, MAPAS, MOTOR, SITUACOES, Tema, argumento_local, caminho_consulta, coordenadas, ler_csv,
-                   ler_esquemas, ler_temas, ler_toml, usar_versao_declarada)
+                   ler_esquemas, ler_temas, ler_toml, sobrenome_e_prenome, usar_versao_declarada)
 
 RECORTES = {"municipio", "sede", "ambos"}
 COLUNAS_PROIBIDAS = {"cpf", "rg", "email", "e-mail", "telefone_pessoal", "celular", "matricula", "endereco_residencial"}
@@ -450,6 +450,24 @@ def verificar_identidade(local: Path, r: Relatorio) -> None:
                        "(extensão trocada?)")
 
 
+def verificar_citacao(local: Path, config: dict, r: Relatorio) -> None:
+    """CITATION.cff (botão "Cite this repository" do GitHub) coerente com o atlas.toml: título do
+    atlas e sobrenome da coordenação. Só avisos; o texto é conferido por padrões (sem YAML)."""
+    arq = local / "CITATION.cff"
+    if not arq.is_file():
+        r.aviso("[citacao] falta CITATION.cff (modelo em modelo-local/ do motor): o GitHub não oferece a citação")
+        return
+    texto = arq.read_text(encoding="utf-8")
+    nome = config.get("municipio", {}).get("nome", "")
+    if nome and f"Atlas Colaborativo de {nome}" not in texto:
+        r.aviso(f"[citacao] CITATION.cff: o título deveria ser \"Atlas Colaborativo de {nome}\"")
+    coord = config.get("publicacao", {}).get("coordenacao", "")
+    if isinstance(coord, str) and coord.strip():
+        sobrenome = sobrenome_e_prenome(coord)[0]
+        if not re.search(rf'family-names:\s*"?{re.escape(sobrenome)}"?\s*$', texto, re.MULTILINE):
+            r.aviso(f"[citacao] CITATION.cff: a coordenação ({coord}) não está entre os autores")
+
+
 def verificar(local: Path) -> Relatorio:
     r = Relatorio()
     config, temas = verificar_config(local, r)
@@ -459,6 +477,7 @@ def verificar(local: Path) -> Relatorio:
     verificar_curados(local, config, temas, r)
     verificar_pranchas(local, temas, r)
     verificar_identidade(local, r)
+    verificar_citacao(local, config, r)
     verificar_arquivos(local, r)
     return r
 

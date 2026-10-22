@@ -226,6 +226,24 @@ class ValidadorComDefeitosPlantados(unittest.TestCase):
         self.trocar("atlas.toml", 'coordenacao = "Rodrigo Smarzaro"', "")
         self.assertEqual(self.erros(), [])
 
+    def avisos(self) -> list[str]:
+        return verificar(self.local).avisos
+
+    def test_citacao_coerente_passa(self):
+        self.assertEqual([a for a in self.avisos() if "[citacao]" in a], [])
+
+    def test_sem_citation_cff(self):
+        self.arq("CITATION.cff").unlink()
+        self.assertTrue(any("falta CITATION.cff" in a for a in self.avisos()))
+
+    def test_citation_de_outro_atlas(self):
+        self.trocar("CITATION.cff", "Atlas Colaborativo de Exemplo", "Atlas Colaborativo de Outro")
+        self.assertTrue(any("o título deveria ser" in a for a in self.avisos()))
+
+    def test_coordenacao_fora_do_citation(self):
+        self.trocar("atlas.toml", 'coordenacao = "Rodrigo Smarzaro"', 'coordenacao = "Maria Souza"')
+        self.assertTrue(any("(Maria Souza) não está entre os autores" in a for a in self.avisos()))
+
     def test_chave_antiga_de_publicacao(self):
         self.acrescentar("atlas.toml", "ativa = true")
         self.assertAcusa("publicacao.ativa saiu na v0.5.0")

@@ -57,6 +57,23 @@ class Scripts(ComMunicipio):
         restos = [p for p in local.rglob("*") if p.is_file() and "@@" in p.read_text(encoding="utf-8", errors="ignore")]
         self.assertEqual(restos, [], "marcadores @@ não substituídos")
         self.assertEqual(verificar(local).erros, [])
+        self.assertEqual([a for a in verificar(local).avisos if "[citacao]" in a], [])
+
+    def test_novo_local_com_citacao(self):
+        import yaml
+        local = self.novo()
+        cff = yaml.safe_load((local / "CITATION.cff").read_text(encoding="utf-8"))
+        self.assertEqual(cff["title"], "Atlas Colaborativo de Cidade Teste")
+        self.assertEqual(cff["authors"][0], {"family-names": "Smarzaro", "given-names": "Rodrigo",
+                                             "affiliation": "Universidade Federal de Viçosa, Campus Rio Paranaíba"})
+        self.assertEqual(cff["authors"][1], {"name": "Programa Youthmappers UFV"})
+        self.assertEqual(cff["repository"], "https://github.com/youthmappers-ufv/atlas-cidade-teste")
+        self.assertEqual(cff["url"], "https://youthmappers-ufv.github.io/atlas-cidade-teste/")
+        self.assertEqual(cff["license"], ["ODbL-1.0", "CC-BY-4.0", "MIT"])
+        readme = (local / "README.md").read_text(encoding="utf-8")
+        self.assertIn("## Como citar\n\nSMARZARO, Rodrigo (coord.). **Atlas Colaborativo de Cidade Teste**", readme)
+        self.assertIn("```bibtex\n% Acrescente urldate", readme)
+        self.assertIn("  editortype = {coordinator},\n", readme)
 
     def test_novo_local_privado_sem_pages(self):
         destino = self.dir / "atlas-privado"
@@ -66,6 +83,10 @@ class Scripts(ComMunicipio):
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn('hospedagem = "artefato"', (destino / "atlas.toml").read_text(encoding="utf-8"))
         self.assertEqual(verificar(destino).erros, [])
+        import yaml
+        self.assertNotIn("url", yaml.safe_load((destino / "CITATION.cff").read_text(encoding="utf-8")),
+                         "sem site, o CITATION.cff fica sem url")
+        self.assertNotIn("Disponível em", (destino / "README.md").read_text(encoding="utf-8"))
 
     def test_novo_local_nao_sobrescreve(self):
         self.novo()
@@ -131,6 +152,8 @@ class Scripts(ComMunicipio):
                       (MOTOR / ".github" / "workflows" / "publicar.yml").read_text(encoding="utf-8"))
         self.assertTrue((gerado / "citacao.md").read_text(encoding="utf-8").startswith(
             "SMARZARO, Rodrigo (coord.). **Atlas Colaborativo de Exemplo**"))
+        self.assertTrue((gerado / "downloads" / "atlas-exemplo.bib").read_text(encoding="utf-8").startswith(
+            "% Acrescente urldate"), "o .bib para baixar, na pasta que o Quarto copia para o site")
         for modelo in ("modelo-local", "testes/exemplo"):
             self.assertIn("{{< include _gerado/citacao.md >}}",
                           (MOTOR / modelo / "atlas" / "index.qmd").read_text(encoding="utf-8"))
@@ -142,7 +165,8 @@ class Scripts(ComMunicipio):
         config = {"municipio": {"nome": "Rio Paranaíba"},
                   "publicacao": {"autoria": "Programa Youthmappers UFV", "coordenacao": "Rodrigo Smarzaro",
                                  "instituicao": "Universidade Federal de Viçosa — Campus Rio Paranaíba",
-                                 "url": "https://youthmappers-ufv.github.io/atlas-rio-paranaiba/"}}
+                                 "url": "https://youthmappers-ufv.github.io/atlas-rio-paranaiba/",
+                                 "slug": "rio-paranaiba"}}
         self.assertEqual(citacao(config, "2026"),
                          "SMARZARO, Rodrigo (coord.). **Atlas Colaborativo de Rio Paranaíba**: mapas abertos do "
                          "município, a partir do OpenStreetMap. Rio Paranaíba: Universidade Federal de Viçosa, "
@@ -154,6 +178,42 @@ class Scripts(ComMunicipio):
         self.assertIn("<https://atlas.prefeitura.mg.gov.br/>", citacao(config, "2026"))
         del config["publicacao"]["coordenacao"]
         self.assertTrue(citacao(config, "2026").startswith("PROGRAMA YOUTHMAPPERS UFV. **Atlas"))
+
+    def test_citacao_biblatex(self):
+        """A entrada BibLaTeX, compilada com o estilo abnt do biblatex-abnt, dá a mesma referência
+        da ABNT (conferido à mão na v0.9.0): coordenação como editor com editortype = coordinator."""
+        from construir import bibtex, trecho_citacao
+        config = {"municipio": {"nome": "Rio Paranaíba"},
+                  "publicacao": {"autoria": "Programa Youthmappers UFV", "coordenacao": "Rodrigo Smarzaro",
+                                 "instituicao": "Universidade Federal de Viçosa — Campus Rio Paranaíba",
+                                 "url": "https://youthmappers-ufv.github.io/atlas-rio-paranaiba/",
+                                 "slug": "rio-paranaiba"}}
+        self.assertEqual(bibtex(config, "2026"),
+                         "% Acrescente urldate = {AAAA-MM-DD}, a data do acesso.\n"
+                         "@book{atlas-rio-paranaiba,\n"
+                         "  editor     = {Smarzaro, Rodrigo},\n"
+                         "  editortype = {coordinator},\n"
+                         "  title      = {Atlas Colaborativo de Rio Paranaíba},\n"
+                         "  subtitle   = {mapas abertos do município, a partir do {OpenStreetMap}},\n"
+                         "  location   = {Rio Paranaíba},\n"
+                         "  publisher  = {Universidade Federal de Viçosa, Programa Youthmappers UFV},\n"
+                         "  year       = {2026},\n"
+                         "  url        = {https://youthmappers-ufv.github.io/atlas-rio-paranaiba/},\n"
+                         "  langid     = {brazilian},\n"
+                         "}\n")
+        trecho = trecho_citacao(config, "2026")
+        abnt, _, site = trecho.partition("\n::: {.content-visible when-format=\"html\"}\n")
+        self.assertTrue(abnt.startswith("SMARZARO, Rodrigo (coord.)"), "a ABNT vale para site e PDF")
+        self.assertIn("[baixar o arquivo .bib](_gerado/downloads/atlas-rio-paranaiba.bib)", site)
+        self.assertIn("```bibtex\n% Acrescente", site)
+        self.assertTrue(site.endswith("```\n:::\n"), "o BibLaTeX fica só no site")
+        del config["publicacao"]["coordenacao"]
+        config["publicacao"]["url"] = ""
+        sem = bibtex(config, "2026")
+        self.assertIn("  author     = {{Programa Youthmappers UFV}},\n", sem)
+        self.assertIn("  publisher  = {Universidade Federal de Viçosa},\n", sem)
+        self.assertNotIn("editor", sem)
+        self.assertNotIn("url", sem)
 
     def test_limpar_preserva_cache_do_quarto(self):
         from construir import limpar

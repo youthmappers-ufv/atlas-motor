@@ -286,6 +286,17 @@ def ler_limite(local: Path) -> list[list[tuple[float, float]]]:
 
 
 # ---------------------------------------------------------------- Nomes
+SUFIXOS = {"filho", "filha", "neto", "neta", "junior", "júnior", "sobrinho", "sobrinha"}
+
+
+def sobrenome_e_prenome(nome: str) -> tuple[str, str]:
+    """"Rodrigo Smarzaro" -> ("Smarzaro", "Rodrigo"); "João Souza Filho" -> ("Souza Filho", "João");
+    partículas ficam com o prenome ("João da Silva" -> ("Silva", "João da")), como na NBR 6023."""
+    p = nome.split()
+    n = 2 if len(p) > 2 and p[-1].lower() in SUFIXOS else 1
+    return " ".join(p[-n:]), " ".join(p[:-n])
+
+
 ABREVIACOES = {
     r"\be\.?\s*e\.?\b": "escola estadual",
     r"\be\.?\s*m\.?\b": "escola municipal",

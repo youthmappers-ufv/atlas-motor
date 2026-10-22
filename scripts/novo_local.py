@@ -82,7 +82,7 @@ def criar(destino: Path, trocas: dict[str, str]) -> None:
     shutil.copytree(MODELO, destino)
     (destino / "gitignore").rename(destino / ".gitignore")
     for arq in destino.rglob("*"):
-        if arq.is_file() and arq.suffix in {".toml", ".md", ".qmd", ".yml", ".csv"} or arq.name == ".gitignore":
+        if arq.is_file() and arq.suffix in {".toml", ".md", ".qmd", ".yml", ".csv", ".cff"} or arq.name == ".gitignore":
             texto = arq.read_text(encoding="utf-8")
             for marca, valor in trocas.items():
                 texto = texto.replace(marca, valor)
@@ -95,6 +95,31 @@ def criar(destino: Path, trocas: dict[str, str]) -> None:
     pranchas = destino / "atlas" / "pranchas"      # pasta vazia no modelo: o Git não a guarda
     pranchas.mkdir(parents=True, exist_ok=True)
     (pranchas / "01-localizacao.qmd").write_text(prancha, encoding="utf-8", newline="\n")
+    preencher_citacao(destino)
+
+
+def preencher_citacao(destino: Path) -> None:
+    """Citação no README e autores no CITATION.cff, a partir do atlas.toml já preenchido: as
+    mesmas funções que geram a citação do site (construir.citacao e construir.bibtex)."""
+    import tomllib
+    from comum import sobrenome_e_prenome
+    from construir import bibtex, citacao, dados_citacao
+    config = tomllib.loads((destino / "atlas.toml").read_text(encoding="utf-8"))
+    ano, d = str(date.today().year), dados_citacao(config)
+    autores = []
+    if d["coord"]:
+        sobrenome, prenome = sobrenome_e_prenome(d["coord"])
+        autores += [f"  - family-names: \"{sobrenome}\"", f"    given-names: \"{prenome}\"",
+                    "    affiliation: \"Universidade Federal de Viçosa, Campus Rio Paranaíba\""]
+    autores.append(f"  - name: \"{d['autoria']}\"")
+    trocas = {"@@CITACAO_ABNT@@": citacao(config, ano), "@@CITACAO_BIBTEX@@": bibtex(config, ano),
+              "@@CFF_AUTORES@@": "\n".join(autores), "@@CFF_URL@@": f"url: \"{d['site']}\"" if d["site"] else ""}
+    for nome in ("README.md", "CITATION.cff"):
+        arq = destino / nome
+        texto = arq.read_text(encoding="utf-8")
+        for marca, valor in trocas.items():
+            texto = texto.replace(marca, valor)
+        arq.write_text(texto, encoding="utf-8", newline="\n")
 
 
 def main() -> int:
@@ -137,7 +162,7 @@ def main() -> int:
         "@@NOME@@": args.nome, "@@UF@@": args.uf, "@@IBGE@@": args.ibge, "@@SLUG@@": s,
         "@@RELACAO@@": str(dados["relacao"]), "@@WIKIDATA@@": dados["wikidata"],
         "@@BBOX@@": str(dados["bbox"]), "@@SEDE_BBOX@@": str(dados["sede_bbox"]),
-        "@@MOTOR@@": versao_motor(), "@@DATA@@": date.today().isoformat(),
+        "@@MOTOR@@": versao_motor(), "@@DATA@@": date.today().isoformat(), "@@ORGANIZACAO@@": args.organizacao,
         "@@HORA@@": str(hora), "@@MINUTO@@": str(minuto),
         "@@HOSPEDAGEM@@": "artefato" if args.privado else "pages",
         "@@URL@@": "" if args.privado else f"https://{args.organizacao}.github.io/atlas-{s}/",

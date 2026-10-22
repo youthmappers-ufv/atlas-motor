@@ -32,8 +32,8 @@ import time
 from datetime import date
 from pathlib import Path
 
-from comum import (MOTOR, argumento_local, ler_config, ler_temas, tirar_somente_leitura, usar_versao_declarada,
-                   versao_motor)
+from comum import (MOTOR, argumento_local, ler_config, ler_temas, sobrenome_e_prenome, tirar_somente_leitura,
+                   usar_versao_declarada, versao_motor)
 from indicadores import calcular
 from identidade import gerar as gerar_identidade
 from validar import verificar
@@ -97,31 +97,59 @@ def botao_pdf(slug: str) -> str:
             ":::\n")
 
 
-SUFIXOS = {"filho", "filha", "neto", "neta", "junior", "júnior", "sobrinho", "sobrinha"}
-
-
 def sobrenome_primeiro(nome: str) -> str:
-    """Nome na entrada da ABNT (NBR 6023): "Rodrigo Smarzaro" -> "SMARZARO, Rodrigo";
-    "João Souza Filho" -> "SOUZA FILHO, João"; partículas ficam com o prenome ("João da Silva" ->
-    "SILVA, João da")."""
-    p = nome.split()
-    n = 2 if len(p) > 2 and p[-1].lower() in SUFIXOS else 1
-    return f"{' '.join(p[-n:]).upper()}, {' '.join(p[:-n])}" if len(p) > n else nome.upper()
+    """Nome na entrada da ABNT: "Rodrigo Smarzaro" -> "SMARZARO, Rodrigo"."""
+    sobrenome, prenome = sobrenome_e_prenome(nome)
+    return f"{sobrenome.upper()}, {prenome}" if prenome else sobrenome.upper()
+
+
+def dados_citacao(config: dict) -> dict:
+    """Partes da referência do atlas, comuns à ABNT e ao BibLaTeX."""
+    mun, pub = config["municipio"], config["publicacao"]
+    autoria, coord = pub.get("autoria", "Programa Youthmappers UFV"), pub.get("coordenacao", "")
+    orgao, _, campus = pub.get("instituicao", "Universidade Federal de Viçosa — Campus Rio Paranaíba").partition(" — ")
+    return {"titulo": f"Atlas Colaborativo de {mun['nome']}", "autoria": autoria, "coord": coord,
+            "local": campus.removeprefix("Campus ").strip(), "editora": f"{orgao}, {autoria}" if coord else orgao,
+            "site": f"https://{pub['dominio']}/" if pub.get("dominio") else pub.get("url", ""),
+            "chave": f"atlas-{pub['slug']}"}
+
+
+SUBTITULO = "mapas abertos do município, a partir do OpenStreetMap"
 
 
 def citacao(config: dict, ano: str) -> str:
     """Referência do atlas no formato da ABNT (NBR 6023:2018), para a página inicial."""
-    mun, pub = config["municipio"], config["publicacao"]
-    autoria, coord = pub.get("autoria", "Programa Youthmappers UFV"), pub.get("coordenacao", "")
-    instituicao = pub.get("instituicao", "Universidade Federal de Viçosa — Campus Rio Paranaíba")
-    entrada = f"{sobrenome_primeiro(coord)} (coord.)" if coord else autoria.upper()
-    orgao, _, campus = instituicao.partition(" — ")
-    local = campus.removeprefix("Campus ").strip() or "[*S. l.*]"
-    editora = f"{orgao}, {autoria}" if coord else orgao
-    site = f"https://{pub['dominio']}/" if pub.get("dominio") else pub.get("url", "")
-    disponivel = f" Disponível em: <{site}>. Acesso em: *data do acesso*." if site else ""
-    return (f"{entrada}. **Atlas Colaborativo de {mun['nome']}**: mapas abertos do município, a partir do "
-            f"OpenStreetMap. {local}: {editora}, {ano}.{disponivel}\n")
+    d = dados_citacao(config)
+    entrada = f"{sobrenome_primeiro(d['coord'])} (coord.)" if d["coord"] else d["autoria"].upper()
+    disponivel = f" Disponível em: <{d['site']}>. Acesso em: *data do acesso*." if d["site"] else ""
+    return (f"{entrada}. **{d['titulo']}**: {SUBTITULO}. {d['local'] or '[*S. l.*]'}: {d['editora']}, "
+            f"{ano}.{disponivel}\n")
+
+
+def bibtex(config: dict, ano: str) -> str:
+    """A mesma referência em BibLaTeX: com o estilo abnt do biblatex-abnt sai igual à da ABNT
+    (a coordenação como editor com editortype = coordinator, que imprime "(coord.)")."""
+    d = dados_citacao(config)
+    if d["coord"]:
+        sobrenome, prenome = sobrenome_e_prenome(d["coord"])
+        nomes = [("editor", f"{sobrenome}, {prenome}" if prenome else sobrenome), ("editortype", "coordinator")]
+    else:
+        nomes = [("author", "{" + d["autoria"] + "}")]
+    campos = nomes + [("title", d["titulo"]), ("subtitle", SUBTITULO.replace("OpenStreetMap", "{OpenStreetMap}")),
+                      ("location", d["local"]), ("publisher", d["editora"]), ("year", ano), ("url", d["site"]),
+                      ("langid", "brazilian")]
+    linhas = [f"  {k:<10} = {{{v}}}," for k, v in campos if v]
+    acesso = "% Acrescente urldate = {AAAA-MM-DD}, a data do acesso.\n" if d["site"] else ""
+    return acesso + f"@book{{{d['chave']},\n" + "\n".join(linhas) + "\n}\n"
+
+
+def trecho_citacao(config: dict, ano: str) -> str:
+    """_gerado/citacao.md: a referência ABNT (site e PDF) e, só no site, a entrada BibLaTeX
+    para copiar ou baixar (_gerado/downloads/atlas-<slug>.bib)."""
+    chave = dados_citacao(config)["chave"]
+    return (citacao(config, ano) + "\n::: {.content-visible when-format=\"html\"}\n"
+            f"Em BibLaTeX (estilo `abnt` do pacote biblatex-abnt; [baixar o arquivo .bib](_gerado/downloads/{chave}.bib)):\n\n"
+            f"```bibtex\n{bibtex(config, ano)}```\n:::\n")
 
 
 def escrever_quarto(livro: Path, config: dict, ativos: list, edicao: str = "") -> None:
@@ -286,7 +314,8 @@ def main() -> int:
     (gerado / "edicao.md").write_text(versao + "\n" + pdf, encoding="utf-8")  # página inicial
     (gerado / "pdf.md").write_text(pdf, encoding="utf-8")                  # Dados para download
     ano = base_osm[:4] if base_osm[:4].isdigit() else str(date.today().year)
-    (gerado / "citacao.md").write_text(citacao(config, ano), encoding="utf-8")  # Como usar e citar
+    (gerado / "citacao.md").write_text(trecho_citacao(config, ano), encoding="utf-8")  # Como usar e citar
+    (gerado / "downloads" / f"atlas-{config['publicacao']['slug']}.bib").write_text(bibtex(config, ano), encoding="utf-8")
     escrever_quarto(livro, config, ativos,
                     f"Versão {versao_local(local)} · motor {versao_motor()} · dados do OpenStreetMap de {base_osm}")
     print(f"Livro montado em {livro.relative_to(local)}.")
