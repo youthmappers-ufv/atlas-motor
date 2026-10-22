@@ -60,7 +60,9 @@ def trechos_tema(tema, res: dict, figuras: list[tuple[str, str, str]], retrato: 
     lacunas = res.get("lacunas") or []
     if lacunas:
         partes = [f"\n**Itens da base oficial sem correspondente no mapa** ({len(lacunas)}):\n",
-                  "| Código | Nome |\n|:--|:--|\n" + "\n".join(f"| {o['id']} | {o['nome']} |" for o in lacunas[:60]) + "\n"]
+                  # traços na proporção das larguras (código 15%, nome 35%, motivo 50%)
+                  "| Código | Nome | Motivo provável |\n|:---|:-------|:----------|\n"
+                  + "\n".join(f"| {o['id']} | {o['nome']} | {o.get('motivo', '')} |" for o in lacunas[:60]) + "\n"]
         if len(lacunas) > 60:
             partes.append(f"\n… e mais {len(lacunas) - 60}.\n")
         t["lacunas"] = "\n".join(partes)

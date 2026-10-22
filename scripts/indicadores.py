@@ -6,6 +6,7 @@ Temas com base oficial (temas.toml: referencia = <pasta em dados/oficiais/>):
   Correspondência: mesmo item a até distancia_max_m e similaridade de nome >= similaridade_min
   (atlas.toml), pareando cada objeto do OSM no máximo uma vez. A similaridade é a maior entre a
   do nome normalizado inteiro e a das palavras distintivas (nome contido no outro: 0,95).
+  Cada item sem correspondente (lacuna) recebe um motivo provável (motivos_lacunas).
 Todos os temas: total de objetos e proporção com nome. Com indicadores = ["servico"] no catálogo:
   endereço e horário; com ["vias"]: comprimento total e proporção com pavimento informado.
 
@@ -20,8 +21,8 @@ import sys
 from difflib import SequenceMatcher
 from pathlib import Path
 
-from comum import (Tema, argumento_local, distancia_m, ler_config, ler_csv, ler_temas, ler_toml,
-                   normalizar_nome, ponto_representativo)
+from comum import (Tema, argumento_local, dentro, distancia_m, ler_config, ler_csv, ler_limite, ler_temas,
+                   ler_toml, normalizar_nome, ponto_representativo)
 
 
 def ler_feicoes(local: Path, tema_id: str) -> list[dict]:
@@ -55,12 +56,17 @@ def similaridade(a: str, b: str, ignorar: frozenset[str] = frozenset()) -> float
     Superior de São Gotardo").
     """
     texto = SequenceMatcher(None, normalizar_nome(a), normalizar_nome(b)).ratio()
+    return max(texto, semelhanca_palavras(a, b, ignorar))
+
+
+def semelhanca_palavras(a: str, b: str, ignorar: frozenset[str] = frozenset()) -> float:
+    """Só a parte das palavras distintivas de similaridade (0 quando não há o que comparar)."""
     pa, pb = palavras_distintivas(a, ignorar), palavras_distintivas(b, ignorar)
     menor = min(len(pa), len(pb))
     comuns = pa & pb
     if not menor or (menor == 1 and max(map(len, comuns), default=0) < 4):
-        return texto
-    return max(texto, 0.95 * len(comuns) / menor)
+        return 0.0
+    return 0.95 * len(comuns) / menor
 
 
 def correspondencias(oficiais: list[dict], feicoes: list[dict], dist_max: float, sim_min: float,
@@ -93,6 +99,67 @@ def correspondencias(oficiais: list[dict], feicoes: list[dict], dist_max: float,
             usados_o.add(i)
             usados_f.add(j)
     return sorted(pares)
+
+
+def metros(d: float) -> str:
+    return f"{d / 1000:.1f} km".replace(".", ",") if d >= 1000 else f"{d:.0f} m"
+
+
+def motivos_lacunas(oficiais: list[dict], feicoes: list[dict], pares: list[tuple], dist_max: float,
+                    sim_min: float, municipio: str = "", limite: list | None = None) -> dict[int, str]:
+    """Motivo provável de cada item oficial sem correspondente, por índice, para orientar a correção.
+
+    Na ordem: sem coordenada; coordenada fora do município; mesmo nome no OSM, mas longe
+    (coordenada oficial ou posição no OSM a conferir); objeto perto já pareado com outro item;
+    objeto perto sem nome; objeto perto com nome diferente; nada do tema por perto (não mapeado).
+    "Mesmo nome longe" exige palavras distintivas em comum: a semelhança do texto inteiro, inflada
+    pelas genéricas ("Centro Educacional Paulo Freire" e "Centro Vocacional Tecnológico"), daria
+    pistas falsas a qualquer distância. Objetos pareados com outro item e de nome diferente não
+    são candidatos.
+    """
+    ignorar = frozenset(normalizar_nome(municipio).split())
+    pontos = [ponto_representativo(f["geometry"]) for f in feicoes]
+    nomes = [f["properties"]["tags"].get("name", "") for f in feicoes]
+    par_de = {j: i for i, j, _, _ in pares}
+    motivos = {}
+    for i, o in enumerate(oficiais):
+        if i in {p[0] for p in pares}:
+            continue
+        if o.get("lat") is None or o.get("lon") is None:
+            mesmo = sorted((-semelhanca_palavras(o["nome"], n, ignorar), j) for j, n in enumerate(nomes)
+                           if n and j not in par_de and semelhanca_palavras(o["nome"], n, ignorar) >= sim_min)
+            motivos[i] = "sem coordenada na base oficial" + (
+                f"; no OSM há \"{nomes[mesmo[0][1]]}\": conferir se é o mesmo" if mesmo else "")
+            continue
+        if limite and not dentro(o["lon"], o["lat"], limite):
+            motivos[i] = "coordenada oficial fora do município"
+            continue
+        dist = [distancia_m(o["lon"], o["lat"], *p) for p in pontos]
+        sims = [similaridade(o["nome"], n, ignorar) if n else 0.0 for n in nomes]
+        palavras = [semelhanca_palavras(o["nome"], n, ignorar) if n else 0.0 for n in nomes]
+        longe = sorted((-palavras[j], dist[j], j) for j in range(len(feicoes))
+                       if palavras[j] >= sim_min and dist[j] > dist_max and j not in par_de)
+        perto = sorted((dist[j], j) for j in range(len(feicoes)) if dist[j] <= dist_max)
+        ocupado = [(d, j) for d, j in perto if sims[j] >= sim_min and j in par_de]
+        perto = [(d, j) for d, j in perto if j not in par_de]
+        sem_nome = [(d, j) for d, j in perto if not nomes[j]]
+        if longe:
+            _, d, j = longe[0]
+            motivos[i] = (f"nome semelhante no OSM a {metros(d)} (\"{nomes[j]}\"; limite {metros(dist_max)}): "
+                          "conferir a coordenada oficial e a posição no mapa")
+        elif ocupado:
+            d, j = ocupado[0]
+            motivos[i] = (f"\"{nomes[j]}\", a {metros(d)}, já corresponde a outro item da base "
+                          f"({oficiais[par_de[j]]['nome']}): item repetido na base ou falta um objeto no mapa")
+        elif sem_nome:
+            motivos[i] = f"objeto sem nome no OSM a {metros(sem_nome[0][0])}: provavelmente este, falta o nome"
+        elif perto:
+            d, j = perto[0]
+            motivos[i] = (f"\"{nomes[j]}\" no OSM a {metros(d)}, com nome diferente "
+                          f"(semelhança {sims[j]:.2f}".replace(".", ",") + "): conferir qual é o nome correto")
+        else:
+            motivos[i] = f"nada deste tema no OSM até {metros(dist_max)}: não mapeado"
+    return motivos
 
 
 def ler_oficial(local: Path, base: str) -> tuple[dict, list[dict]] | None:
@@ -166,7 +233,10 @@ def calcular(local: Path, tema: Tema, config: dict) -> dict:
             res["linhas"].append((f"Itens na base oficial ({fonte['nome']})", str(len(itens))))
             res["linhas"].append(("Completude C_t (com correspondente no OSM)", f"{len(pares)} ({c_t}%)"))
             res["linhas"].append(("Qualidade Q_t (nome e endereço)", f"{completos} ({q_t}%)" if pares else "—"))
-            res["lacunas"] = [o for i, o in enumerate(itens) if i not in correspondidos]
+            arq_limite = local / "dados" / "osm" / "limite.geojson"
+            motivos = motivos_lacunas(itens, feicoes, pares, cc["distancia_max_m"], cc["similaridade_min"],
+                                      config["municipio"]["nome"], ler_limite(local) if arq_limite.exists() else None)
+            res["lacunas"] = [dict(o, motivo=motivos[i]) for i, o in enumerate(itens) if i not in correspondidos]
     return res
 
 
@@ -184,6 +254,10 @@ def main() -> int:
         print(f"\n{t.numero}. {t.titulo}")
         for rotulo, valor in r["linhas"]:
             print(f"  {rotulo}: {valor}")
+        if r.get("lacunas"):
+            print("  Sem correspondente no OSM (motivo provável):")
+            for o in r["lacunas"]:
+                print(f"    {o['id']} {o['nome']}: {o['motivo']}")
     return 0
 
 

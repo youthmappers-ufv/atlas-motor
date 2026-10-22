@@ -268,14 +268,15 @@ class CatalogoDeTemas(unittest.TestCase):
         from construir import TRECHOS, trecho_tema, trechos_tema
         tema = Tema(id="educacao", numero=3, titulo="Educação", situacao="em-andamento", consulta="",
                     referencia="inep", recorte="ambos")
-        res = {"linhas": [("Objetos no OpenStreetMap", "3")], "lacunas": [{"id": "1", "nome": "E.E. X"}]}
+        res = {"linhas": [("Objetos no OpenStreetMap", "3")],
+               "lacunas": [{"id": "1", "nome": "E.E. X", "motivo": "sem coordenada na base oficial"}]}
         figuras = [("educacao-municipio.png", "Educação: município", "municipio")]
         config = {"publicacao": {"atribuicao": "© OSM"}}
         partes = trechos_tema(tema, res, figuras, {}, config)
         self.assertEqual(tuple(partes), TRECHOS)
         self.assertEqual(partes["mapa-sede"], "", "recorte sem mapa fica vazio, para o include não falhar")
         self.assertIn("educacao-municipio.png", partes["mapa-municipio"])
-        self.assertIn("E.E. X", partes["lacunas"])
+        self.assertIn("| 1 | E.E. X | sem coordenada na base oficial |", partes["lacunas"])
         inteira = trecho_tema(tema, res, figuras, {}, config)
         self.assertEqual(inteira, "\n".join(p for p in partes.values() if p))
         ordem = [inteira.index(x) for x in ("educacao-municipio.png", "Pontos cheios", "Indicador", "E.E. X", "Fonte:")]
