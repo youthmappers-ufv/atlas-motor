@@ -139,6 +139,8 @@ def main() -> int:
         "@@HORA@@": str(hora), "@@MINUTO@@": str(minuto),
         "@@HOSPEDAGEM@@": "artefato" if args.privado else "pages",
         "@@URL@@": "" if args.privado else f"https://{args.organizacao}.github.io/atlas-{s}/",
+        "@@SITE@@": ("gerados como artefato do workflow *Publicar atlas* (repositório privado, sem site público)"
+                     if args.privado else f"https://{args.organizacao}.github.io/atlas-{s}/"),
     })
     print(f"Criado: {destino}")
     if args.baixar:
