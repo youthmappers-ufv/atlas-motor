@@ -477,10 +477,54 @@ class ModeloCoerenteComMotor(unittest.TestCase):
         passos = re.split(r"\n      - (?=name:|uses:)", texto)
         nomes = [re.match(r"name: (.+)", p).group(1) if p.startswith("name:") else "" for p in passos]
         copia = passos[nomes.index("PDF com a versão no nome")]
-        self.assertIn("if: steps.alvo.outputs.destino == 'edicao'", copia)
+        self.assertIn("if: steps.alvo.outputs.destino == 'edicao' || steps.release.outputs.criar == 'true'", copia)
         self.assertLess(nomes.index("Publicar como versão principal"), nomes.index("PDF com a versão no nome"))
         self.assertLess(nomes.index("PDF com a versão no nome"), nomes.index("Publicar como edição numerada"))
-        self.assertIn("steps.pdf.outputs.nome", passos[nomes.index("Release com o PDF (só em tags)")])
+        self.assertIn("steps.pdf.outputs.nome", passos[nomes.index("Release com o PDF")])
+
+    def test_release_do_atlas_so_em_versao_maior(self):
+        """Release (e DOI, com o Zenodo) do atlas: sozinho só com tag vX.0.0; à mão (release = true)
+        só de tag. Roda o script do passo "Decidir o release" em cada situação."""
+        import os
+        texto = (MOTOR / ".github" / "workflows" / "publicar.yml").read_text(encoding="utf-8")
+        passos = re.split(r"\n      - (?=name:|uses:)", texto)
+        nomes = [re.match(r"name: (.+)", p).group(1) if p.startswith("name:") else "" for p in passos]
+        self.assertIn("if: steps.release.outputs.criar == 'true'", passos[nomes.index("Release com o PDF")])
+        self.assertLess(nomes.index("Decidir o release"), nomes.index("PDF com a versão no nome"))
+        script = re.search(r"run: \|\n(.*)", passos[nomes.index("Decidir o release")], re.S)[1]
+        script = "\n".join(l[10:] for l in script.splitlines())
+        bash = shutil.which("bash")
+        if not bash:
+            self.skipTest("sem bash")
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            (tmp / "motor" / "scripts").mkdir(parents=True)
+            shutil.copy(SCRIPTS / "notas_versao.py", tmp / "motor" / "scripts")
+            (tmp / "local").mkdir()
+            g = {"cwd": tmp / "local", "capture_output": True}
+            subprocess.run(["git", "init", "-q"], **g)
+            subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "x"], **g)
+            subprocess.run(["git", "tag", "v1.1.0"], **g)
+            (tmp / "decidir.sh").write_text(script, encoding="utf-8", newline="\n")
+            def decidir(evento, ref, pedido="false"):
+                saida = tmp / "saida"
+                saida.write_text("", encoding="utf-8")
+                caminho = str(Path(sys.executable).parent) + os.pathsep + os.environ["PATH"]
+                r = subprocess.run([bash, "decidir.sh"], cwd=tmp, capture_output=True, text=True,
+                                   env={**os.environ, "PATH": caminho, "EVENTO": evento, "REF": ref,
+                                        "PEDIDO": pedido, "GITHUB_OUTPUT": str(saida)})
+                return r.returncode, saida.read_text(encoding="utf-8").strip()
+            self.assertEqual(decidir("push", "v2.0.0"), (0, "criar=true"))
+            self.assertEqual(decidir("push", "v1.1.0"), (0, "criar=false"), "versão menor: sem release")
+            self.assertEqual(decidir("push", "v1.0"), (0, "criar=false"), "tag fora do padrão: sem release")
+            self.assertEqual(decidir("workflow_dispatch", "v1.1.0", "true"), (0, "criar=true"), "à mão, de tag")
+            self.assertEqual(decidir("workflow_dispatch", "main", "true")[0], 1, "à mão, só de tag")
+            self.assertEqual(decidir("workflow_dispatch", "v1.1.0"), (0, "criar=false"))
+            self.assertEqual(decidir("schedule", "main"), (0, "criar=false"))
+        modelo = (MOTOR / "modelo-local" / ".github" / "workflows" / "publicar.yml").read_text(encoding="utf-8")
+        self.assertIn("      release:\n", modelo)
+        self.assertIn("release: ${{ inputs.release || false }}", modelo)
+        self.assertIn("      release:", texto[:texto.index("jobs:")], "entrada do workflow reutilizável")
 
     def test_versao_no_formato(self):
         self.assertRegex(versao_motor(), r"^v\d+\.\d+\.\d+$")

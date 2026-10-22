@@ -2,8 +2,9 @@
 # do PRÓPRIO repositório do município (branch gh-pages), com o token do workflow.
 # Chamado pelo .github/workflows/publicar.yml de cada atlas-<cidade>.
 #
-#  - tag v* no município: edição numerada em /edicoes/<tag>/ e versão principal na raiz,
-#    mais um release com o PDF;
+#  - tag v* no município: edição numerada em /edicoes/<tag>/ e versão principal na raiz; release
+#    com o PDF (e DOI, com o Zenodo ligado) sozinho só em versão maior (vX.0.0, X >= 1, mesma regra
+#    do motor: scripts/notas_versao.py); nas demais tags, à mão (manual com release = true);
 #  - agendamento: versão principal a partir da main, com os dados versionados;
 #  - manual: versão (branch, tag ou commit), dados atuais ou versionados, destino.
 # O motor usado é o declarado no atlas.toml DAQUELA versão do município (reprodutível).
@@ -23,6 +24,9 @@ on:
       destino:
         type: string
         default: ""
+      release:                      # manual: criar o release desta tag (só faz sentido com tag)
+        type: boolean
+        default: false
 
 jobs:
   publicar:
@@ -78,6 +82,26 @@ jobs:
           cache: pip
           cache-dependency-path: motor/requirements.txt
       - run: pip install -r motor/requirements.txt
+      - name: Decidir o release
+        id: release
+        env:
+          EVENTO: ${{ github.event_name }}
+          REF: ${{ steps.alvo.outputs.ref }}
+          PEDIDO: ${{ inputs.release }}
+        run: |
+          criar=false
+          if [ "$EVENTO" = "push" ]; then
+            if python motor/scripts/notas_versao.py "$REF" --automatico 2>/dev/null; then
+              criar=true
+            else
+              echo "::notice::$REF não é versão maior (vX.0.0): edição publicada sem release; para criá-lo, Run workflow com versao = $REF e release marcado."
+            fi
+          elif [ "$PEDIDO" = "true" ]; then
+            git -C local rev-parse -q --verify "refs/tags/$REF" >/dev/null \
+              || { echo "::error::release só de tag: '$REF' não é uma tag deste repositório"; exit 1; }
+            criar=true
+          fi
+          echo "criar=$criar" >> "$GITHUB_OUTPUT"
       - uses: quarto-dev/quarto-actions/setup@v2
         with:
           version: 1.10.18           # versão testada com o modelo do livro
@@ -109,7 +133,7 @@ jobs:
       # uma edição fica com um arquivo que diz qual é.
       - name: PDF com a versão no nome
         id: pdf
-        if: steps.alvo.outputs.destino == 'edicao'
+        if: steps.alvo.outputs.destino == 'edicao' || steps.release.outputs.criar == 'true'
         run: |
           site=local/_construcao/livro/_site
           nome="atlas-${{ steps.local.outputs.slug }}-${{ steps.alvo.outputs.pasta }}.pdf"
@@ -130,16 +154,18 @@ jobs:
       - name: Aviso de publicação só como artefato
         if: steps.local.outputs.hospedagem != 'pages'
         run: |
-          echo "::notice::publicacao.hospedagem = artefato no atlas.toml: site e PDF só como artefato (e release, em tags)."
+          echo "::notice::publicacao.hospedagem = artefato no atlas.toml: site e PDF só como artefato (e no release, quando houver)."
 
-      - name: Release com o PDF (só em tags)
-        if: github.event_name == 'push'
+      - name: Release com o PDF
+        if: steps.release.outputs.criar == 'true'
         working-directory: local
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.alvo.outputs.ref }}
         run: |
-          gh release create "${{ github.ref_name }}" "_construcao/livro/_site/${{ steps.pdf.outputs.nome }}" \
-            --title "Atlas ${{ github.ref_name }}" --notes-file _construcao/livro/_gerado/notas.md
+          if gh release view "$TAG" >/dev/null 2>&1; then echo "::notice::o release $TAG já existe"; exit 0; fi
+          gh release create "$TAG" "_construcao/livro/_site/${{ steps.pdf.outputs.nome }}" \
+            --verify-tag --title "Atlas $TAG" --notes-file _construcao/livro/_gerado/notas.md
 
       - name: Guardar site e PDF como artefato
         uses: actions/upload-artifact@v4
