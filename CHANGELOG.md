@@ -17,7 +17,7 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
-## Próxima versão (não lançada)
+## v0.11.0 — 2026-10-22
 
 **Ao atualizar o município:** no `.github/workflows/publicar.yml`, acrescente a entrada `release` do botão e a linha `release: ${{ inputs.release || false }}` na chamada ao motor (texto atual em `modelo-local/`; mantenha o horário próprio do município). Sem isso o workflow continua funcionando, mas o release à mão fica indisponível. Na seção "Edições do atlas" do CONTRIBUTING, troque o parágrafo pelo do modelo.
 
