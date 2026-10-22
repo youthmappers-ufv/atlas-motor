@@ -80,7 +80,10 @@ jobs:
       - run: pip install -r motor/requirements.txt
       - uses: quarto-dev/quarto-actions/setup@v2
         with:
+          version: 1.10.18           # versão testada com o modelo do livro
           tinytex: true
+      - name: Fontes do tema padrão (o PDF usa reservas se faltarem)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-adobe-sourcesans3 || echo "::warning::Source Sans 3 indisponível; o PDF usa a fonte de reserva"
 
       - name: Construir e renderizar (site e PDF)
         env:

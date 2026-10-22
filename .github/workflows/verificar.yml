@@ -56,5 +56,7 @@ jobs:
           cache-dependency-path: motor/requirements.txt
       - run: pip install -r motor/requirements.txt
       - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: 1.10.18           # versão testada com o modelo do livro
       - name: Montar o livro e renderizar o site (HTML)
         run: python motor/scripts/construir.py --local local --renderizar html

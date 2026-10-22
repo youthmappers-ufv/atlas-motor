@@ -28,5 +28,7 @@ jobs:
       - name: Validar o município de exemplo
         run: python scripts/validar.py --local testes/exemplo
       - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: 1.10.18           # versão testada com o modelo do livro
       - name: Construir o site do município de exemplo
         run: python scripts/construir.py --local testes/exemplo --renderizar html
