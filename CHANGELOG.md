@@ -17,6 +17,12 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
+## v0.5.1 — 2026-10-21
+
+Correção: `atualizar_motor.py --versao v0.5.1`.
+
+- `construir.py` omite o `site-url` do livro quando não há endereço (`hospedagem = "artefato"` com `url` vazio); com a v0.5.0, o Quarto recusava o projeto e o site não era gerado.
+
 ## v0.5.0 — 2026-10-21
 
 **Exige mudança nos municípios** (pré-lançamento). O município passa a ser repositório **público** e publica o próprio site no GitHub Pages; o repositório de saída compartilhado (`youthmappers-ufv/atlas`) deixa de ser usado.
