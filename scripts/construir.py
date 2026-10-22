@@ -29,6 +29,7 @@ import shutil
 import subprocess
 import sys
 import time
+from datetime import date
 from pathlib import Path
 
 from comum import (MOTOR, argumento_local, ler_config, ler_temas, tirar_somente_leitura, usar_versao_declarada,
@@ -96,14 +97,43 @@ def botao_pdf(slug: str) -> str:
             ":::\n")
 
 
+SUFIXOS = {"filho", "filha", "neto", "neta", "junior", "júnior", "sobrinho", "sobrinha"}
+
+
+def sobrenome_primeiro(nome: str) -> str:
+    """Nome na entrada da ABNT (NBR 6023): "Rodrigo Smarzaro" -> "SMARZARO, Rodrigo";
+    "João Souza Filho" -> "SOUZA FILHO, João"; partículas ficam com o prenome ("João da Silva" ->
+    "SILVA, João da")."""
+    p = nome.split()
+    n = 2 if len(p) > 2 and p[-1].lower() in SUFIXOS else 1
+    return f"{' '.join(p[-n:]).upper()}, {' '.join(p[:-n])}" if len(p) > n else nome.upper()
+
+
+def citacao(config: dict, ano: str) -> str:
+    """Referência do atlas no formato da ABNT (NBR 6023:2018), para a página inicial."""
+    mun, pub = config["municipio"], config["publicacao"]
+    autoria, coord = pub.get("autoria", "Programa Youthmappers UFV"), pub.get("coordenacao", "")
+    instituicao = pub.get("instituicao", "Universidade Federal de Viçosa — Campus Rio Paranaíba")
+    entrada = f"{sobrenome_primeiro(coord)} (coord.)" if coord else autoria.upper()
+    orgao, _, campus = instituicao.partition(" — ")
+    local = campus.removeprefix("Campus ").strip() or "[*S. l.*]"
+    editora = f"{orgao}, {autoria}" if coord else orgao
+    site = f"https://{pub['dominio']}/" if pub.get("dominio") else pub.get("url", "")
+    disponivel = f" Disponível em: <{site}>. Acesso em: *data do acesso*." if site else ""
+    return (f"{entrada}. **Atlas Colaborativo de {mun['nome']}**: mapas abertos do município, a partir do "
+            f"OpenStreetMap. {local}: {editora}, {ano}.{disponivel}\n")
+
+
 def escrever_quarto(livro: Path, config: dict, ativos: list, edicao: str = "") -> None:
     mun, pub = config["municipio"], config["publicacao"]
     capitulos = "\n".join(f"        - pranchas/{t.prancha}" for t in ativos) or "        - index.qmd"
-    rodape = " · ".join(x for x in (f"Dados {pub['atribuicao']}", pub.get("autoria", "Programa Youthmappers UFV"),
+    autoria, coord = pub.get("autoria", "Programa Youthmappers UFV"), pub.get("coordenacao", "")
+    autores = [f"{coord} (coordenação)", autoria] if coord else [autoria]
+    rodape = " · ".join(x for x in (f"Dados {pub['atribuicao']}", autoria, coord and f"Coordenação: {coord}",
                                     pub.get("registro", "")) if x)
     trocas = {
         "{{titulo}}": f"Atlas Colaborativo de {mun['nome']}",
-        "{{autoria}}": pub.get("autoria", "Programa Youthmappers UFV"),
+        "{{autores}}": json.dumps(autores, ensure_ascii=False),          # lista YAML (forma JSON)
         "{{instituicao}}": pub.get("instituicao", "Universidade Federal de Viçosa — Campus Rio Paranaíba"),
         "{{site_url}}": f"https://{pub['dominio']}/" if pub.get("dominio") else pub.get("url", ""),
         "{{arquivo}}": f"atlas-{pub['slug']}",
@@ -255,6 +285,8 @@ def main() -> int:
     (gerado / "notas.md").write_text(versao, encoding="utf-8")            # notas do release (publicar.yml)
     (gerado / "edicao.md").write_text(versao + "\n" + pdf, encoding="utf-8")  # página inicial
     (gerado / "pdf.md").write_text(pdf, encoding="utf-8")                  # Dados para download
+    ano = base_osm[:4] if base_osm[:4].isdigit() else str(date.today().year)
+    (gerado / "citacao.md").write_text(citacao(config, ano), encoding="utf-8")  # Como usar e citar
     escrever_quarto(livro, config, ativos,
                     f"Versão {versao_local(local)} · motor {versao_motor()} · dados do OpenStreetMap de {base_osm}")
     print(f"Livro montado em {livro.relative_to(local)}.")

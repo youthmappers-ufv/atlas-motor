@@ -12,7 +12,7 @@ lang: pt-BR
 book:
   title: "{{titulo}}"
   subtitle: "Mapas abertos do município, a partir do OpenStreetMap"
-  author: "{{autoria}}"
+  author: {{autores}}
   publisher: "{{instituicao}}"
   site-url: {{site_url}}
   output-file: {{arquivo}}             # nome do PDF, sem acento (vai para URLs)

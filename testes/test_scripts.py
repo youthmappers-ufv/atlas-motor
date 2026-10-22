@@ -97,6 +97,21 @@ class Scripts(ComMunicipio):
         self.assertNotIn("site-url", (self.dir / "_quarto.yml").read_text(encoding="utf-8"),
                          "o Quarto recusa site-url vazio")
 
+    def test_coordenacao_na_autoria_e_no_rodape(self):
+        import tomllib
+        import yaml
+        from construir import escrever_quarto
+        config = tomllib.loads((MOTOR / "testes" / "exemplo" / "atlas.toml").read_text(encoding="utf-8"))
+        escrever_quarto(self.dir, config, [])
+        livro = yaml.safe_load((self.dir / "_quarto.yml").read_text(encoding="utf-8"))["book"]
+        self.assertEqual(livro["author"], ["Rodrigo Smarzaro (coordenação)", "Programa Youthmappers UFV"])
+        self.assertIn("Coordenação: Rodrigo Smarzaro", livro["page-footer"]["center"])
+        del config["publicacao"]["coordenacao"]
+        escrever_quarto(self.dir, config, [])
+        livro = yaml.safe_load((self.dir / "_quarto.yml").read_text(encoding="utf-8"))["book"]
+        self.assertEqual(livro["author"], ["Programa Youthmappers UFV"], "sem coordenação, só o programa")
+        self.assertNotIn("Coordenação", livro["page-footer"]["center"])
+
     def test_botao_do_pdf_na_pagina_inicial_e_nos_dados(self):
         import os
         local = self.dir / "atlas-exemplo"
@@ -114,6 +129,31 @@ class Scripts(ComMunicipio):
         self.assertIn("{{< include _gerado/pdf.md >}}", (MOTOR / "livro" / "dados.qmd").read_text(encoding="utf-8"))
         self.assertIn("--notes-file _construcao/livro/_gerado/notas.md",
                       (MOTOR / ".github" / "workflows" / "publicar.yml").read_text(encoding="utf-8"))
+        self.assertTrue((gerado / "citacao.md").read_text(encoding="utf-8").startswith(
+            "SMARZARO, Rodrigo (coord.). **Atlas Colaborativo de Exemplo**"))
+        for modelo in ("modelo-local", "testes/exemplo"):
+            self.assertIn("{{< include _gerado/citacao.md >}}",
+                          (MOTOR / modelo / "atlas" / "index.qmd").read_text(encoding="utf-8"))
+
+    def test_citacao_abnt(self):
+        from construir import citacao, sobrenome_primeiro
+        self.assertEqual([sobrenome_primeiro(n) for n in ("Rodrigo Smarzaro", "João Souza Filho", "João da Silva")],
+                         ["SMARZARO, Rodrigo", "SOUZA FILHO, João", "SILVA, João da"])
+        config = {"municipio": {"nome": "Rio Paranaíba"},
+                  "publicacao": {"autoria": "Programa Youthmappers UFV", "coordenacao": "Rodrigo Smarzaro",
+                                 "instituicao": "Universidade Federal de Viçosa — Campus Rio Paranaíba",
+                                 "url": "https://youthmappers-ufv.github.io/atlas-rio-paranaiba/"}}
+        self.assertEqual(citacao(config, "2026"),
+                         "SMARZARO, Rodrigo (coord.). **Atlas Colaborativo de Rio Paranaíba**: mapas abertos do "
+                         "município, a partir do OpenStreetMap. Rio Paranaíba: Universidade Federal de Viçosa, "
+                         "Programa Youthmappers UFV, 2026. Disponível em: "
+                         "<https://youthmappers-ufv.github.io/atlas-rio-paranaiba/>. Acesso em: *data do acesso*.\n")
+        config["publicacao"].update(url="", dominio="")                    # hospedagem artefato: sem endereço
+        self.assertNotIn("Disponível em", citacao(config, "2026"))
+        config["publicacao"]["dominio"] = "atlas.prefeitura.mg.gov.br"
+        self.assertIn("<https://atlas.prefeitura.mg.gov.br/>", citacao(config, "2026"))
+        del config["publicacao"]["coordenacao"]
+        self.assertTrue(citacao(config, "2026").startswith("PROGRAMA YOUTHMAPPERS UFV. **Atlas"))
 
     def test_limpar_preserva_cache_do_quarto(self):
         from construir import limpar

@@ -123,6 +123,8 @@ def verificar_config(local: Path, r: Relatorio) -> tuple[dict, list[Tema]]:
     if pub.get("dominio") and not RE_DOMINIO.match(str(pub["dominio"])):
         r.erro("[config] atlas.toml: publicacao.dominio deve ser só o nome (ex.: atlas.prefeitura.mg.gov.br), "
                "sem https:// nem barra")
+    if "coordenacao" in pub and not (isinstance(pub["coordenacao"], str) and pub["coordenacao"].strip()):
+        r.erro("[config] atlas.toml: publicacao.coordenacao deve ser o nome de quem coordena (ou saia do arquivo)")
 
     catalogo = {t["id"] for t in ler_toml(CATALOGO / "temas.toml")["tema"]}
     escolhas = {}

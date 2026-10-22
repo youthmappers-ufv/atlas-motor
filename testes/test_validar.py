@@ -218,6 +218,14 @@ class ValidadorComDefeitosPlantados(unittest.TestCase):
         self.trocar("atlas.toml", 'dominio = ""', 'dominio = "atlas.exemplo.mg.gov.br"')
         self.assertEqual(self.erros(), [])
 
+    def test_coordenacao_vazia(self):
+        self.trocar("atlas.toml", 'coordenacao = "Rodrigo Smarzaro"', 'coordenacao = " "')
+        self.assertAcusa("publicacao.coordenacao deve ser")
+
+    def test_sem_coordenacao_passa(self):
+        self.trocar("atlas.toml", 'coordenacao = "Rodrigo Smarzaro"', "")
+        self.assertEqual(self.erros(), [])
+
     def test_chave_antiga_de_publicacao(self):
         self.acrescentar("atlas.toml", "ativa = true")
         self.assertAcusa("publicacao.ativa saiu na v0.5.0")
