@@ -136,7 +136,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${{ github.ref_name }}" "_construcao/livro/_site/${{ steps.pdf.outputs.nome }}" \
-            --title "Atlas ${{ github.ref_name }}" --notes-file _construcao/livro/_gerado/edicao.md
+            --title "Atlas ${{ github.ref_name }}" --notes-file _construcao/livro/_gerado/notas.md
 
       - name: Guardar site e PDF como artefato
         uses: actions/upload-artifact@v4

@@ -97,6 +97,24 @@ class Scripts(ComMunicipio):
         self.assertNotIn("site-url", (self.dir / "_quarto.yml").read_text(encoding="utf-8"),
                          "o Quarto recusa site-url vazio")
 
+    def test_botao_do_pdf_na_pagina_inicial_e_nos_dados(self):
+        import os
+        local = self.dir / "atlas-exemplo"
+        shutil.copytree(MOTOR / "testes" / "exemplo", local, ignore=shutil.ignore_patterns("_construcao"))
+        r = subprocess.run([sys.executable, str(SCRIPTS / "construir.py"), "--local", str(local), "--sem-mapas"],
+                           capture_output=True, text=True, encoding="utf-8",
+                           env={**os.environ, "PYTHONIOENCODING": "utf-8", "ATLAS_MOTOR_ATUAL": "1"})
+        self.assertEqual(r.returncode, 0, r.stderr)
+        gerado = local / "_construcao" / "livro" / "_gerado"
+        edicao, pdf, notas = ((gerado / f"{n}.md").read_text(encoding="utf-8") for n in ("edicao", "pdf", "notas"))
+        self.assertIn('href="atlas-exemplo.pdf"', pdf)
+        self.assertIn('when-format="html"', pdf, "o botão não aparece dentro do próprio PDF")
+        self.assertTrue(edicao.startswith(notas) and edicao.endswith(pdf), "página inicial: versão e botão")
+        self.assertNotIn("atlas-exemplo.pdf", notas, "notas do release só com a versão")
+        self.assertIn("{{< include _gerado/pdf.md >}}", (MOTOR / "livro" / "dados.qmd").read_text(encoding="utf-8"))
+        self.assertIn("--notes-file _construcao/livro/_gerado/notas.md",
+                      (MOTOR / ".github" / "workflows" / "publicar.yml").read_text(encoding="utf-8"))
+
     def test_limpar_preserva_cache_do_quarto(self):
         from construir import limpar
         livro = self.dir / "livro"

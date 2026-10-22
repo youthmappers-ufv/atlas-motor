@@ -87,6 +87,15 @@ def versao_local(local: Path) -> str:
         return "desenvolvimento"
 
 
+def botao_pdf(slug: str) -> str:
+    """Botão de baixar o atlas em PDF, só no site (o PDF fica na raiz do site, ao lado das páginas):
+    o ícone que o Quarto põe na barra lateral passa despercebido."""
+    return ("::: {.content-visible when-format=\"html\"}\n"
+            f"<a class=\"btn btn-primary atlas-pdf\" href=\"atlas-{slug}.pdf\" download>"
+            "<i class=\"bi bi-file-earmark-pdf\" aria-hidden=\"true\"></i> Baixar o atlas completo em PDF</a>\n"
+            ":::\n")
+
+
 def escrever_quarto(livro: Path, config: dict, ativos: list, edicao: str = "") -> None:
     mun, pub = config["municipio"], config["publicacao"]
     capitulos = "\n".join(f"        - pranchas/{t.prancha}" for t in ativos) or "        - index.qmd"
@@ -240,9 +249,12 @@ def main() -> int:
         if (gerado / "downloads" / f"{t.id}.geojson").exists()]
     (gerado / "downloads.md").write_text("\n".join(itens) + "\n", encoding="utf-8")
     base_osm = retrato.get("base_osm", "")[:10] or "data desconhecida"
-    (gerado / "edicao.md").write_text(
-        f"Versão **{versao_local(local)}** (motor {versao_motor()}), com dados do OpenStreetMap de "
-        f"**{base_osm}**.\n", encoding="utf-8")
+    versao = (f"Versão **{versao_local(local)}** (motor {versao_motor()}), com dados do OpenStreetMap de "
+              f"**{base_osm}**.\n")
+    pdf = botao_pdf(config["publicacao"]["slug"])
+    (gerado / "notas.md").write_text(versao, encoding="utf-8")            # notas do release (publicar.yml)
+    (gerado / "edicao.md").write_text(versao + "\n" + pdf, encoding="utf-8")  # página inicial
+    (gerado / "pdf.md").write_text(pdf, encoding="utf-8")                  # Dados para download
     escrever_quarto(livro, config, ativos,
                     f"Versão {versao_local(local)} · motor {versao_motor()} · dados do OpenStreetMap de {base_osm}")
     print(f"Livro montado em {livro.relative_to(local)}.")
