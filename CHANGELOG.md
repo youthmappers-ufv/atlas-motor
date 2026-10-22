@@ -10,12 +10,35 @@ Versionamento semântico, `vMAIOR.MENOR.CORREÇÃO`:
 
 - licença definida e repositórios públicos no GitHub;
 - CI verde no GitHub (testes do motor e verificação, atualização e publicação de um município);
-- primeiro atlas de Rio Paranaíba publicado pelo workflow, com pelo menos uma base oficial carregada (INEP);
+- primeiro atlas de Rio Paranaíba publicado pelo workflow no GitHub Pages do próprio repositório, com pelo menos uma base oficial carregada (INEP);
 - `novo_local.py` usado para um segundo município, de ponta a ponta.
 
 Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* verde. Os municípios escolhem quando atualizar; uma edição publicada continua reproduzível com a versão que a gerou.
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
+
+## v0.5.0 — 2026-10-21
+
+**Exige mudança nos municípios** (pré-lançamento). O município passa a ser repositório **público** e publica o próprio site no GitHub Pages; o repositório de saída compartilhado (`youthmappers-ufv/atlas`) deixa de ser usado.
+
+- `publicar.yml` publica no `gh-pages` do próprio município, com o token do workflow (sem chave de deploy nem segredo); edições numeradas em `edicoes/<tag>/`. Com `publicacao.hospedagem = "artefato"`, nada é publicado (repositório privado, ou hospedagem em outro lugar).
+- `[publicacao]` do `atlas.toml`: saem `ativa`, `url_base` e `repositorio`; entram `hospedagem` (`"pages"` ou `"artefato"`), `url` (endereço do site) e `dominio` (opcional, domínio próprio). O validador acusa as chaves antigas.
+- `construir.py`, `validar.py` e `baixar_osm.py` rodam na versão do motor declarada pelo município: se o motor ao lado estiver em outra versão, a declarada é extraída da tag para `~/.cache/atlas-motor/` e roda no lugar (`--motor-atual` usa o motor da pasta).
+- `scripts/instalar_ganchos.py`: gancho de pre-push que roda o validador antes de cada envio.
+- Validador: acusa telefone em dado curado e linha de CSV com mais valores que colunas (antes quebrava).
+- Modelo de município para repositório público: regra de dados públicos no `CONTRIBUTING.md`, avisos nos modelos de issue e PR, `LICENCAS.md`. `novo_local.py` preenche `hospedagem` e `url` (`--organizacao`, `--privado`).
+- Saem do motor o registro de pesquisa (`pesquisa/`), a estratégia das instâncias, `metricas_motor.py` e o esquema `atividades`, que não são necessários ao funcionamento; ficam no repositório de documentos do programa.
+- Documentação: arquitetura e configuração do GitHub reescritas (Pages próprio, proteção da `main` e das tags do motor, domínio próprio, transferência para a prefeitura).
+
+**Migração de um município** (num PR próprio, `[CONFIG] Motor v0.5.0`):
+
+1. `python ../atlas-motor/scripts/atualizar_motor.py --versao v0.5.0`.
+2. No `[publicacao]` do `atlas.toml`, apague `ativa`, `url_base` e `repositorio` e acrescente:
+   `hospedagem = "pages"` (ou `"artefato"`, se o repositório for privado), `url = "https://youthmappers-ufv.github.io/atlas-<cidade>/"` (vazio com `"artefato"`) e `dominio = ""`.
+3. No `.github/workflows/publicar.yml`, apague a linha `secrets: inherit`.
+4. Se o repositório tiver `docs/decisoes.md` ou `dados/curados/atividades.csv`, mova-os para o repositório de documentos do programa.
+5. Copie do modelo do motor os textos de repositório público (`README.md`, `CONTRIBUTING.md`, `LICENCAS.md`, modelos de issue e PR), ajustando o nome do município.
+6. `python ../atlas-motor/scripts/validar.py` (0 erros) e `python ../atlas-motor/scripts/instalar_ganchos.py`.
 
 ## v0.4.0 — 2026-10-21
 
