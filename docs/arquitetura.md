@@ -17,7 +17,11 @@ O atlas fica em repositórios separados por papel: um **motor** público com o c
 
 ## Identidade visual
 
-Um arquivo só, o `_brand.yml` (formato do Quarto), define cores, fontes e logos do site e do PDF. O motor traz o tema padrão do programa (`livro/_brand.yml`); um município troca a identidade com `tema/_brand.yml` e os logos ao lado, no próprio repositório. Na construção, o tema do município é posto sobre o padrão; o Quarto aplica o `_brand.yml` no site, e `scripts/tema.py` o traduz para o `tema.tex` do PDF (LaTeX), que o estilo do atlas (`livro/atlas-estilo.tex`) e a capa usam. Nem o estilo do site nem o do PDF definem cores ou fontes próprias: tudo vem do tema. As cores dos mapas são fixas por tema do atlas (leitura cartográfica e comparação entre municípios) e não mudam com a identidade.
+Um arquivo só, o `_brand.yml` (formato do Quarto), define cores, fontes e logos do site e do PDF. O motor traz o tema padrão do programa (`livro/_brand.yml`); um município troca a identidade com `identidade/_brand.yml` e os logos ao lado, no próprio repositório. Na construção, a identidade do município é posta sobre a padrão; o Quarto aplica o `_brand.yml` no site, e `scripts/identidade.py` o traduz para o `identidade.tex` do PDF (LaTeX), que o estilo do atlas (`livro/atlas-estilo.tex`) e a capa usam. Nem o estilo do site nem o do PDF definem cores ou fontes próprias: tudo vem da identidade. As cores dos mapas são de cada tema do catálogo (campo `cor`; leitura cartográfica e comparação entre municípios) e não mudam com a identidade. Uso e regras: [Identidade visual](identidade-visual.md).
+
+## Pranchas e catálogo de temas
+
+O catálogo (`catalogo/temas.toml`) define as pranchas comuns: número, título, consulta Overpass, base oficial de referência, recorte e a forma de desenhar e medir (`cor`, `mapa`, `indicadores`). Um tema novo no catálogo, portanto, normalmente não exige código: [Novos temas](novos-temas.md). Cada município escolhe no próprio `temas.toml` quais temas abre, pode ajustar título, recorte, referência e cor, e pode ter pranchas próprias (número 20 em diante). Na construção, o motor gera para cada prancha a versão inteira (`_gerado/<tema>.md`) e cada parte em separado (`_gerado/<tema>/<parte>.md`); a equipe monta a prancha com uma ou com as outras: [Pranchas](pranchas.md).
 
 ## Ciclo mensal de um município
 

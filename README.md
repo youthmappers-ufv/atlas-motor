@@ -12,14 +12,14 @@ youthmappers-ufv/atlas-<cidade>     público    um por município: atlas.toml, t
 
 ![Arquitetura dos repositórios do atlas](docs/figuras/arquitetura-repositorios.svg)
 
-Detalhes e o ciclo mensal de um município em [docs/arquitetura.md](docs/arquitetura.md).
+Detalhes e o ciclo mensal de um município em [docs/arquitetura.md](docs/arquitetura.md). **Toda a documentação de uso e manutenção** (guia do município, pranchas, novos temas, identidade visual, referência, manutenção, solução de problemas) está em [docs/](docs/README.md).
 
 ## O que tem aqui
 
 ```
 VERSAO, CHANGELOG.md    versão atual (vX.Y.Z) e o que mudou em cada uma
 catalogo/
-  temas.toml            as pranchas (número, título, consulta, base de referência, recorte)
+  temas.toml            as pranchas (número, título, consulta, base de referência, recorte, cor, mapa, indicadores)
   consultas/            uma consulta Overpass por prancha ({{bbox}} = caixa do município)
   esquemas/             esquemas dos CSV levantados pelas equipes
 livro/                  modelo do livro Quarto: método, dados, _quarto.modelo.yml, tema padrão (_brand.yml,
@@ -32,7 +32,7 @@ scripts/
   indicadores.py        completude C_t e Q_t e indicadores internos
   mapas.py              mapas das pranchas (matplotlib)
   construir.py          monta o livro e renderiza site e PDF
-  tema.py               traduz o _brand.yml (identidade visual) para o PDF
+  identidade.py         traduz o _brand.yml (identidade visual) para o PDF
   novo_local.py         cria o repositório de um município novo pelo código IBGE
   instalar_ganchos.py   instala no município o gancho de pre-push com o validador
   ativar_tema.py        abre uma prancha num município
@@ -40,7 +40,7 @@ scripts/
   serie_historica.py    série histórica dos indicadores de um município, a partir do Git
 .github/workflows/      reutilizáveis (verificar, atualizar-dados, publicar) e os testes do motor
 testes/                 testes, com o município sintético testes/exemplo/
-docs/                   arquitetura (com diagramas em figuras/) e configuração do GitHub
+docs/                   documentação de uso e manutenção (índice em docs/README.md; diagramas em figuras/)
 CITATION.cff            como citar o software
 ```
 

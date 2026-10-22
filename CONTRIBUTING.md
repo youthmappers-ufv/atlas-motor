@@ -1,6 +1,6 @@
 # Como mudar o motor
 
-O motor serve a vários municípios ao mesmo tempo; uma mudança aqui chega a todos quando eles atualizarem a versão. Por isso:
+O motor serve a vários municípios ao mesmo tempo; uma mudança aqui chega a todos quando eles atualizarem a versão. Um tema novo no catálogo segue o processo próprio de [docs/novos-temas.md](docs/novos-temas.md); as rotinas da coordenação (versões, canário, municípios novos) estão em [docs/manutencao.md](docs/manutencao.md). Para mudanças de código:
 
 1. **Issue** descrevendo a mudança e para que serve (vale para todos os municípios?). Uma necessidade de um município só costuma caber no repositório dele (consulta ou esquema próprio, prancha própria).
 2. **Branch** a partir da `main` e **commits pequenos**, um por passo (`[CODIGO] …`, `[CATALOGO] …`, `[LIVRO] …`, `[CI] …`, `[DOC] …`).
