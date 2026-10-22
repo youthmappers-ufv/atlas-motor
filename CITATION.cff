@@ -8,7 +8,7 @@ authors:
     affiliation: "Universidade Federal de Viçosa, Campus Rio Paranaíba"
   - name: "Programa Youthmappers UFV"
 license: MIT
-version: v0.8.0
+version: v0.9.0
 date-released: 2026-10-22
 repository-code: "https://github.com/youthmappers-ufv/atlas-motor"
 keywords:

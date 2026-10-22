@@ -17,7 +17,7 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
-## Próxima versão (não lançada)
+## v0.9.0 — 2026-10-22
 
 **Ao atualizar o município:** acrescente o `CITATION.cff` e a seção "Como citar" do README (modelos em `modelo-local/`, com os marcadores preenchidos pelo `novo_local.py` num município novo); sem o `CITATION.cff`, o validador avisa.
 
