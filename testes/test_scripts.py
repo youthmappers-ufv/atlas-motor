@@ -68,6 +68,16 @@ class Scripts(unittest.TestCase):
         self.assertEqual(len(horarios), 4, "municípios da região não podem coincidir no agendamento")
         self.assertTrue(all(8 <= h <= 11 and 0 <= m <= 59 for h, m in horarios))
 
+    def test_limpar_preserva_cache_do_quarto(self):
+        from construir import limpar
+        livro = self.dir / "livro"
+        for rel in (".quarto/cache/kv", "_site/index.html", "pranchas/01.qmd", "_gerado/a.md", "index.qmd"):
+            (livro / rel).parent.mkdir(parents=True, exist_ok=True)
+            (livro / rel).write_text("x", encoding="utf-8")
+        limpar(livro)
+        self.assertEqual(sorted(p.name for p in livro.iterdir()), [".quarto", "_site"])
+        self.assertTrue((livro / ".quarto" / "cache" / "kv").exists())
+
     def test_ativar_tema(self):
         local = self.novo()
         r = rodar("ativar_tema.py", "saude", "--local", str(local))

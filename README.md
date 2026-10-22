@@ -58,6 +58,7 @@ python ../atlas-motor/scripts/validar.py
 python ../atlas-motor/scripts/baixar_osm.py
 python ../atlas-motor/scripts/ativar_tema.py saude
 python ../atlas-motor/scripts/construir.py --renderizar todos      # site e PDF em _construcao/livro/_site/
+python ../atlas-motor/scripts/construir.py --previa                # prévia ao vivo (quarto preview)
 ```
 
 Requisitos: Python 3.11+ (validação e testes só com a biblioteca padrão), `pip install -r requirements.txt` (matplotlib, para os mapas) e [Quarto](https://quarto.org); para o PDF, TinyTeX (`quarto install tinytex`) ou MiKTeX.

@@ -31,6 +31,7 @@ python ../atlas-motor/scripts/baixar_osm.py                     # retrato novo d
 python ../atlas-motor/scripts/ativar_tema.py educacao           # abre uma prancha
 python ../atlas-motor/scripts/construir.py --renderizar html    # site em _construcao/livro/_site/
 python ../atlas-motor/scripts/construir.py --renderizar todos   # site e PDF
+python ../atlas-motor/scripts/construir.py --previa             # prévia ao vivo: edite atlas/ e o navegador recarrega
 ```
 
 Procedimentos de contribuição: [CONTRIBUTING.md](CONTRIBUTING.md). Configuração no GitHub: `docs/configuracao-github.md` do atlas-motor.

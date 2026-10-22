@@ -37,7 +37,7 @@ Coordenadas em graus decimais (WGS 84), com ponto: `-19.1965`.
 
 - Para abrir uma prancha: `python ../atlas-motor/scripts/ativar_tema.py <tema>`. O script muda a situação em `temas.toml` e cria `atlas/pranchas/<nn>-<tema>.qmd`; depois, rode `baixar_osm.py --tema <tema>` e escreva o texto.
 - O texto da prancha é da equipe; mapas, indicadores e lacunas entram pelo `include`, gerados pelo motor.
-- Veja o resultado com `python ../atlas-motor/scripts/construir.py --renderizar html`.
+- Veja o resultado com `python ../atlas-motor/scripts/construir.py --previa`: abre o site no navegador e recarrega a cada texto salvo em `atlas/`. Mudou dados, `temas.toml` ou `atlas.toml`? Rode `construir.py` de novo (pode ser com a prévia aberta, em outro terminal). Para o site completo em arquivo, `--renderizar html`.
 
 ## 5. Atualizar o motor
 

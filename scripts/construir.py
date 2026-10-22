@@ -12,7 +12,10 @@ Uso (de dentro do repositório do município, com o motor ao lado):
   python ../atlas-motor/scripts/construir.py --renderizar todos  # ... site e PDF
   python ../atlas-motor/scripts/construir.py --baixar            # baixa um retrato novo antes
   python ../atlas-motor/scripts/construir.py --sem-mapas         # sem matplotlib
+  python ../atlas-motor/scripts/construir.py --previa            # prévia ao vivo no navegador
 Resultado: _construcao/livro/_site/ (site e atlas-<slug>.pdf).
+Com a prévia aberta, pode rodar de novo o construir.py (sem --previa) em outro terminal
+depois de mudar dados ou temas: o livro é atualizado no lugar e a prévia recarrega.
 
 A versão mostrada no atlas vem de ATLAS_VERSAO (o CI usa a tag ou o commit) e da
 versão do motor; sem a variável, usa o git describe do município.
@@ -25,11 +28,14 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from comum import MOTOR, argumento_local, ler_config, ler_temas, versao_motor
 from indicadores import calcular
 from validar import verificar
+
+PRESERVAR = {".quarto", "_site", "_freeze"}
 
 
 def tabela(linhas: list[tuple[str, str]]) -> str:
@@ -93,12 +99,61 @@ def tirar_somente_leitura(funcao, caminho, _info) -> None:
     funcao(caminho)
 
 
+def limpar(livro: Path) -> None:
+    """Esvazia o livro montado, mas mantém o que o Quarto usa entre execuções (.quarto, _site,
+    _freeze): apagar a pasta inteira falha com o quarto preview aberto, que segura o cache."""
+    if not livro.exists():
+        return
+    for item in livro.iterdir():
+        if item.name in PRESERVAR:
+            continue
+        if item.is_dir():
+            shutil.rmtree(item, onerror=tirar_somente_leitura)
+        else:
+            item.unlink()
+
+
+def arquivos(pasta: Path) -> dict[Path, float]:
+    return {p.relative_to(pasta): p.stat().st_mtime for p in pasta.rglob("*") if p.is_file()}
+
+
+def previa(local: Path, livro: Path, porta: int, navegador: bool = True) -> int:
+    """Roda o quarto preview no livro montado e, enquanto ele estiver aberto, copia para o
+    livro os textos salvos em atlas/ (o navegador recarrega sozinho). Mudanças em dados,
+    temas.toml ou atlas.toml pedem nova construção (feche com Ctrl+C e rode de novo)."""
+    proc = subprocess.Popen(["quarto", "preview", str(livro), "--to", "html", "--port", str(porta)]
+                            + ([] if navegador else ["--no-browser"]))
+    print(f"Prévia em http://localhost:{porta}/ — edite atlas/ e salve; Ctrl+C para sair.")
+    origem, vistos = local / "atlas", arquivos(local / "atlas")
+    shutil.copytree(origem, livro, dirs_exist_ok=True)     # o que foi salvo durante a montagem
+    try:
+        while proc.poll() is None:
+            time.sleep(1)
+            agora = arquivos(origem)
+            for rel, mtime in agora.items():
+                if vistos.get(rel) != mtime:
+                    (livro / rel).parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(origem / rel, livro / rel)
+                    print(f"  atualizado: atlas/{rel.as_posix()}")
+            for rel in vistos.keys() - agora.keys():
+                (livro / rel).unlink(missing_ok=True)
+                print(f"  removido: atlas/{rel.as_posix()}")
+            vistos = agora
+    except KeyboardInterrupt:
+        proc.terminate()
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     argumento_local(ap)
     ap.add_argument("--baixar", action="store_true", help="baixar um retrato novo do OSM antes")
     ap.add_argument("--sem-mapas", action="store_true", help="não gerar mapas (sem matplotlib)")
     ap.add_argument("--renderizar", choices=["html", "pdf", "todos"], help="chamar o Quarto no fim")
+    ap.add_argument("--previa", action="store_true",
+                    help="abrir o quarto preview e copiar para o livro as edições salvas em atlas/")
+    ap.add_argument("--porta", type=int, default=4200, help="porta da prévia (padrão: 4200)")
+    ap.add_argument("--sem-navegador", action="store_true", help="na prévia, não abrir o navegador")
     args = ap.parse_args()
     local = args.local.resolve()
 
@@ -116,14 +171,12 @@ def main() -> int:
         print(f"Aviso: o município declara o motor {versao_declarada}, mas este motor é {versao_motor()}.",
               file=sys.stderr)
 
-    construcao = local / "_construcao"
-    if construcao.exists():
-        shutil.rmtree(construcao, onerror=tirar_somente_leitura)
-    livro = construcao / "livro"
-    shutil.copytree(MOTOR / "livro", livro, ignore=shutil.ignore_patterns("_quarto.modelo.yml"))
+    livro = local / "_construcao" / "livro"
+    limpar(livro)
+    shutil.copytree(MOTOR / "livro", livro, ignore=shutil.ignore_patterns("_quarto.modelo.yml"), dirs_exist_ok=True)
     shutil.copytree(local / "atlas", livro, dirs_exist_ok=True)
     gerado = livro / "_gerado"
-    (gerado / "downloads").mkdir(parents=True)
+    (gerado / "downloads").mkdir(parents=True, exist_ok=True)
     retrato_arq = local / "dados" / "osm" / "retrato.json"
     retrato = json.loads(retrato_arq.read_text(encoding="utf-8")) if retrato_arq.exists() else {}
 
@@ -165,6 +218,8 @@ def main() -> int:
         if subprocess.run(cmd).returncode:
             return 1
         print(f"Resultado em {(livro / '_site').relative_to(local)}.")
+    if args.previa:
+        return previa(local, livro, args.porta, not args.sem_navegador)
     return 0
 
 
