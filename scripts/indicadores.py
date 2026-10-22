@@ -3,8 +3,9 @@
 Temas com base oficial (temas.toml: referencia = <pasta em dados/oficiais/>):
   C_t = itens oficiais com correspondente no OSM / itens oficiais
   Q_t = correspondidos com os atributos essenciais (nome e endereço) / correspondidos
-  Correspondência: mesmo item a até distancia_max_m e similaridade de nome normalizado
-  >= similaridade_min (atlas.toml), pareando cada objeto do OSM no máximo uma vez.
+  Correspondência: mesmo item a até distancia_max_m e similaridade de nome >= similaridade_min
+  (atlas.toml), pareando cada objeto do OSM no máximo uma vez. A similaridade é a maior entre a
+  do nome normalizado inteiro e a das palavras distintivas (nome contido no outro: 0,95).
 Todos os temas: total de objetos e proporção com nome. Com indicadores = ["servico"] no catálogo:
   endereço e horário; com ["vias"]: comprimento total e proporção com pavimento informado.
 
@@ -30,15 +31,46 @@ def ler_feicoes(local: Path, tema_id: str) -> list[dict]:
     return json.loads(arq.read_text(encoding="utf-8"))["features"]
 
 
-def similaridade(a: str, b: str) -> float:
-    return SequenceMatcher(None, normalizar_nome(a), normalizar_nome(b)).ratio()
+# Palavras que dizem o tipo do lugar ou ligam o nome, não qual lugar é ("Colégio Dimensão" e
+# "COLEGIO DIMENSAO ENSINO FUNDAMENTAL E MEDIO" têm a mesma palavra distintiva: dimensao).
+GENERICAS = set("""
+a as o os e de da das do dos em no na
+escola escolas estadual municipal particular privada publica colegio instituto centro educacional
+educacao ensino infantil fundamental medio tecnica creche unidade basica saude posto hospital
+""".split())
 
 
-def correspondencias(oficiais: list[dict], feicoes: list[dict], dist_max: float, sim_min: float) -> list[tuple]:
+def palavras_distintivas(nome: str, ignorar: frozenset[str] = frozenset()) -> set[str]:
+    return {p for p in normalizar_nome(nome).split() if p not in GENERICAS | ignorar and len(p) > 1}
+
+
+def similaridade(a: str, b: str, ignorar: frozenset[str] = frozenset()) -> float:
+    """Semelhança de dois nomes, de 0 a 1: a maior entre a do texto normalizado inteiro e a das
+    palavras distintivas (fração das palavras do nome mais curto que estão no outro).
+
+    Um nome contido no outro (palavras do mais curto todas no mais longo) vale 0,95, abaixo de
+    um nome igual (1,0), que tem a preferência quando os dois disputam o mesmo objeto. Uma única
+    palavra em comum só conta se tiver 4 letras ou mais. `ignorar`: palavras que não distinguem
+    neste município (as do nome dele: "Colégio Gama de São Gotardo" não é o "Centro de Ensino
+    Superior de São Gotardo").
+    """
+    texto = SequenceMatcher(None, normalizar_nome(a), normalizar_nome(b)).ratio()
+    pa, pb = palavras_distintivas(a, ignorar), palavras_distintivas(b, ignorar)
+    menor = min(len(pa), len(pb))
+    comuns = pa & pb
+    if not menor or (menor == 1 and max(map(len, comuns), default=0) < 4):
+        return texto
+    return max(texto, 0.95 * len(comuns) / menor)
+
+
+def correspondencias(oficiais: list[dict], feicoes: list[dict], dist_max: float, sim_min: float,
+                     municipio: str = "") -> list[tuple]:
     """Pares (índice oficial, índice feição, distância, similaridade), um para um.
 
-    oficiais: dicts com 'nome', 'lat', 'lon' (floats ou None).
+    oficiais: dicts com 'nome', 'lat', 'lon' (floats ou None). municipio: nome do município,
+    cujas palavras não contam como distintivas.
     """
+    ignorar = frozenset(normalizar_nome(municipio).split())
     pontos = [ponto_representativo(f["geometry"]) for f in feicoes]
     candidatos = []
     for i, o in enumerate(oficiais):
@@ -51,7 +83,7 @@ def correspondencias(oficiais: list[dict], feicoes: list[dict], dist_max: float,
             d = distancia_m(o["lon"], o["lat"], *pontos[j])
             if d > dist_max:
                 continue
-            s = similaridade(o["nome"], nome)
+            s = similaridade(o["nome"], nome, ignorar)
             if s >= sim_min:
                 candidatos.append((i, j, d, s))
     pares, usados_o, usados_f = [], set(), set()
@@ -122,7 +154,8 @@ def calcular(local: Path, tema: Tema, config: dict) -> dict:
         else:
             fonte, itens = oficial
             cc = config["completude"]
-            pares = correspondencias(itens, feicoes, cc["distancia_max_m"], cc["similaridade_min"])
+            pares = correspondencias(itens, feicoes, cc["distancia_max_m"], cc["similaridade_min"],
+                                     config["municipio"]["nome"])
             correspondidos = {i for i, _, _, _ in pares}
             completos = sum(1 for _, j, _, _ in pares
                             if tags[j].get("name") and tags[j].get("addr:street"))
