@@ -57,7 +57,7 @@ FORMATOS = {
         nome="Catálogo de Escolas (lista detalhada)",
         orgao="INEP",
         url="https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos/inep-data/catalogo-de-escolas",
-        licenca="Dados abertos do INEP (Catálogo de Escolas, InepData)",
+        licenca="CC BY 4.0 (Portaria Inep nº 496, de 13 de outubro de 2021: licença padrão dos dados abertos do Inep; https://riep.inep.gov.br/items/a2634026-7d3c-416d-8657-f8832d52003a)",
         arquivo="escolas.csv",
         colunas={"Código INEP": "codigo_inep", "Escola": "escola", "Localização": "localizacao",
                  "Dependência Administrativa": "dependencia", "Restrição de Atendimento": "situacao",

@@ -194,6 +194,7 @@ class PrepararBase(ComMunicipio):
         fonte = (local / "dados" / "oficiais" / "inep" / "fonte.toml").read_text(encoding="utf-8")
         self.assertIn("data_acesso = 2026-10-22", fonte)
         self.assertIn("1 escolas paralisadas retiradas", fonte)
+        self.assertIn('licenca = "CC BY 4.0 (Portaria Inep nº 496', fonte)
         rel = verificar(local)
         self.assertEqual(rel.erros, [])
         self.assertTrue(any("fora da área" in a for a in rel.avisos))
