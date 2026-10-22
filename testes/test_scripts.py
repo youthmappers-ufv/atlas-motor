@@ -180,6 +180,32 @@ class SerieHistorica(unittest.TestCase):
         self.assertEqual([l["C_t"] for l in linhas], [66.7, 100.0], "a escola rural nova completa a base oficial")
 
 
+class GanchoPrePush(unittest.TestCase):
+    """O gancho instalado no município bloqueia o push quando o validador acusa erro."""
+
+    def test_push_com_dado_pessoal_e_bloqueado(self):
+        import os
+        with tempfile.TemporaryDirectory() as tmp:
+            local = Path(tmp) / "atlas-exemplo"
+            shutil.copytree(MOTOR / "testes" / "exemplo", local, ignore=shutil.ignore_patterns("_construcao"))
+            env = {**os.environ, "PATH": str(Path(sys.executable).parent) + os.pathsep + os.environ["PATH"],
+                   "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t",
+                   "GIT_COMMITTER_EMAIL": "t@t"}
+            def git(*a):
+                return subprocess.run(["git", *a], cwd=local, capture_output=True, text=True, env=env)
+            git("init", "-q", "-b", "main")
+            git("add", "-A")
+            git("commit", "-q", "-m", "inicial")
+            subprocess.run(["git", "init", "-q", "--bare", str(Path(tmp) / "remoto.git")], check=True)
+            git("remote", "add", "origin", str(Path(tmp) / "remoto.git"))
+            self.assertEqual(rodar("instalar_ganchos.py", "--local", str(local)).returncode, 0)
+            self.assertEqual(git("push", "-q", "origin", "main").returncode, 0, "push limpo deve passar")
+            with (local / "dados" / "curados" / "levantamentos-campo.csv").open("a", encoding="utf-8") as f:
+                f.write("LC-2027-001,2027-02-10,educacao,E.E. X,confirmado,node/1,,-19.20,-46.25,fulano@exemplo.com\n")
+            git("commit", "-qam", "dado pessoal")
+            self.assertNotEqual(git("push", "-q", "origin", "main").returncode, 0, "push com e-mail deve ser bloqueado")
+
+
 def tag_disponivel(tag: str) -> bool:
     return subprocess.run(["git", "-C", str(MOTOR), "rev-parse", "--verify", "-q", f"refs/tags/{tag}"],
                           capture_output=True).returncode == 0
