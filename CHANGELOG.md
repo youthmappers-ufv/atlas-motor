@@ -17,7 +17,7 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
-## Próxima versão (não lançada)
+## v0.12.0 — 2026-10-22
 
 **Ao atualizar o município:** no `atlas.toml`, em `[publicacao]`, acrescente `coordenacao_orcid` e `doi` (texto em `modelo-local/atlas.toml`; `doi` fica vazio até o primeiro DOI) e rode `python ../atlas-motor/scripts/citacao_repositorio.py`, que regrava `CITATION.cff`, `.zenodo.json` (só município público), badges e "Como citar". Commit dos arquivos antes de criar o próximo release.
 
