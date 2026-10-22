@@ -244,6 +244,32 @@ class ValidadorComDefeitosPlantados(unittest.TestCase):
         self.trocar("atlas.toml", 'coordenacao = "Rodrigo Smarzaro"', 'coordenacao = "Maria Souza"')
         self.assertTrue(any("(Maria Souza) não está entre os autores" in a for a in self.avisos()))
 
+    def test_orcid_com_digito_errado(self):
+        self.trocar("atlas.toml", '"0000-0002-4783-8383"', '"0000-0002-4783-8384"')
+        self.assertAcusa("coordenacao_orcid inválido")
+
+    def test_orcid_com_endereco(self):
+        self.trocar("atlas.toml", '"0000-0002-4783-8383"', '"https://orcid.org/0000-0002-4783-8383"')
+        self.assertAcusa("coordenacao_orcid inválido")
+
+    def test_doi_com_endereco(self):
+        self.trocar("atlas.toml", 'doi = ""', 'doi = "https://doi.org/10.5281/zenodo.1"')
+        self.assertAcusa("publicacao.doi deve ser só o DOI")
+
+    def test_doi_fora_do_citation(self):
+        self.trocar("atlas.toml", 'doi = ""', 'doi = "10.5281/zenodo.1"')
+        self.assertEqual(self.erros(), [])
+        self.assertTrue(any("falta o DOI" in a for a in self.avisos()))
+
+    def test_zenodo_com_lista_de_licencas(self):
+        """O defeito que fez o Zenodo recusar o primeiro release de Rio Paranaíba."""
+        self.trocar(".zenodo.json", '"license": "odbl-1.0"', '"license": ["odbl-1.0", "cc-by-4.0"]')
+        self.assertAcusa(".zenodo.json: license deve ser uma licença só")
+
+    def test_zenodo_json_quebrado(self):
+        self.trocar(".zenodo.json", '"upload_type": "dataset",', '"upload_type": "dataset"')
+        self.assertAcusa(".zenodo.json não é JSON válido")
+
     def test_chave_antiga_de_publicacao(self):
         self.acrescentar("atlas.toml", "ativa = true")
         self.assertAcusa("publicacao.ativa saiu na v0.5.0")

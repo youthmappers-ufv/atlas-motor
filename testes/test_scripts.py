@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 
@@ -65,15 +67,46 @@ class Scripts(ComMunicipio):
         cff = yaml.safe_load((local / "CITATION.cff").read_text(encoding="utf-8"))
         self.assertEqual(cff["title"], "Atlas Colaborativo de Cidade Teste")
         self.assertEqual(cff["authors"][0], {"family-names": "Smarzaro", "given-names": "Rodrigo",
-                                             "affiliation": "Universidade Federal de Viçosa, Campus Rio Paranaíba"})
+                                             "affiliation": "Universidade Federal de Viçosa, Campus Rio Paranaíba",
+                                             "orcid": "https://orcid.org/0000-0002-4783-8383"})
         self.assertEqual(cff["authors"][1], {"name": "Programa Youthmappers UFV"})
         self.assertEqual(cff["repository"], "https://github.com/youthmappers-ufv/atlas-cidade-teste")
         self.assertEqual(cff["url"], "https://youthmappers-ufv.github.io/atlas-cidade-teste/")
         self.assertEqual(cff["license"], ["ODbL-1.0", "CC-BY-4.0", "MIT"])
+        self.assertNotIn("doi", cff, "sem DOI no atlas.toml, sem doi no CITATION.cff")
         readme = (local / "README.md").read_text(encoding="utf-8")
         self.assertIn("## Como citar\n\nSMARZARO, Rodrigo (coord.). **Atlas Colaborativo de Cidade Teste**", readme)
         self.assertIn("```bibtex\n% Acrescente urldate", readme)
         self.assertIn("  editortype = {coordinator},\n", readme)
+        zen = json.loads((local / ".zenodo.json").read_text(encoding="utf-8"))
+        self.assertEqual((zen["upload_type"], zen["license"], zen["language"]), ("dataset", "odbl-1.0", "por"))
+        self.assertEqual(zen["creators"][0]["orcid"], "0000-0002-4783-8383")
+        self.assertEqual(zen["related_identifiers"][0]["identifier"], "10.5281/zenodo.23573341",
+                         "o atlas aponta para o DOI do motor que o gerou")
+        from citacao_repositorio import atualizar
+        self.assertEqual(atualizar(local, "youthmappers-ufv"), [], "rodar de novo não muda nada")
+
+    def test_citacao_com_doi(self):
+        """Com publicacao.doi: DOI na ABNT, no BibLaTeX, no badge, no CITATION.cff e no README."""
+        import yaml
+        from citacao_repositorio import atualizar
+        from construir import bibtex, citacao
+        local = self.novo()
+        atlas = local / "atlas.toml"
+        atlas.write_text(atlas.read_text(encoding="utf-8").replace('doi = ""', 'doi = "10.5281/zenodo.99999"'),
+                         encoding="utf-8")
+        self.assertEqual(sorted(atualizar(local, "youthmappers-ufv")), ["CITATION.cff", "README.md"],
+                         "o .zenodo.json não leva o DOI do próprio registro")
+        config = tomllib.loads(atlas.read_text(encoding="utf-8"))
+        self.assertIn(", 2026. DOI: 10.5281/zenodo.99999. Disponível em:", citacao(config, "2026"))
+        self.assertIn("  doi        = {10.5281/zenodo.99999},\n", bibtex(config, "2026"))
+        self.assertEqual(yaml.safe_load((local / "CITATION.cff").read_text(encoding="utf-8"))["doi"],
+                         "10.5281/zenodo.99999")
+        readme = (local / "README.md").read_text(encoding="utf-8")
+        self.assertTrue(readme.splitlines()[2].startswith(
+            "[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.99999.svg)](https://doi.org/10.5281/zenodo.99999)"))
+        self.assertEqual(readme.count("## Como citar"), 1, "a seção é trocada, não repetida")
+        self.assertEqual(verificar(local).erros, [])
 
     def test_novo_local_privado_sem_pages(self):
         destino = self.dir / "atlas-privado"
@@ -586,6 +619,19 @@ class ModeloCoerenteComMotor(unittest.TestCase):
         self.assertIn(f"  edition   = {{Versão {versao_motor()}}},\n", bib)
         self.assertIn(f"  year      = {{{ano}}},\n", bib)
         self.assertNotIn("version", bib, "o estilo abnt ignora version; a versão vai em edition")
+
+    def test_doi_do_motor_igual_em_todo_lugar(self):
+        """DOI conceito do motor: CITATION.cff, badge e citações do README, e o que os atlas
+        declaram como gerados por ele (.zenodo.json)."""
+        from citacao_repositorio import DOI_MOTOR
+        cff = (MOTOR / "CITATION.cff").read_text(encoding="utf-8")
+        self.assertIn(f'doi: "{DOI_MOTOR}"\n', cff)
+        self.assertIn('orcid: "https://orcid.org/0000-0002-4783-8383"', cff)
+        readme = (MOTOR / "README.md").read_text(encoding="utf-8")
+        self.assertIn(f"[![DOI](https://zenodo.org/badge/DOI/{DOI_MOTOR}.svg)](https://doi.org/{DOI_MOTOR})", readme)
+        self.assertIn(f". DOI: {DOI_MOTOR}. Disponível em:", readme)
+        self.assertIn(f"  doi       = {{{DOI_MOTOR}}},\n", readme)
+        self.assertEqual(set(re.findall(r"10\.5281/zenodo\.\d+", readme + cff)), {DOI_MOTOR})
 
 
 class SerieHistorica(unittest.TestCase):

@@ -46,5 +46,7 @@ slug = "exemplo"                                     # nome do PDF: atlas-<slug>
 atribuicao = "© colaboradores do OpenStreetMap (ODbL)"
 autoria = "Programa Youthmappers UFV"
 coordenacao = "Rodrigo Smarzaro"                      # opcional: quem coordena; entra na autoria como (coordenação)
+coordenacao_orcid = "0000-0002-4783-8383"             # opcional: ORCID de quem coordena (CITATION.cff e Zenodo)
+doi = ""                                              # opcional: DOI conceito do Zenodo (todas as edições), ex.: "10.5281/zenodo.123"
 instituicao = "Universidade Federal de Viçosa — Campus Rio Paranaíba"
 registro = ""                                         # ex.: "RAEX PRJ-211/2026"

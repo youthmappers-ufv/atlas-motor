@@ -111,19 +111,22 @@ def dados_citacao(config: dict) -> dict:
     return {"titulo": f"Atlas Colaborativo de {mun['nome']}", "autoria": autoria, "coord": coord,
             "local": campus.removeprefix("Campus ").strip(), "editora": f"{orgao}, {autoria}" if coord else orgao,
             "site": f"https://{pub['dominio']}/" if pub.get("dominio") else pub.get("url", ""),
-            "chave": f"atlas-{pub['slug']}"}
+            "chave": f"atlas-{pub['slug']}", "doi": pub.get("doi", ""),
+            "orcid": pub.get("coordenacao_orcid", "") if coord else ""}
 
 
 SUBTITULO = "mapas abertos do município, a partir do OpenStreetMap"
 
 
 def citacao(config: dict, ano: str) -> str:
-    """Referência do atlas no formato da ABNT (NBR 6023:2018), para a página inicial."""
+    """Referência do atlas no formato da ABNT (NBR 6023:2018), para a página inicial. Com
+    publicacao.doi (DOI conceito do Zenodo: todas as edições), "DOI: …" antes de "Disponível em"."""
     d = dados_citacao(config)
     entrada = f"{sobrenome_primeiro(d['coord'])} (coord.)" if d["coord"] else d["autoria"].upper()
+    doi = f" DOI: {d['doi']}." if d["doi"] else ""
     disponivel = f" Disponível em: <{d['site']}>. Acesso em: *data do acesso*." if d["site"] else ""
     return (f"{entrada}. **{d['titulo']}**: {SUBTITULO}. {d['local'] or '[*S. l.*]'}: {d['editora']}, "
-            f"{ano}.{disponivel}\n")
+            f"{ano}.{doi}{disponivel}\n")
 
 
 def bibtex(config: dict, ano: str) -> str:
@@ -138,8 +141,8 @@ def bibtex(config: dict, ano: str) -> str:
     else:
         nomes = [("author", "{" + d["autoria"] + "}")]
     campos = nomes + [("title", d["titulo"]), ("subtitle", SUBTITULO.replace("OpenStreetMap", "{OpenStreetMap}")),
-                      ("location", d["local"]), ("publisher", d["editora"]), ("year", ano), ("url", d["site"]),
-                      ("langid", "brazilian")]
+                      ("location", d["local"]), ("publisher", d["editora"]), ("year", ano), ("doi", d["doi"]),
+                      ("url", d["site"]), ("langid", "brazilian")]
     linhas = [f"  {k:<10} = {{{v}}}," for k, v in campos if v]
     acesso = "% Acrescente urldate = {AAAA-MM-DD}, a data do acesso.\n" if d["site"] else ""
     return acesso + f"@dataset{{{d['chave']},\n" + "\n".join(linhas) + "\n}\n"

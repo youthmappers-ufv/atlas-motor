@@ -46,6 +46,19 @@ RE_VERSAO = re.compile(r"^v\d+\.\d+\.\d+$")
 RE_SLUG = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 RE_URL_SITE = re.compile(r"^https://[^\s/]+(/[^\s]*)?/$")
 RE_DOMINIO = re.compile(r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$")
+RE_DOI = re.compile(r"^10\.\d{4,9}/\S+$")
+RE_ORCID = re.compile(r"^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$")
+
+
+def orcid_valido(orcid: str) -> bool:
+    """Formato 0000-0000-0000-000X e dígito verificador (ISO 7064 11,2), que pega erro de digitação."""
+    if not RE_ORCID.match(orcid):
+        return False
+    total = 0
+    for c in orcid.replace("-", "")[:-1]:
+        total = (total + int(c)) * 2
+    digito = (12 - total % 11) % 11
+    return orcid[-1] == ("X" if digito == 10 else str(digito))
 HOSPEDAGENS = ("pages", "artefato")
 RE_CHAMADA = re.compile(r"uses:\s*youthmappers-ufv/atlas-motor/\.github/workflows/[\w.-]+@(\S+)")
 TIPOS = {"texto", "inteiro", "decimal", "data", "lista", "latitude", "longitude", "tema", "url"}
@@ -125,6 +138,11 @@ def verificar_config(local: Path, r: Relatorio) -> tuple[dict, list[Tema]]:
                "sem https:// nem barra")
     if "coordenacao" in pub and not (isinstance(pub["coordenacao"], str) and pub["coordenacao"].strip()):
         r.erro("[config] atlas.toml: publicacao.coordenacao deve ser o nome de quem coordena (ou saia do arquivo)")
+    if pub.get("coordenacao_orcid") and not orcid_valido(str(pub["coordenacao_orcid"])):
+        r.erro("[config] atlas.toml: publicacao.coordenacao_orcid inválido (0000-0000-0000-000X, sem https://orcid.org/; "
+               "confira o dígito final)")
+    if pub.get("doi") and not RE_DOI.match(str(pub["doi"])):
+        r.erro("[config] atlas.toml: publicacao.doi deve ser só o DOI (ex.: 10.5281/zenodo.123), sem https://doi.org/")
 
     catalogo = {t["id"] for t in ler_toml(CATALOGO / "temas.toml")["tema"]}
     escolhas = {}
@@ -461,11 +479,28 @@ def verificar_citacao(local: Path, config: dict, r: Relatorio) -> None:
     nome = config.get("municipio", {}).get("nome", "")
     if nome and f"Atlas Colaborativo de {nome}" not in texto:
         r.aviso(f"[citacao] CITATION.cff: o título deveria ser \"Atlas Colaborativo de {nome}\"")
-    coord = config.get("publicacao", {}).get("coordenacao", "")
+    pub = config.get("publicacao", {})
+    coord = pub.get("coordenacao", "")
     if isinstance(coord, str) and coord.strip():
         sobrenome = sobrenome_e_prenome(coord)[0]
         if not re.search(rf'family-names:\s*"?{re.escape(sobrenome)}"?\s*$', texto, re.MULTILINE):
             r.aviso(f"[citacao] CITATION.cff: a coordenação ({coord}) não está entre os autores")
+        if pub.get("coordenacao_orcid") and str(pub["coordenacao_orcid"]) not in texto:
+            r.aviso("[citacao] CITATION.cff: falta o ORCID da coordenação (rode citacao_repositorio.py)")
+    if pub.get("doi") and str(pub["doi"]) not in texto:
+        r.aviso("[citacao] CITATION.cff: falta o DOI do atlas.toml (rode citacao_repositorio.py)")
+    zen = local / ".zenodo.json"
+    if zen.is_file():
+        try:
+            meta = json.loads(zen.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            r.erro(f"[citacao] .zenodo.json não é JSON válido ({e.msg}, linha {e.lineno}): o Zenodo recusa o release")
+            return
+        if not isinstance(meta.get("license"), str):
+            r.erro("[citacao] .zenodo.json: license deve ser uma licença só (ex.: \"odbl-1.0\"); com lista, o Zenodo "
+                   "recusa o release")
+        if nome and meta.get("title") != f"Atlas Colaborativo de {nome}":
+            r.aviso(f"[citacao] .zenodo.json: o título deveria ser \"Atlas Colaborativo de {nome}\"")
 
 
 def verificar(local: Path) -> Relatorio:

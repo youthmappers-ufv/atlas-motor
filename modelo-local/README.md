@@ -11,13 +11,7 @@ Repositório do atlas de **@@NOME@@** (IBGE @@IBGE@@), do Programa Youthmappers 
 
 ## Como citar
 
-@@CITACAO_ABNT@@
-Em BibLaTeX (estilo `abnt` do pacote biblatex-abnt):
-
-```bibtex
-@@CITACAO_BIBTEX@@```
-
-O GitHub também oferece a citação pelo botão *Cite this repository* (arquivo `CITATION.cff`). A página inicial do atlas traz a referência com o ano da edição e o arquivo `.bib` para baixar. Os dados do OpenStreetMap pedem, além disso, a atribuição *© colaboradores do OpenStreetMap (ODbL)*.
+@@COMO_CITAR@@ (gerada por scripts/citacao_repositorio.py do motor)
 
 ## Estrutura
 
