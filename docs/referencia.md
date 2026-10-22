@@ -37,6 +37,8 @@ slug = "rio-paranaiba"           # nome do PDF: atlas-<slug>.pdf
 atribuicao = "© colaboradores do OpenStreetMap (ODbL)"
 autoria = "Programa Youthmappers UFV"
 coordenacao = "Rodrigo Smarzaro"   # opcional: entra na autoria como "(coordenação)", no rodapé e na citação
+coordenacao_orcid = "0000-0002-4783-8383"   # opcional: ORCID da coordenação (CITATION.cff e Zenodo); o validador confere o dígito final
+doi = "10.5281/zenodo.123"       # opcional: DOI conceito do Zenodo (todas as edições): citações, badge e CITATION.cff
 instituicao = "Universidade Federal de Viçosa — Campus Rio Paranaíba"
 registro = "RAEX PRJ-211/2026"   # opcional, no rodapé
 ```
@@ -172,6 +174,7 @@ Todos rodam de dentro do repositório do município (ou com `--local <pasta>`). 
 | `indicadores.py` | mostra os indicadores e as lacunas, com o motivo provável, no terminal | `--tema`, `--local` |
 | `mapas.py` | gera só os mapas | `--tema`, `--local` |
 | `serie_historica.py` | refaz a série dos indicadores a partir dos retratos no Git | `--saida <csv>`, `--local` |
+| `citacao_repositorio.py` | regrava, a partir do `atlas.toml`, o `CITATION.cff`, o `.zenodo.json` (município público), a fileira de badges e a seção "Como citar" do README | `--organizacao`, `--local` |
 | `notas_versao.py <tag>` | (motor) notas da versão tiradas do CHANGELOG; diz se a tag dispara o release sozinha | `--automatico` |
 | `novo_local.py` | cria o repositório de um município novo | `--nome`, `--ibge`, `--uf`, `--slug`, `--destino`, `--baixar`, `--git`, `--organizacao`, `--privado`; sem rede: `--sem-rede --relacao --bbox= --sede-bbox= --wikidata` |
 

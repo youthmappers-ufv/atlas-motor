@@ -17,6 +17,15 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
+## Próxima versão (não lançada)
+
+**Ao atualizar o município:** no `atlas.toml`, em `[publicacao]`, acrescente `coordenacao_orcid` e `doi` (texto em `modelo-local/atlas.toml`; `doi` fica vazio até o primeiro DOI) e rode `python ../atlas-motor/scripts/citacao_repositorio.py`, que regrava `CITATION.cff`, `.zenodo.json` (só município público), badges e "Como citar". Commit dos arquivos antes de criar o próximo release.
+
+- DOI e ORCID. `publicacao.doi` (DOI conceito do Zenodo) entra na referência ABNT ("DOI: …" antes de "Disponível em", como imprime o biblatex-abnt), no BibLaTeX (`doi`), no badge e no `CITATION.cff`; `publicacao.coordenacao_orcid` entra no `CITATION.cff` e no Zenodo. O validador confere o formato do DOI e o dígito verificador do ORCID.
+- `.zenodo.json` nos municípios públicos (tipo *dataset*, licença `odbl-1.0`, relação com o DOI do motor). Causa: o primeiro release de Rio Paranaíba falhou no Zenodo com "Citation metadata load failed"; o `CITATION.cff` é válido, mas a lista de licenças vira `license: {id: [...]}`, e o registro aceita uma só. O validador recusa `.zenodo.json` com lista de licenças ou JSON inválido.
+- `scripts/citacao_repositorio.py`: gera `CITATION.cff`, `.zenodo.json`, badges e "Como citar" a partir do `atlas.toml` (usado pelo `novo_local.py` e para atualizar municípios existentes); o modelo deixa de ter `CITATION.cff` fixo.
+- Motor: ORCID no `CITATION.cff`, DOI conceito (`10.5281/zenodo.23573341`) no `CITATION.cff`, no badge e nas citações do README.
+
 ## v0.11.0 — 2026-10-22
 
 **Ao atualizar o município:** no `.github/workflows/publicar.yml`, acrescente a entrada `release` do botão e a linha `release: ${{ inputs.release || false }}` na chamada ao motor (texto atual em `modelo-local/`; mantenha o horário próprio do município). Sem isso o workflow continua funcionando, mas o release à mão fica indisponível. Na seção "Edições do atlas" do CONTRIBUTING, troque o parágrafo pelo do modelo.
