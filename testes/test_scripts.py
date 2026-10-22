@@ -2,6 +2,8 @@
 combinação catálogo + município e da coerência entre o modelo municipal e o motor."""
 from __future__ import annotations
 
+import csv
+import io
 import re
 import shutil
 import subprocess
@@ -23,7 +25,9 @@ def rodar(script: str, *args: str) -> subprocess.CompletedProcess:
                           encoding="utf-8", env={**__import__("os").environ, "PYTHONIOENCODING": "utf-8"})
 
 
-class Scripts(unittest.TestCase):
+class ComMunicipio(unittest.TestCase):
+    """Base: pasta temporária e um município novo criado por novo_local.py."""
+
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
         self.dir = Path(self._tmp.name)
@@ -38,6 +42,8 @@ class Scripts(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         return destino
 
+
+class Scripts(ComMunicipio):
     def test_novo_local_cria_repositorio_valido(self):
         local = self.novo()
         texto = (local / "atlas.toml").read_text(encoding="utf-8")
@@ -128,6 +134,113 @@ class Scripts(unittest.TestCase):
             f.write('\n[tema.educacao]\nsituacao = "planejado"\nreferencia = "inep-2027"\nrecorte = "sede"\n')
         t = {t.id: t for t in ler_temas(local)}["educacao"]
         self.assertEqual((t.referencia, t.recorte, t.situacao), ("inep-2027", "sede", "planejado"))
+
+
+INEP_CABECALHO = ("Restrição de Atendimento,Escola,Código INEP,UF,Município,Localização,Localidade Diferenciada,"
+                  "Categoria Administrativa,Endereço,Telefone,Dependência Administrativa,Categoria Escola Privada,"
+                  "Conveniada Poder Público,Regulamentação pelo Conselho de Educação,Porte da Escola,"
+                  "Etapas e Modalidade de Ensino Oferecidas,Outras Ofertas Educacionais,Latitude,Longitude")
+INEP_LINHAS = [   # sintéticas, no formato do Catálogo de Escolas
+    'ESCOLA EM FUNCIONAMENTO E SEM RESTRIÇÃO DE ATENDIMENTO,EM CENTRO,30000001,MG,Cidade Teste,Urbana,Não,Pública,'
+    '"RUA A, 10 CENTRO. 38800-000 Cidade Teste - MG.",(34) 99999-0000,Municipal,Não Informado,Não,Sim,,'
+    '"Educação Infantil, Ensino Fundamental",,-19.2001,-46.3001',
+    'ESCOLA PARALISADA,EE FAZENDA,30000002,MG,Cidade Teste,Rural,Não Informado,Pública,'
+    '"FAZ B, 0 38800-000 Cidade Teste - MG.",,Estadual,Não Informado,Não,,,,,                              ,   ',
+    'ESCOLA EM FUNCIONAMENTO E SEM RESTRIÇÃO DE ATENDIMENTO,EM SEM PONTO,30000003,MG,Cidade Teste,Urbana,Não,Pública,'
+    '"RUA C, 5 38800-000 Cidade Teste - MG.",,Municipal,Não Informado,Não,Sim,,Ensino Fundamental,,      ,      ',
+    'ESCOLA EM FUNCIONAMENTO E SEM RESTRIÇÃO DE ATENDIMENTO,CRECHE LONGE,30000004,MG,Cidade Teste,Urbana,Não,Pública,'
+    '"RUA D, 1 38800-000 Cidade Teste - MG.",,Municipal,Não Informado,Não,Sim,,Educação Infantil,,-18.5,-46.3',
+    'ESCOLA EM FUNCIONAMENTO E SEM RESTRIÇÃO DE ATENDIMENTO,EM VIZINHA,30000005,MG,Outra Cidade,Urbana,Não,Pública,'
+    '"RUA E, 2 38800-000 Outra Cidade - MG.",,Municipal,Não Informado,Não,Sim,,Ensino Fundamental,,-19.25,-46.35',
+    'ESCOLA EM FUNCIONAMENTO E SEM RESTRIÇÃO DE ATENDIMENTO,EM HOMONIMA,30000006,SP,Cidade Teste,Urbana,Não,Pública,'
+    '"RUA F, 3 11000-000 Cidade Teste - SP.",,Municipal,Não Informado,Não,Sim,,Ensino Fundamental,,-23.5,-46.6',
+]
+
+
+class PrepararBase(ComMunicipio):
+    """preparar_base.py, com o arquivo no formato do órgão e defeitos plantados."""
+
+    def original(self, linhas=INEP_LINHAS, cabecalho=INEP_CABECALHO, separador=",", codificacao="utf-8-sig") -> Path:
+        texto = "\n".join([cabecalho, *linhas]) + "\n"
+        if separador == ";":   # como nas exportações com vírgula decimal
+            saida = io.StringIO()
+            w = csv.writer(saida, delimiter=";", lineterminator="\n")
+            for campos in csv.reader(io.StringIO(texto)):
+                w.writerow([c.replace(".", ",") if re.fullmatch(r"-?\d+\.\d+", c) else c for c in campos])
+            texto = saida.getvalue()
+        arq = self.dir / "baixado.csv"
+        arq.write_bytes(texto.encode(codificacao))
+        return arq
+
+    def preparar(self, local: Path, arq: Path, *extra: str) -> subprocess.CompletedProcess:
+        return rodar("preparar_base.py", "inep", str(arq), "--data", "2026-10-22", "--local", str(local), *extra)
+
+    def escolas(self, local: Path) -> list[dict]:
+        with (local / "dados" / "oficiais" / "inep" / "escolas.csv").open(encoding="utf-8", newline="") as f:
+            return list(csv.DictReader(f))
+
+    def test_inep_filtra_municipio_e_paralisadas_e_tira_telefone(self):
+        local = self.novo()
+        r = self.preparar(local, self.original())
+        self.assertEqual(r.returncode, 0, r.stderr)
+        escolas = self.escolas(local)
+        self.assertEqual([e["codigo_inep"] for e in escolas], ["30000001", "30000003", "30000004"])
+        self.assertNotIn("telefone", " ".join(escolas[0]).lower())
+        self.assertNotIn("99999", (local / "dados" / "oficiais" / "inep" / "escolas.csv").read_text(encoding="utf-8"))
+        self.assertEqual((escolas[0]["latitude"], escolas[0]["longitude"]), ("-19.2001", "-46.3001"))
+        self.assertEqual((escolas[1]["latitude"], escolas[1]["longitude"]), ("", ""))
+        self.assertIn("EM SEM PONTO", r.stdout)                 # avisa quem está sem coordenada
+        self.assertIn("CRECHE LONGE", r.stdout)                 # e quem está fora da área
+        fonte = (local / "dados" / "oficiais" / "inep" / "fonte.toml").read_text(encoding="utf-8")
+        self.assertIn("data_acesso = 2026-10-22", fonte)
+        self.assertIn("1 escolas paralisadas retiradas", fonte)
+        rel = verificar(local)
+        self.assertEqual(rel.erros, [])
+        self.assertTrue(any("fora da área" in a for a in rel.avisos))
+
+    def test_inep_todas_mantem_paralisadas(self):
+        local = self.novo()
+        self.assertEqual(self.preparar(local, self.original(), "--todas").returncode, 0)
+        self.assertIn("30000002", [e["codigo_inep"] for e in self.escolas(local)])
+
+    def test_inep_latin1_com_ponto_e_virgula_e_virgula_decimal(self):
+        local = self.novo()
+        r = self.preparar(local, self.original(separador=";", codificacao="cp1252"))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        escolas = self.escolas(local)
+        self.assertEqual(escolas[0]["escola"], "EM CENTRO")
+        self.assertEqual((escolas[0]["latitude"], escolas[0]["longitude"]), ("-19.2001", "-46.3001"))
+        self.assertEqual(verificar(local).erros, [])
+
+    def test_formato_mudado_nao_grava_nada(self):
+        local = self.novo()
+        r = self.preparar(local, self.original(cabecalho=INEP_CABECALHO.replace("Latitude", "Lat")))
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("faltam as colunas: Latitude", r.stderr)
+        self.assertFalse((local / "dados" / "oficiais" / "inep").exists())
+
+    def test_fora_do_municipio_ou_sem_arquivo(self):
+        r = self.preparar(self.dir, self.original())
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("falta atlas.toml", r.stderr)
+        r = self.preparar(self.novo(), self.dir / "nao-existe.csv")
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("Arquivo não encontrado", r.stderr)
+
+    def test_arquivo_de_outro_municipio(self):
+        local = self.novo()
+        r = self.preparar(local, self.original(linhas=INEP_LINHAS[4:5]))
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("Nenhuma linha de Cidade Teste", r.stderr)
+
+    def test_nao_substitui_sem_pedir(self):
+        local = self.novo()
+        self.assertEqual(self.preparar(local, self.original()).returncode, 0)
+        r = self.preparar(local, self.original(linhas=INEP_LINHAS[:1]))
+        self.assertEqual(r.returncode, 2)
+        self.assertEqual(len(self.escolas(local)), 3)
+        self.assertEqual(self.preparar(local, self.original(linhas=INEP_LINHAS[:1]), "--substituir").returncode, 0)
+        self.assertEqual(len(self.escolas(local)), 1)
 
 
 class CatalogoDeTemas(unittest.TestCase):
