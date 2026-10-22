@@ -17,6 +17,16 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
+## v0.6.0 — 2026-10-22
+
+Compatível com v0.5.1: `atualizar_motor.py --versao v0.6.0`. Sem `tema/`, o atlas usa a identidade do programa.
+
+- **Identidade visual por `_brand.yml`**, fonte única de cores, fontes e logos para o site e o PDF. Tema padrão do programa em `livro/_brand.yml` (com o logo em `livro/marca/`); o município troca a identidade com `tema/_brand.yml` e os logos ao lado (instruções em `modelo-local/tema/LEIAME.md`).
+- PDF (LaTeX) no padrão visual dos documentos do programa: capa em faixas com os logos do tema, títulos sem serifa com filete, faixa de "Pranchas" sem página própria, cabeçalho, listas, tabelas e legendas nas cores do tema, texto sem serifa. `scripts/tema.py` gera o `tema.tex` do `_brand.yml`, com fontes de reserva se a do tema não estiver instalada.
+- Site: tema `[cosmo, brand, estilo.scss]`; o `estilo.scss` deixa de fixar as cores do programa (elas anulavam o `_brand.yml`).
+- Validador: `tema/` com cores inválidas, logos citados que não existem ou imagem com extensão trocada (ex.: JPEG chamado `.png`).
+- `requirements.txt`: PyYAML (para ler o `_brand.yml` na construção). CI: Quarto 1.10.18 fixado e fonte Source Sans 3 instalada para o PDF.
+
 ## v0.5.1 — 2026-10-21
 
 Correção: `atualizar_motor.py --versao v0.5.1`.
