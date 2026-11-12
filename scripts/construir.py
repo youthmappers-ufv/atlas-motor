@@ -33,7 +33,10 @@ import time
 from datetime import date
 from pathlib import Path
 
-from comum import (MOTOR, argumento_local, data_br, ler_config, ler_temas, sobrenome_e_prenome, texto_md,
+from comparacao import csv_texto as csv_comparacao
+from comparacao import geojson as geojson_comparacao
+from comparacao import quadro_resumo, resumo_curto, tabela_so_oficial, tabela_so_osm
+from comum import (MOTOR, argumento_local, data_br, ler_config, ler_temas, numero, sobrenome_e_prenome, texto_md,
                    tirar_somente_leitura, usar_versao_declarada, versao_motor)
 from indicadores import calcular
 from identidade import gerar as gerar_identidade
@@ -47,38 +50,76 @@ def tabela(linhas: list[tuple[str, str]]) -> str:
     return f"| Indicador | Valor |\n|:--|--:|\n{corpo}\n"
 
 
-TRECHOS = ("mapa-municipio", "mapa-sede", "legenda", "indicadores", "lacunas", "fonte")
+TRECHOS = ("interativo", "mapa-municipio", "mapa-sede", "legenda", "indicadores", "comparacao-municipio",
+           "comparacao-sede", "resumo", "lacunas", "so-osm", "fonte")
 
 
 def trechos_tema(tema, res: dict, figuras: list[tuple[str, str, str]], retrato: dict, config: dict) -> dict[str, str]:
     """Partes geradas de uma prancha, cada uma incluível sozinha (_gerado/<tema>/<parte>.md).
-    Partes que não se aplicam (ex.: mapa-sede num tema só do município) ficam vazias."""
+    Partes que não se aplicam (ex.: mapa-sede num tema só do município) ficam vazias.
+
+    Ordem: o tema no OpenStreetMap (mapa interativo no site, mapas, indicadores) e, havendo base
+    oficial, a comparação das duas fontes (mapas de comparação, quadro-resumo, itens só na base
+    oficial, objetos só no OpenStreetMap); por fim, a fonte. figuras: (arquivo, legenda, recorte),
+    com recorte "municipio" ou "sede" (mapa do tema) ou "comparacao-municipio"/"comparacao-sede"."""
     t = dict.fromkeys(TRECHOS, "")
+    comp = res.get("comparacao")
+    t["interativo"] = mapa_interativo(tema, bool(comp))
     for arq, legenda, recorte in figuras:
+        chave = recorte if recorte.startswith("comparacao-") else f"mapa-{recorte}"
         alt = f"Mapa: {legenda}".replace('"', "'")
         # No PDF o mapa ocupa no máximo metade da altura da página, para os indicadores (e a fonte)
         # caberem com ele; no site, a largura toda.
         # (só a altura no PDF: com largura e altura juntas a imagem seria esticada)
         imagem = f"![{legenda}](../_gerado/figuras/{arq}){{fig-alt=\"{alt}\""
-        t[f"mapa-{recorte}"] = (f"::: {{.content-visible when-format=\"html\"}}\n{imagem} width=100%}}\n:::\n\n"
-                                f"::: {{.content-visible unless-format=\"html\"}}\n{imagem} height=50%}}\n:::\n")
+        t[chave] = (f"::: {{.content-visible when-format=\"html\"}}\n{imagem} width=100%}}\n:::\n\n"
+                    f"::: {{.content-visible unless-format=\"html\"}}\n{imagem} height=50%}}\n:::\n")
     # "legenda" fica vazia: a legenda é desenhada dentro de cada mapa (mapas.py). O trecho continua
     # existindo para as pranchas que o incluem em separado.
     t["indicadores"] = tabela(res["linhas"])
-    lacunas = res.get("lacunas") or []
-    if lacunas:
-        partes = [f"\n**Itens da base oficial sem correspondente no mapa** ({len(lacunas)}):\n",
-                  # traços na proporção das larguras (código 15%, nome 35%, motivo 50%)
-                  "| Código | Nome | Motivo provável |\n|:---|:-------|:----------|\n"
-                  + "\n".join(f"| {texto_md(o['id'])} | {texto_md(o['nome'])} | {texto_md(o.get('motivo', ''))} |"
-                              for o in lacunas[:60]) + "\n"]
-        if len(lacunas) > 60:
-            partes.append(f"\n… e mais {len(lacunas) - 60}.\n")
-        t["lacunas"] = "\n".join(partes)
+    if comp:
+        t["resumo"] = "\n" + quadro_resumo(comp)
+        t["lacunas"] = tabela_so_oficial(comp)
+        t["so-osm"] = tabela_so_osm(comp)
+    elif res.get("lacunas"):                      # resultado sem a comparação montada (uso direto do módulo)
+        t["lacunas"] = ("\n| Código | Nome | Motivo provável |\n|:---|:-------|:----------|\n" + "\n".join(
+            f"| {texto_md(o['id'])} | {texto_md(o['nome'])} | {texto_md(o.get('motivo', ''))} |" for o in res["lacunas"]) + "\n")
     base = retrato.get("temas", {}).get(tema.id, {}).get("base_osm") or retrato.get("base_osm", "")
-    t["fonte"] = (f"\n*Fonte: OpenStreetMap, dados de {data_br(base[:10]) or 'data desconhecida'}. "
-                  f"{config['publicacao']['atribuicao']}.*\n")
+    osm = f"OpenStreetMap, dados de {data_br(base[:10]) or 'data desconhecida'} ({config['publicacao']['atribuicao']})"
+    if comp:
+        f = comp["fonte"]
+        oficial = ", ".join(x for x in (f["orgao"], f["nome"]) if x)
+        t["fonte"] = f"\n*Fontes: {osm}; {oficial}, acesso em {data_br(f['data_acesso'])}.*\n"
+    else:
+        t["fonte"] = f"\n*Fonte: {osm}.*\n"
     return t
+
+
+def mapa_interativo(tema, com_comparacao: bool) -> str:
+    """Mapa interativo da prancha, só no site: livro/mapa.js desenha em cada .atlas-mapa as camadas
+    publicadas em _gerado/downloads/ (o mesmo dado dos mapas do PDF). Sem JavaScript, ficam os
+    mapas estáticos logo abaixo."""
+    comparacao = f' data-comparacao="../_gerado/downloads/{tema.id}-comparacao.geojson"' if com_comparacao else ""
+    return ("::: {.content-visible when-format=\"html\"}\n```{=html}\n"
+            f'<div class="atlas-mapa" data-tema="../_gerado/downloads/{tema.id}.geojson" '
+            f'data-limite="../_gerado/downloads/limite.geojson" data-cor="{tema.cor}" data-forma="{tema.mapa}" '
+            f'data-titulo="{tema.titulo.replace(chr(34), chr(39))}"{comparacao} role="region" '
+            f'aria-label="Mapa interativo: {tema.titulo.replace(chr(34), chr(39))}"></div>\n'
+            "```\n:::\n")
+
+
+def sintese(resumo: list) -> str:
+    """_gerado/pranchas.md: a síntese do atlas, uma linha por prancha, com o que há no OpenStreetMap
+    e, nos temas com base oficial, a cobertura do mapa em relação a ela."""
+    linhas = []
+    for t, res in resumo:
+        comp = res.get("comparacao")
+        com_nome = next((v for r, v in res["linhas"] if r == "Com nome"), "—")
+        base = (comp["fonte"]["orgao"] or comp["fonte"]["nome"]) if comp else ("—" if t.referencia == "interno" else "*a carregar*")
+        linhas.append(f"| {t.numero} | [{t.titulo}](pranchas/{t.prancha}) | {numero(res['total'], 0)} | {com_nome} "
+                      f"| {texto_md(base)} | {resumo_curto(comp)} |")
+    return ("| Nº | Prancha | Objetos no OpenStreetMap | Com nome | Base oficial | Encontrados no mapa |\n"
+            "|--:|:-----|---:|---:|:--|---:|\n" + "\n".join(linhas) + "\n")
 
 
 def trecho_tema(tema, res: dict, figuras: list[tuple[str, str, str]], retrato: dict, config: dict) -> str:
@@ -220,6 +261,8 @@ def escrever_quarto(livro: Path, config: dict, ativos: list, edicao: str = "") -
         "{{rodape}}": rodape.replace('"', "'"),
         "{{capitulos}}": capitulos,
         "{{edicao}}": edicao.replace('"', "'"),
+        "{{descricao}}": (f"Mapas temáticos de {mun['nome']} ({mun.get('uf', '')}) feitos a partir do OpenStreetMap, "
+                          "com a completude do mapa em relação às bases oficiais e as lacunas a mapear."),
     }
     texto = (MOTOR / "livro" / "_quarto.modelo.yml").read_text(encoding="utf-8")
     if not trocas["{{site_url}}"]:              # hospedagem "artefato": sem endereço (o Quarto recusa vazio)
@@ -328,19 +371,31 @@ def main() -> int:
     retrato_arq = local / "dados" / "osm" / "retrato.json"
     retrato = json.loads(retrato_arq.read_text(encoding="utf-8")) if retrato_arq.exists() else {}
 
-    desenhar = None
+    desenhar = desenhar_comparacao = None
     if not args.sem_mapas:
-        from mapas import desenhar                # importa o matplotlib só aqui
+        from mapas import desenhar, desenhar_comparacao   # importa o matplotlib só aqui
 
-    ativos, resumo = [t for t in temas if t.ativo], []
+    ativos, resumo, comparacoes = [t for t in temas if t.ativo], [], []
     for t in ativos:
         res = calcular(local, t, config)
+        comp = res.get("comparacao")
         figuras = []
         if desenhar:
-            for rec in (("municipio", "sede") if t.recorte == "ambos" else (t.recorte,)):
+            recortes = ("municipio", "sede") if t.recorte == "ambos" else (t.recorte,)
+            for rec in recortes:
                 arq = f"{t.id}-{rec}.png"
                 desenhar(local, t, rec, config, gerado / "figuras" / arq)
                 figuras.append((arq, f"{t.titulo}: {'sede do município' if rec == 'sede' else 'município'}", rec))
+            for rec in recortes if comp else ():
+                arq = f"{t.id}-{rec}-comparacao.png"
+                desenhar_comparacao(local, t, rec, config, comp, gerado / "figuras" / arq)
+                onde = "sede do município" if rec == "sede" else "município"
+                figuras.append((arq, f"{t.titulo}, OpenStreetMap e {comp['fonte']['orgao'] or 'base oficial'}: {onde}",
+                                f"comparacao-{rec}"))
+        if comp:                                  # as duas fontes num arquivo só: mapa do site e downloads
+            (gerado / "downloads" / f"{t.id}-comparacao.geojson").write_text(geojson_comparacao(comp), encoding="utf-8")
+            (gerado / "downloads" / f"{t.id}-comparacao.csv").write_text(csv_comparacao(comp), encoding="utf-8")
+            comparacoes.append(t)
         (gerado / f"{t.id}.md").write_text(trecho_tema(t, res, figuras, retrato, config), encoding="utf-8")
         (gerado / t.id).mkdir(exist_ok=True)
         for parte, texto in trechos_tema(t, res, figuras, retrato, config).items():
@@ -351,11 +406,13 @@ def main() -> int:
         resumo.append((t, res))
         print(f"{t.numero:>2}. {t.titulo}: {res['total']} objetos")
 
-    linhas = "\n".join(f"| {t.numero} | [{t.titulo}](pranchas/{t.prancha}) | {res['total']} |" for t, res in resumo)
-    (gerado / "pranchas.md").write_text("| Nº | Prancha | Objetos no mapa |\n|--:|:--|--:|\n" + linhas + "\n", encoding="utf-8")
+    (gerado / "pranchas.md").write_text(sintese(resumo), encoding="utf-8")
     shutil.copy2(local / "dados" / "osm" / "limite.geojson", gerado / "downloads" / "limite.geojson")
     arquivos_dados = [("Limite do município", "limite.geojson")] + [
         (t.titulo, f"{t.id}.geojson") for t, _ in resumo if (gerado / "downloads" / f"{t.id}.geojson").exists()]
+    for t in comparacoes:
+        arquivos_dados += [(f"{t.titulo}: comparação com a base oficial (mapa)", f"{t.id}-comparacao.geojson"),
+                           (f"{t.titulo}: comparação com a base oficial (planilha)", f"{t.id}-comparacao.csv")]
     (gerado / "downloads.md").write_text(trecho_downloads(arquivos_dados, dados_citacao(config)["site"]),
                                          encoding="utf-8")
     # Data da edição: a do tema ativo com dados mais antigos (os servidores do Overpass nem sempre

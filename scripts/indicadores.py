@@ -22,7 +22,8 @@ import sys
 from difflib import SequenceMatcher
 from pathlib import Path
 
-from comum import (Tema, argumento_local, dentro, distancia_geometria_m, distancia_m, ler_config, ler_csv, ler_limite,
+from comparacao import montar, no_escopo
+from comum import (Tema, area_m2, argumento_local, dentro, distancia_geometria_m, distancia_m, ler_config, ler_csv, ler_limite,
                    ler_temas, ler_toml, linhas_de, normalizar_nome, numero, porcentagem)
 
 
@@ -217,6 +218,19 @@ def calcular(local: Path, tema: Tema, config: dict) -> dict:
         res["linhas"].append(("Com tipo de pavimento informado",
                               f"{numero(km_pav)} km ({porcentagem(pct(km_pav, km))})" if km else "—"))
         res["km_vias"], res["km_pavimento"] = round(km, 2), round(km_pav, 2)
+    if "linhas" in tema.indicadores:
+        km = sum(comprimento_m(f["geometry"]) for f in feicoes) / 1000
+        km_nome = sum(comprimento_m(f["geometry"]) for f in feicoes if f["properties"]["tags"].get("name")) / 1000
+        res["linhas"].append(("Comprimento das linhas (dentro do município)", f"{numero(km)} km"))
+        res["linhas"].append(("Comprimento com nome", f"{numero(km_nome)} km ({porcentagem(pct(km_nome, km))})" if km else "—"))
+        res["km_linhas"] = round(km, 2)
+    if "areas" in tema.indicadores:
+        ha = sum(area_m2(f["geometry"]) for f in feicoes) / 10_000
+        arq_limite = local / "dados" / "osm" / "limite.geojson"
+        ha_mun = (sum(area_m2({"type": "Polygon", "coordinates": [anel]}) for anel in ler_limite(local)) / 10_000
+                  if arq_limite.exists() else 0)
+        res["linhas"].append(("Área mapeada", f"{numero(ha)} ha" + (f" ({porcentagem(pct(ha, ha_mun))} do município)" if ha_mun else "")))
+        res["ha_areas"] = round(ha, 1)
 
     if tema.referencia != "interno":
         oficial = ler_oficial(local, tema.referencia)
@@ -226,6 +240,10 @@ def calcular(local: Path, tema: Tema, config: dict) -> dict:
         else:
             fonte, itens = oficial
             cc = config["completude"]
+            # Só entram na comparação os objetos do tipo que a base cobre (fonte.toml: filtro_osm).
+            todas = feicoes
+            feicoes = [f for f in todas if no_escopo(f["properties"]["tags"], fonte.get("filtro_osm"))]
+            tags = [f["properties"]["tags"] for f in feicoes]
             pares = correspondencias(itens, feicoes, cc["distancia_max_m"], cc["similaridade_min"],
                                      config["municipio"]["nome"])
             correspondidos = {i for i, _, _, _ in pares}
@@ -235,13 +253,13 @@ def calcular(local: Path, tema: Tema, config: dict) -> dict:
             c_t, q_t = pct(len(pares), len(itens)), pct(completos, len(pares))
             res["completude"] = {"C_t": c_t, "Q_t": q_t, "oficiais": len(itens), "correspondidos": len(pares),
                                  "sem_coordenada": sem_coord, "fonte": fonte["nome"], "data_acesso": str(fonte["data_acesso"])}
-            res["linhas"].append((f"Itens na base oficial ({fonte['nome']})", str(len(itens))))
-            res["linhas"].append(("Itens oficiais encontrados no mapa (completude)", parte(len(pares), len(itens))))
-            res["linhas"].append(("Encontrados que têm nome e endereço no mapa (qualidade)", parte(completos, len(pares))))
+            res["linhas"].append(("Encontrados na base oficial que têm nome e endereço no mapa", parte(completos, len(pares))))
             arq_limite = local / "dados" / "osm" / "limite.geojson"
             motivos = motivos_lacunas(itens, feicoes, pares, cc["distancia_max_m"], cc["similaridade_min"],
                                       config["municipio"]["nome"], ler_limite(local) if arq_limite.exists() else None)
             res["lacunas"] = [dict(o, motivo=motivos[i]) for i, o in enumerate(itens) if i not in correspondidos]
+            # As duas fontes juntas: quadro-resumo, tabelas, mapa de comparação e downloads saem daqui.
+            res["comparacao"] = montar(fonte, itens, feicoes, pares, motivos, fora_escopo=len(todas) - len(feicoes))
     return res
 
 

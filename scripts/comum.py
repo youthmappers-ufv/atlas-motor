@@ -63,8 +63,8 @@ class Tema:
 
 # Temas que todo mapa usa como fundo (vias e nomes das localidades): são baixados mesmo em "planejado".
 TEMAS_DE_FUNDO = ("sistema-viario", "localizacao")
-MAPAS = ("pontos", "linhas")
-INDICADORES = ("servico", "vias")
+MAPAS = ("pontos", "linhas", "areas")
+INDICADORES = ("servico", "vias", "linhas", "areas")
 
 
 def _visual(base: dict, escolha: dict) -> dict:
@@ -300,15 +300,25 @@ def linhas_de(geometria: dict) -> list[list]:
     return []
 
 
+def poligonos_de(geometria: dict) -> list[list]:
+    """Os polígonos de uma geometria de área, cada um como lista de anéis (o primeiro é o externo):
+    um (Polygon) ou vários (MultiPolygon, que é como fica a relação multipolígono do OSM)."""
+    if geometria["type"] == "Polygon":
+        return [geometria["coordinates"]]
+    if geometria["type"] == "MultiPolygon":
+        return list(geometria["coordinates"])
+    return []
+
+
 def coordenadas(geometria: dict) -> list[tuple[float, float]]:
-    """Todos os vértices de uma geometria GeoJSON (Point, LineString, MultiLineString, Polygon)."""
+    """Todos os vértices de uma geometria GeoJSON (ponto, linha, área e as formas "Multi" das duas)."""
     t, c = geometria["type"], geometria["coordinates"]
     if t == "Point":
         return [tuple(c)]
     if t in ("LineString", "MultiLineString"):
         return [tuple(p) for linha in linhas_de(geometria) for p in linha]
-    if t == "Polygon":
-        return [tuple(p) for anel in c for p in anel]
+    if t in ("Polygon", "MultiPolygon"):
+        return [tuple(p) for poligono in poligonos_de(geometria) for anel in poligono for p in anel]
     raise ValueError(f"geometria não suportada: {t}")
 
 
@@ -316,7 +326,21 @@ def ponto_representativo(geometria: dict) -> tuple[float, float]:
     pts = coordenadas(geometria)
     if geometria["type"] in ("LineString", "MultiLineString"):
         return pts[len(pts) // 2]
+    if geometria["type"] == "MultiPolygon":       # centro do maior polígono (o que tem mais vértices)
+        pts = [tuple(p) for p in max(poligonos_de(geometria), key=lambda pol: len(pol[0]))[0]]
     return sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts)
+
+
+def area_m2(geometria: dict) -> float:
+    """Área em metros quadrados de uma geometria de área (anéis internos descontados); outras: zero.
+    Plano local na latitude média de cada anel: erro desprezível na escala de um município."""
+    def anel_m2(anel) -> float:
+        if len(anel) < 4:
+            return 0.0
+        fx = math.cos(math.radians(sum(p[1] for p in anel) / len(anel)))
+        soma = sum(a[0] * fx * b[1] - b[0] * fx * a[1] for a, b in zip(anel, anel[1:]))
+        return abs(soma) / 2 * 111_194.9 ** 2
+    return sum(anel_m2(pol[0]) - sum(anel_m2(furo) for furo in pol[1:]) for pol in poligonos_de(geometria) if pol)
 
 
 def _distancia_segmento_m(lon: float, lat: float, a, b) -> float:
@@ -335,10 +359,11 @@ def distancia_geometria_m(lon: float, lat: float, geometria: dict) -> float:
     t, c = geometria["type"], geometria["coordinates"]
     if t == "Point":
         return distancia_m(lon, lat, c[0], c[1])
-    if t == "Polygon":
-        if dentro(lon, lat, c[:1]) and not any(dentro(lon, lat, [furo]) for furo in c[1:]):
-            return 0.0
-        partes = c
+    if t in ("Polygon", "MultiPolygon"):
+        for pol in poligonos_de(geometria):
+            if dentro(lon, lat, pol[:1]) and not any(dentro(lon, lat, [furo]) for furo in pol[1:]):
+                return 0.0
+        partes = [anel for pol in poligonos_de(geometria) for anel in pol]
     else:
         partes = linhas_de(geometria)
     return min((_distancia_segmento_m(lon, lat, a, b) for parte in partes for a, b in zip(parte, parte[1:])),

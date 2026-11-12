@@ -68,6 +68,13 @@ def geometria(e: dict) -> dict | None:
             return {"type": "Polygon", "coordinates": [pts]}
         return {"type": "LineString", "coordinates": pts}
     if e["type"] == "relation":
+        if e.get("tags", {}).get("type") in ("multipolygon", "boundary"):
+            # multipolígono: os anéis externos viram áreas (os internos, "buracos", não são descontados)
+            aneis = [a for a in aneis_externos(e) if len(a) >= 4 and a[0] == a[-1]]
+            if len(aneis) == 1:
+                return {"type": "Polygon", "coordinates": [[[r7(x), r7(y)] for x, y in aneis[0]]]}
+            if aneis:
+                return {"type": "MultiPolygon", "coordinates": [[[[r7(x), r7(y)] for x, y in a]] for a in aneis]}
         pts = [(p["lon"], p["lat"]) for m in e.get("members", []) for p in (m.get("geometry") or []) if p]
         if pts:                                  # relação: guardamos o centro da caixa envolvente
             xs, ys = [p[0] for p in pts], [p[1] for p in pts]

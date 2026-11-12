@@ -30,7 +30,7 @@ from datetime import date
 from pathlib import Path
 
 from comum import (CATALOGO, INDICADORES, MAPAS, MOTOR, SITUACOES, TEMAS_DE_FUNDO, Tema, argumento_local, caminho_consulta, coordenadas, ler_csv,
-                   ler_esquemas, ler_temas, ler_toml, sobrenome_e_prenome, usar_versao_declarada)
+                   ler_esquemas, ler_temas, ler_toml, ponto_representativo, sobrenome_e_prenome, usar_versao_declarada)
 
 RECORTES = {"municipio", "sede", "ambos"}
 COLUNAS_PROIBIDAS = {"cpf", "rg", "email", "e-mail", "telefone_pessoal", "celular", "matricula", "endereco_residencial"}
@@ -236,6 +236,9 @@ def verificar_osm(local: Path, config: dict, temas: list[Tema], r: Relatorio) ->
             except (KeyError, ValueError, TypeError) as e:
                 r.erro(f"[osm] {arq.name}: {osm or i}: geometria inválida ({e})")
                 continue
+            # áreas: vale o ponto representativo (uma mata ou represa pode passar do limite)
+            if f["geometry"]["type"] in ("Polygon", "MultiPolygon"):
+                pts = [ponto_representativo(f["geometry"])]
             if nome != "limite" and not all(dentro_caixa(x, y, bbox) for x, y in pts):
                 r.erro(f"[osm] {arq.name}: {osm} fora da área do município")
         if nome != "limite":
