@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -32,8 +33,8 @@ import time
 from datetime import date
 from pathlib import Path
 
-from comum import (MOTOR, argumento_local, ler_config, ler_temas, sobrenome_e_prenome, tirar_somente_leitura,
-                   usar_versao_declarada, versao_motor)
+from comum import (MOTOR, argumento_local, data_br, ler_config, ler_temas, sobrenome_e_prenome, texto_md,
+                   tirar_somente_leitura, usar_versao_declarada, versao_motor)
 from indicadores import calcular
 from identidade import gerar as gerar_identidade
 from validar import verificar
@@ -54,21 +55,23 @@ def trechos_tema(tema, res: dict, figuras: list[tuple[str, str, str]], retrato: 
     Partes que não se aplicam (ex.: mapa-sede num tema só do município) ficam vazias."""
     t = dict.fromkeys(TRECHOS, "")
     for arq, legenda, recorte in figuras:
-        t[f"mapa-{recorte}"] = f"![{legenda}](../_gerado/figuras/{arq}){{fig-alt=\"{legenda}\" width=100%}}\n"
-    if figuras:
-        t["legenda"] = "Pontos cheios: objetos com nome no mapa; pontos vazados: sem nome.\n"
+        alt = f"Mapa: {legenda}".replace('"', "'")
+        t[f"mapa-{recorte}"] = f"![{legenda}](../_gerado/figuras/{arq}){{fig-alt=\"{alt}\" width=100%}}\n"
+    # "legenda" fica vazia: a legenda é desenhada dentro de cada mapa (mapas.py). O trecho continua
+    # existindo para as pranchas que o incluem em separado.
     t["indicadores"] = tabela(res["linhas"])
     lacunas = res.get("lacunas") or []
     if lacunas:
         partes = [f"\n**Itens da base oficial sem correspondente no mapa** ({len(lacunas)}):\n",
                   # traços na proporção das larguras (código 15%, nome 35%, motivo 50%)
                   "| Código | Nome | Motivo provável |\n|:---|:-------|:----------|\n"
-                  + "\n".join(f"| {o['id']} | {o['nome']} | {o.get('motivo', '')} |" for o in lacunas[:60]) + "\n"]
+                  + "\n".join(f"| {texto_md(o['id'])} | {texto_md(o['nome'])} | {texto_md(o.get('motivo', ''))} |"
+                              for o in lacunas[:60]) + "\n"]
         if len(lacunas) > 60:
             partes.append(f"\n… e mais {len(lacunas) - 60}.\n")
         t["lacunas"] = "\n".join(partes)
     base = retrato.get("temas", {}).get(tema.id, {}).get("base_osm") or retrato.get("base_osm", "")
-    t["fonte"] = (f"\n*Fonte: OpenStreetMap, dados de {base[:10] or 'data desconhecida'}. "
+    t["fonte"] = (f"\n*Fonte: OpenStreetMap, dados de {data_br(base[:10]) or 'data desconhecida'}. "
                   f"{config['publicacao']['atribuicao']}.*\n")
     return t
 
@@ -79,13 +82,28 @@ def trecho_tema(tema, res: dict, figuras: list[tuple[str, str, str]], retrato: d
 
 
 def versao_local(local: Path) -> str:
-    if os.environ.get("ATLAS_VERSAO"):
+    """Versão mostrada no atlas: a tag da edição (ATLAS_VERSAO, no CI) ou o git describe. Um nome
+    de branch em ATLAS_VERSAO (a publicação mensal sai da "main") não é versão: vale o describe,
+    que diz a última edição e quantos commits vieram depois."""
+    if re.fullmatch(r"v\d+\.\d+\.\d+\S*", os.environ.get("ATLAS_VERSAO", "")):
         return os.environ["ATLAS_VERSAO"]
     try:
         return subprocess.run(["git", "describe", "--tags", "--always", "--dirty"], cwd=local,
                               capture_output=True, text=True, check=True).stdout.strip() or "desenvolvimento"
     except (OSError, subprocess.CalledProcessError):
         return "desenvolvimento"
+
+
+def trecho_downloads(arquivos: list[tuple[str, str]], site: str) -> str:
+    """_gerado/downloads.md: no site, links para os arquivos ao lado das páginas; no PDF, que circula
+    fora do site, o endereço completo (ou só o nome do arquivo, se o atlas não tem site)."""
+    no_site = "\n".join(f"- [{titulo}](_gerado/downloads/{arq})" for titulo, arq in arquivos)
+    if site:
+        fora = "\n".join(f"- [{titulo}]({site}_gerado/downloads/{arq})" for titulo, arq in arquivos)
+    else:
+        fora = "\n".join(f"- {titulo}: `{arq}`" for titulo, arq in arquivos)
+    return (f"::: {{.content-visible when-format=\"html\"}}\n{no_site}\n:::\n\n"
+            f"::: {{.content-visible unless-format=\"html\"}}\n{fora}\n:::\n")
 
 
 def botao_pdf(slug: str) -> str:
@@ -331,22 +349,23 @@ def main() -> int:
     linhas = "\n".join(f"| {t.numero} | [{t.titulo}](pranchas/{t.prancha}) | {res['total']} |" for t, res in resumo)
     (gerado / "pranchas.md").write_text("| Nº | Prancha | Objetos no mapa |\n|--:|:--|--:|\n" + linhas + "\n", encoding="utf-8")
     shutil.copy2(local / "dados" / "osm" / "limite.geojson", gerado / "downloads" / "limite.geojson")
-    itens = ["- [Limite do município](_gerado/downloads/limite.geojson)"] + [
-        f"- [{t.titulo}](_gerado/downloads/{t.id}.geojson)" for t, _ in resumo
-        if (gerado / "downloads" / f"{t.id}.geojson").exists()]
-    (gerado / "downloads.md").write_text("\n".join(itens) + "\n", encoding="utf-8")
-    base_osm = retrato.get("base_osm", "")[:10] or "data desconhecida"
+    arquivos_dados = [("Limite do município", "limite.geojson")] + [
+        (t.titulo, f"{t.id}.geojson") for t, _ in resumo if (gerado / "downloads" / f"{t.id}.geojson").exists()]
+    (gerado / "downloads.md").write_text(trecho_downloads(arquivos_dados, dados_citacao(config)["site"]),
+                                         encoding="utf-8")
+    base_iso = retrato.get("base_osm", "")[:10]
+    base_osm = data_br(base_iso) or "data desconhecida"
     versao = (f"Versão **{versao_local(local)}** (motor {versao_motor()}), com dados do OpenStreetMap de "
               f"**{base_osm}**.\n")
     pdf = botao_pdf(config["publicacao"]["slug"])
     (gerado / "notas.md").write_text(versao, encoding="utf-8")            # notas do release (publicar.yml)
     (gerado / "edicao.md").write_text(versao + "\n" + pdf, encoding="utf-8")  # página inicial
     (gerado / "pdf.md").write_text(pdf, encoding="utf-8")                  # Dados para download
-    ano = base_osm[:4] if base_osm[:4].isdigit() else str(date.today().year)
+    ano = base_iso[:4] if base_iso[:4].isdigit() else str(date.today().year)
     (gerado / "citacao.md").write_text(trecho_citacao(config, ano), encoding="utf-8")  # Como usar e citar
     (gerado / "downloads" / f"atlas-{config['publicacao']['slug']}.bib").write_text(bibtex(config, ano), encoding="utf-8")
     (gerado / "badges").mkdir(exist_ok=True)
-    for nome, dados in badges(resumo, base_osm).items():
+    for nome, dados in badges(resumo, base_iso or "data desconhecida").items():
         (gerado / "badges" / f"{nome}.json").write_text(json.dumps(dados, ensure_ascii=False), encoding="utf-8")
     escrever_quarto(livro, config, ativos,
                     f"Versão {versao_local(local)} · motor {versao_motor()} · dados do OpenStreetMap de {base_osm}")

@@ -14,8 +14,10 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib.lines import Line2D  # noqa: E402
+from matplotlib.patches import Patch  # noqa: E402
 
-from comum import Tema, argumento_local, ler_config, ler_limite, ler_temas  # noqa: E402
+from comum import Tema, argumento_local, ler_config, ler_limite, ler_temas, linhas_de  # noqa: E402
 from indicadores import ler_feicoes  # noqa: E402
 
 # Cores fixas do mapa (fundo, limite, textos); a cor dos objetos vem do tema (catálogo: cor).
@@ -48,11 +50,11 @@ def desenhar(local: Path, tema: Tema, recorte: str, config: dict, saida: Path) -
     if tema.mapa != "linhas":
         for f in ler_feicoes(local, "sistema-viario"):
             g, hw = f["geometry"], f["properties"]["tags"].get("highway", "")
-            if g["type"] != "LineString" or (recorte != "sede" and not hw.startswith(
-                    ("trunk", "primary", "secondary", "tertiary", "unclassified"))):
+            if recorte != "sede" and not hw.startswith(("trunk", "primary", "secondary", "tertiary", "unclassified")):
                 continue
-            xs, ys = zip(*g["coordinates"])
-            ax.plot(xs, ys, color="#C9C9C9", lw=0.9 if recorte == "sede" else 0.35, zorder=1.5)
+            for linha in linhas_de(g):
+                xs, ys = zip(*linha)
+                ax.plot(xs, ys, color="#C9C9C9", lw=0.9 if recorte == "sede" else 0.35, zorder=1.5)
     if recorte != "sede":
         for f in ler_feicoes(local, "localizacao"):
             nome = f["properties"]["tags"].get("name")
@@ -63,19 +65,24 @@ def desenhar(local: Path, tema: Tema, recorte: str, config: dict, saida: Path) -
 
     cor = tema.cor
     pontos_x, pontos_y, vazios_x, vazios_y = [], [], [], []
+    tem = set()                                   # o que foi desenhado, para a legenda
     for f in ler_feicoes(local, tema.id):
         g, tags = f["geometry"], f["properties"]["tags"]
-        if g["type"] == "LineString":
-            xs, ys = zip(*g["coordinates"])
-            if "waterway" in tags:
-                ax.plot(xs, ys, color="#3A7BD5", lw=0.7, zorder=2)
-            else:
-                principal = tags.get("highway", "").startswith(("trunk", "primary", "secondary"))
-                ax.plot(xs, ys, color=cor if tema.mapa == "linhas" else "#9E9E9E",
-                        lw=1.1 if principal else 0.4, zorder=3)
+        if linhas_de(g):
+            for linha in linhas_de(g):
+                xs, ys = zip(*linha)
+                if "waterway" in tags:
+                    ax.plot(xs, ys, color="#3A7BD5", lw=0.7, zorder=2)
+                    tem.add("agua")
+                else:
+                    tem.add("linhas")
+                    principal = tags.get("highway", "").startswith(("trunk", "primary", "secondary"))
+                    ax.plot(xs, ys, color=cor if tema.mapa == "linhas" else "#9E9E9E",
+                            lw=1.1 if principal else 0.4, zorder=3)
         elif g["type"] == "Polygon":
             xs, ys = zip(*g["coordinates"][0])
             ax.fill(xs, ys, color=cor, alpha=0.35, lw=0, zorder=2)
+            tem.add("areas")
             cx, cy = sum(xs) / len(xs), sum(ys) / len(ys)
             (pontos_x if tags.get("name") else vazios_x).append(cx)
             (pontos_y if tags.get("name") else vazios_y).append(cy)
@@ -85,6 +92,29 @@ def desenhar(local: Path, tema: Tema, recorte: str, config: dict, saida: Path) -
             (pontos_y if tags.get("name") else vazios_y).append(y)
     ax.scatter(pontos_x, pontos_y, s=22, color=cor, edgecolors="white", linewidths=0.6, zorder=5)
     ax.scatter(vazios_x, vazios_y, s=14, facecolors="white", edgecolors=cor, linewidths=0.9, zorder=5)
+
+    # legenda: só do que aparece neste mapa
+    itens = []
+    if pontos_x:
+        itens.append(Line2D([], [], marker="o", ls="", color=cor, markeredgecolor="white", markersize=5.5,
+                            label="Com nome no mapa"))
+    if vazios_x:
+        itens.append(Line2D([], [], marker="o", ls="", markerfacecolor="white", markeredgecolor=cor, markersize=4.5,
+                            label="Sem nome no mapa"))
+    if "areas" in tem:
+        itens.append(Patch(facecolor=cor, alpha=0.35, lw=0, label="Área do objeto"))
+    if "linhas" in tem:
+        itens.append(Line2D([], [], color=cor if tema.mapa == "linhas" else "#9E9E9E", lw=1.1,
+                            label="Vias do tema" if tema.mapa == "linhas" else "Vias"))
+    if "agua" in tem:
+        itens.append(Line2D([], [], color="#3A7BD5", lw=0.9, label="Cursos d'água"))
+    if tema.mapa != "linhas":
+        itens.append(Line2D([], [], color="#C9C9C9", lw=1.1, label="Vias (referência)"))
+    if recorte != "sede":
+        itens.append(Line2D([], [], color=BORDO, lw=1.2, ls=(0, (5, 2)), label="Limite do município"))
+    if itens:
+        ax.legend(handles=itens, loc="upper left", fontsize=6.5, frameon=True, framealpha=0.92, facecolor="white",
+                  edgecolor="#BBBBBB", borderpad=0.7, labelcolor=CINZA).set_zorder(9)
 
     # escala (0,5 km na sede, 5 km no município), norte e atribuição
     km = 0.5 if recorte == "sede" else 5

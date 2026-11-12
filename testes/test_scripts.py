@@ -476,8 +476,38 @@ class CatalogoDeTemas(unittest.TestCase):
         self.assertIn("| 1 | E.E. X | sem coordenada na base oficial |", partes["lacunas"])
         inteira = trecho_tema(tema, res, figuras, {}, config)
         self.assertEqual(inteira, "\n".join(p for p in partes.values() if p))
-        ordem = [inteira.index(x) for x in ("educacao-municipio.png", "Pontos cheios", "Indicador", "E.E. X", "Fonte:")]
-        self.assertEqual(ordem, sorted(ordem), "ordem da prancha: mapas, legenda, indicadores, lacunas, fonte")
+        ordem = [inteira.index(x) for x in ("educacao-municipio.png", "Indicador", "E.E. X", "Fonte:")]
+        self.assertEqual(ordem, sorted(ordem), "ordem da prancha: mapas, indicadores, lacunas, fonte")
+        self.assertEqual(partes["legenda"], "", "a legenda é desenhada dentro do mapa")
+
+    def test_texto_dos_dados_nao_quebra_a_prancha(self):
+        from comum import Tema
+        from construir import trechos_tema
+        tema = Tema(id="educacao", numero=3, titulo='Educação "básica"', situacao="em-andamento", consulta="",
+                    referencia="inep", recorte="municipio")
+        res = {"linhas": [], "lacunas": [{"id": "1", "nome": "E.E. A | B", "motivo": "x"}]}
+        partes = trechos_tema(tema, res, [("m.png", 'Educação "básica": município', "municipio")],
+                              {"base_osm": "2026-10-21T20:01:36Z"}, {"publicacao": {"atribuicao": "© OSM"}})
+        self.assertIn("| 1 | E.E. A \| B | x |", partes["lacunas"], "barra vertical escapada na tabela")
+        self.assertIn("fig-alt=\"Mapa: Educação 'básica': município\"", partes["mapa-municipio"])
+        self.assertIn("dados de 21/10/2026", partes["fonte"])
+
+    def test_versao_mostrada_nunca_e_nome_de_branch(self):
+        import os
+        from unittest import mock
+        from construir import versao_local
+        with mock.patch.dict(os.environ, {"ATLAS_VERSAO": "v1.2.0"}):
+            self.assertEqual(versao_local(MOTOR), "v1.2.0")
+        with mock.patch.dict(os.environ, {"ATLAS_VERSAO": "main"}):
+            self.assertNotEqual(versao_local(MOTOR), "main", "a publicação mensal sai da main: vale o git describe")
+
+    def test_downloads_com_endereco_completo_fora_do_site(self):
+        from construir import trecho_downloads
+        com_site = trecho_downloads([("Educação", "educacao.geojson")], "https://exemplo.org/atlas/")
+        self.assertIn("[Educação](_gerado/downloads/educacao.geojson)", com_site)
+        self.assertIn("[Educação](https://exemplo.org/atlas/_gerado/downloads/educacao.geojson)", com_site)
+        sem_site = trecho_downloads([("Educação", "educacao.geojson")], "")
+        self.assertIn("- Educação: `educacao.geojson`", sem_site)
 
 
 class ModeloCoerenteComMotor(unittest.TestCase):
