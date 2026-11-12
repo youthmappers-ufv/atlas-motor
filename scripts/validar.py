@@ -60,6 +60,8 @@ def orcid_valido(orcid: str) -> bool:
     digito = (12 - total % 11) % 11
     return orcid[-1] == ("X" if digito == 10 else str(digito))
 HOSPEDAGENS = ("pages", "artefato")
+# Modos de comparação com a base oficial (fonte.toml: comparacao) e os papéis de coluna de cada um
+MODOS_COMPARACAO = {"itens": ("id", "nome", "lat", "lon"), "contagem": ("unidade", "total"), "nomes": ("nome",)}
 RE_CHAMADA = re.compile(r"uses:\s*youthmappers-ufv/atlas-motor/\.github/workflows/[\w.-]+@(\S+)")
 TIPOS = {"texto", "inteiro", "decimal", "data", "lista", "latitude", "longitude", "tema", "url"}
 IGNORAR = {".git", "_site", "_gerado", "_construcao", ".quarto", "__pycache__", "_freeze", ".venv"}
@@ -281,13 +283,31 @@ def verificar_oficiais(local: Path, config: dict, r: Relatorio) -> None:
         if not arq.is_file():
             r.erro(f"[oficiais] {pasta.name}: arquivo declarado não existe: {fonte.get('arquivo')}")
             continue
+        modo = fonte.get("comparacao", "itens")
+        if modo not in MODOS_COMPARACAO:
+            r.erro(f"[oficiais] {pasta.name}/fonte.toml: comparacao '{modo}' (use {list(MODOS_COMPARACAO)})")
+            continue
+        geo = [arq] if arq.suffix == ".geojson" else []
+        if fonte.get("geometrias"):
+            geo.append(pasta / str(fonte["geometrias"]))
+        for g in geo:                             # unidades (setores) e geometrias de apoio: GeoJSON bem formado
+            try:
+                if json.loads(g.read_text(encoding="utf-8")).get("type") != "FeatureCollection":
+                    r.erro(f"[oficiais] {pasta.name}/{g.name}: não é FeatureCollection")
+            except (OSError, ValueError) as e:
+                r.erro(f"[oficiais] {pasta.name}/{g.name}: GeoJSON ilegível ({e})")
+        if arq.suffix == ".geojson":
+            continue
         try:
             cab, linhas = ler_csv(arq)
         except UnicodeDecodeError:
             r.erro(f"[oficiais] {pasta.name}/{arq.name}: não está em UTF-8")
             continue
         colunas = fonte.get("colunas", {})
-        for papel in ("id", "nome", "lat", "lon"):
+        if modo == "contagem" and not (local / "dados" / "oficiais" / str(fonte.get("unidades", "")) / "fonte.toml").is_file():
+            r.erro(f"[oficiais] {pasta.name}/fonte.toml: comparação por contagem pede 'unidades' = pasta das unidades "
+                   "(ex.: \"setores\") em dados/oficiais/")
+        for papel in MODOS_COMPARACAO[modo]:
             if colunas.get(papel) not in cab:
                 r.erro(f"[oficiais] {pasta.name}: coluna para '{papel}' ({colunas.get(papel)}) não está no CSV")
         if colunas.get("lat") in cab and colunas.get("lon") in cab:

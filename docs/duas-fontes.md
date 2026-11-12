@@ -41,13 +41,37 @@ Cada regra é `chave=valor`, com alternativas separadas por `|`; só a chave (`"
 
 ## Modos de comparação
 
-| Modo | Quando se aplica | Situação |
-|---|---|---|
-| `itens` | a base lista objetos com coordenada (INEP, CNES, Censo SUAS, Conab) | **implementado**: é o descrito acima |
-| `contagem` | a base dá totais por unidade territorial (CNEFE: endereços por setor) | previsto: razão OSM ÷ oficial por unidade, em mapa coroplético |
-| `extensao` | a base é uma malha de linhas ou áreas (faces de logradouro, distritos) | previsto: comprimento ou área no OSM ÷ oficial por unidade |
+O `fonte.toml` da base diz o modo (`comparacao`); sem ele, vale `itens`.
 
-Os modos `contagem` e `extensao` dependem de carregar as bases correspondentes e a malha de unidades (setores ou distritos); até lá, as pranchas de Edificações, Logradouros e Bairros usam só indicadores internos.
+| Modo | Quando se aplica | O que a prancha mostra |
+|---|---|---|
+| `itens` | a base lista objetos com coordenada (INEP, CNES) | o descrito acima: cada item nas duas fontes, só na oficial ou só no OpenStreetMap |
+| `contagem` | a base dá totais por unidade territorial (CNEFE: endereços por setor censitário) | mapa dos setores na cor da razão OpenStreetMap ÷ oficial (cinco classes), quadro com os totais e a razão, e a tabela dos setores da maior falta para a menor |
+| `nomes` | a base é uma lista de nomes (logradouros da Base de Faces do IBGE) | mapa das faces na cor da situação do nome (nas duas, só na oficial, sem nome na base), quadro, a tabela dos nomes oficiais que faltam no mapa (com a grafia parecida, quando há) e a lista dos nomes só no OpenStreetMap |
+
+No modo `contagem`, o `fonte.toml` aponta a pasta das unidades (`unidades = "setores"`), as colunas (`[colunas] unidade`, `total`) e os rótulos do quadro (`rotulo_oficial`, `rotulo_osm`). Cada objeto do OpenStreetMap é contado no setor em que o seu ponto representativo cai. Endereço não é edificação (um prédio tem vários), e por isso a razão é uma aproximação: serve para ordenar os setores por falta, não como medida exata.
+
+No modo `nomes`, os nomes são comparados sem acento, sem maiúsculas e com as abreviações usuais por extenso (R., Av., Dr., Prof., Cel.); um nome oficial sem igual no mapa, mas com um parecido, ganha a pista "conferir a grafia". O `fonte.toml` pode apontar as geometrias de apoio (`geometrias = "faces.geojson"`), usadas só para desenhar o mapa.
+
+## Baixar as bases
+
+`scripts/baixar_bases.py` baixa e prepara as bases federais que o motor conhece, a partir do código IBGE e da UF do `atlas.toml`:
+
+```
+python ../atlas-motor/scripts/baixar_bases.py                # todas
+python ../atlas-motor/scripts/baixar_bases.py --base cnes    # só uma (pode repetir)
+```
+
+| Base | Fonte | O que grava em `dados/oficiais/` | Prancha |
+|---|---|---|---|
+| `cnes` | API de dados abertos do Ministério da Saúde | `cnes/estabelecimentos.csv`: estabelecimentos ativos, com código, nome fantasia, tipo, esfera, endereço e coordenada | Saúde (`itens`) |
+| `setores` | Malha de setores do Censo 2022 (IBGE), arquivo da UF | `setores/setores.geojson`: os setores do município | unidades da contagem |
+| `cnefe` | CNEFE do Censo 2022 (IBGE), arquivo do município | `cnefe/enderecos-por-setor.csv`: endereços por setor e por espécie | Edificações (`contagem`) |
+| `faces` | Base de Faces de Logradouros 2022 (IBGE), arquivo da UF | `faces/logradouros.csv` e `faces/faces.geojson` | Logradouros (`nomes`) |
+
+Só o recorte do município entra no repositório, e só o que a comparação usa: do CNES não saem razão social, CNPJ ou CPF, telefone nem e-mail; do CNEFE saem só as contagens, nenhum endereço. Os arquivos originais ficam em `~/.cache/atlas-motor/bases` (os da UF servem a todos os municípios do estado; setores e faces de Minas Gerais somam cerca de 300 MB). `setores` deve vir antes de `cnefe`: cada endereço é contado no setor da malha publicada em que a sua coordenada cai, porque o código de setor do CNEFE é o da coleta e nem sempre existe na malha.
+
+O Catálogo de Escolas do INEP continua a ser baixado à mão do painel do órgão e preparado com `preparar_base.py`.
 
 ## Como a correspondência é feita
 

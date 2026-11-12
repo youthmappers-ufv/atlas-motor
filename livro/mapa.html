@@ -100,6 +100,31 @@
 
     if (!d.comparacao) return;
     ler(d.comparacao).then(function (g) {
+      // Comparação por contagem (setores) ou por nomes (logradouros): cada feição traz o rótulo e a
+      // cor da sua classe, os mesmos do mapa do PDF. Uma camada por classe, na ordem do arquivo.
+      if (g.features.length && g.features[0].properties.cor) {
+        var classes = [];
+        g.features.forEach(function (f) { if (classes.indexOf(f.properties.rotulo) < 0) classes.push(f.properties.rotulo); });
+        classes.forEach(function (rotulo) {
+          var camada = L.geoJSON(g, {
+            filter: function (f) { return f.properties.rotulo === rotulo; },
+            style: function (f) { return {color: f.properties.cor, weight: f.geometry.type.indexOf("Polygon") >= 0 ? 1 : 3,
+                                          fillColor: f.properties.cor, fillOpacity: 0.55}; },
+            onEachFeature: function (f, c) {
+              var p = f.properties;
+              c.bindPopup(function () {
+                return p.unidade
+                  ? ficha("Setor " + p.unidade, [["Situação", p.situacao], ["Nº na tabela", String(p.n)],
+                                                 ["Na base oficial", String(p.oficial)], ["No OpenStreetMap", String(p.osm)],
+                                                 ["Razão", p.razao === null ? "" : String(p.razao).replace(".", ",") + "%"]])
+                  : ficha(p.nome || "Sem nome na base oficial", [["Situação", p.rotulo]]);
+              });
+            }
+          }).addTo(mapa);
+          camadas.addOverlay(camada, rotulo);
+        });
+        return;
+      }
       var grupos = {
         ambas: {rotulo: "Nas duas fontes", estilo: {radius: 6, color: "#fff", weight: 1, fillColor: cor, fillOpacity: 1}},
         so_osm: {rotulo: "Só no OpenStreetMap", estilo: {radius: 6, color: cor, weight: 2, fillColor: "#fff", fillOpacity: 1}},

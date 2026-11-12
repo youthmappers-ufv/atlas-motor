@@ -22,7 +22,8 @@ import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.lines import Line2D  # noqa: E402
 from matplotlib.patches import Patch  # noqa: E402
 
-from comum import (Tema, argumento_local, ler_config, ler_limite, ler_temas, linhas_de, poligonos_de,  # noqa: E402
+from comparacao import CLASSES_RAZAO, CORES_NOMES, SEM_BASE  # noqa: E402
+from comum import (Tema, area_m2, argumento_local, ler_config, ler_limite, ler_temas, linhas_de, poligonos_de,  # noqa: E402
                    ponto_representativo)
 from indicadores import calcular, ler_feicoes  # noqa: E402
 
@@ -184,6 +185,11 @@ def desenhar(local: Path, tema: Tema, recorte: str, config: dict, saida: Path) -
 def desenhar_comparacao(local: Path, tema: Tema, recorte: str, config: dict, comp: dict, saida: Path) -> Path:
     """As duas fontes: itens nas duas, só no OpenStreetMap e só na base oficial (numerados)."""
     cx = caixa(recorte, config)
+    modo = comp.get("modo", "itens")
+    if modo == "contagem":
+        return _comparacao_por_unidade(local, recorte, config, comp, saida)
+    if modo == "nomes":
+        return _comparacao_por_nomes(local, recorte, config, comp, saida)
     fig, ax = _base(local, recorte, config, True)
     cor = tema.cor
     ambas = [(o["lon"], o["lat"]) for o in comp["oficiais"] if o["situacao"] == "ambas" and o["lat"] is not None]
@@ -211,6 +217,52 @@ def desenhar_comparacao(local: Path, tema: Tema, recorte: str, config: dict, com
     if faltam:
         itens.append(Line2D([], [], marker="D", ls="", color=FALTA, markeredgecolor="white", markersize=5.5,
                             label="Só na base oficial (nº da tabela)"))
+    _legenda_de_fundo(itens, recorte, True)
+    return _finalizar(fig, ax, itens, recorte, config, saida)
+
+
+def _comparacao_por_unidade(local: Path, recorte: str, config: dict, comp: dict, saida: Path) -> Path:
+    """Contagem: cada setor na cor da sua razão OpenStreetMap ÷ base oficial, com o número da tabela
+    nos de maior falta que cabem no recorte."""
+    cx = caixa(recorte, config)
+    fig, ax = _base(local, recorte, config, recorte == "sede")
+    classes = {}
+    # Do maior para o menor: o setor rural que envolve a cidade é desenhado antes dos urbanos, que
+    # ficam por cima dele (o contorno externo do setor rural cobre a área da cidade).
+    for u in sorted(comp["unidades"], key=lambda u: -area_m2(u["geometry"])):
+        for poligono in poligonos_de(u["geometry"]):
+            xs, ys = zip(*poligono[0])
+            ax.fill(xs, ys, facecolor=u["cor"], edgecolor="white", linewidth=0.5, zorder=2)
+        classes[u["classe"]] = u["cor"]
+    numerados = 0
+    for u in comp["unidades"]:                    # já em ordem de falta
+        x, y = ponto_representativo(u["geometry"])
+        if numerados < 12 and na_caixa(x, y, cx):
+            numerados += 1
+            ax.annotate(str(u["n"]), (x, y), ha="center", va="center", fontsize=6.5, fontweight="bold", color=CINZA, zorder=8,
+                        bbox=dict(boxstyle="round,pad=0.15", facecolor="white", edgecolor="none", alpha=0.85))
+    ordem = [rotulo for _, rotulo, _ in CLASSES_RAZAO] + [SEM_BASE[0]]
+    itens = [Patch(facecolor=classes[r], edgecolor="white", label=f"{r} do total oficial" if "%" in r else r)
+             for r in ordem if r in classes]
+    _legenda_de_fundo(itens, recorte, recorte == "sede")
+    return _finalizar(fig, ax, itens, recorte, config, saida)
+
+
+def _comparacao_por_nomes(local: Path, recorte: str, config: dict, comp: dict, saida: Path) -> Path:
+    """Nomes: as faces de logradouro da base oficial, na cor da situação do nome."""
+    fig, ax = _base(local, recorte, config, True)
+    presentes = set()
+    for situacao, zorder in (("sem_nome", 3), ("ambas", 4), ("so_oficial", 5)):
+        rotulo, cor = CORES_NOMES[situacao]
+        for f in comp["faces"]:
+            if f["situacao"] != situacao:
+                continue
+            for linha in linhas_de(f["geometry"]):
+                xs, ys = zip(*linha)
+                ax.plot(xs, ys, color=cor, lw=1.6 if situacao == "so_oficial" else 1.0, zorder=zorder)
+            presentes.add(situacao)
+    itens = [Line2D([], [], color=CORES_NOMES[s][1], lw=1.6, label=CORES_NOMES[s][0])
+             for s in ("ambas", "so_oficial", "sem_nome") if s in presentes]
     _legenda_de_fundo(itens, recorte, True)
     return _finalizar(fig, ax, itens, recorte, config, saida)
 

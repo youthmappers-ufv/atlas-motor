@@ -32,7 +32,9 @@ modelo-local/           modelo de repositório municipal (usado por novo_local.p
 scripts/
   baixar_osm.py         retrato do OSM do município
   validar.py            integridade do repositório do município (CI em todo PR)
-  indicadores.py        completude C_t e Q_t e indicadores internos
+  indicadores.py        indicadores do tema e comparação com a base oficial
+  comparacao.py         as duas fontes juntas: por itens, por contagem e por nomes
+  baixar_bases.py       baixa e prepara as bases oficiais federais (CNES, CNEFE, setores, faces)
   mapas.py              mapas das pranchas (matplotlib)
   construir.py          monta o livro e renderiza site e PDF
   identidade.py         traduz o _brand.yml (identidade visual) para o PDF

@@ -33,9 +33,9 @@ import time
 from datetime import date
 from pathlib import Path
 
-from comparacao import csv_texto as csv_comparacao
-from comparacao import geojson as geojson_comparacao
-from comparacao import quadro_resumo, resumo_curto, tabela_so_oficial, tabela_so_osm
+from comparacao import csv_modo as csv_comparacao
+from comparacao import geojson_modo as geojson_comparacao
+from comparacao import quadro, resumo_curto, tabela_faltas, tabela_sobras
 from comum import (MOTOR, argumento_local, data_br, ler_config, ler_temas, numero, porcentagem, sobrenome_e_prenome, texto_md,
                    tirar_somente_leitura, usar_versao_declarada, versao_motor)
 from indicadores import calcular
@@ -78,9 +78,9 @@ def trechos_tema(tema, res: dict, figuras: list[tuple[str, str, str]], retrato: 
     # existindo para as pranchas que o incluem em separado.
     t["indicadores"] = tabela(res["linhas"])
     if comp:
-        t["resumo"] = "\n" + quadro_resumo(comp)
-        t["lacunas"] = tabela_so_oficial(comp)
-        t["so-osm"] = tabela_so_osm(comp)
+        t["resumo"] = "\n" + quadro(comp)
+        t["lacunas"] = tabela_faltas(comp)
+        t["so-osm"] = tabela_sobras(comp)
     elif res.get("lacunas"):                      # resultado sem a comparação montada (uso direto do módulo)
         t["lacunas"] = ("\n| Código | Nome | Motivo provável |\n|:---|:-------|:----------|\n" + "\n".join(
             f"| {texto_md(o['id'])} | {texto_md(o['nome'])} | {texto_md(o.get('motivo', ''))} |" for o in res["lacunas"]) + "\n")

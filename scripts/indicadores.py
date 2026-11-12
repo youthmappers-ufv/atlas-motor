@@ -22,7 +22,7 @@ import sys
 from difflib import SequenceMatcher
 from pathlib import Path
 
-from comparacao import montar, no_escopo
+from comparacao import montar, montar_contagem, montar_nomes, no_escopo
 from comum import (Tema, area_m2, argumento_local, dentro, distancia_geometria_m, distancia_m, ler_config, ler_csv, ler_limite,
                    ler_temas, ler_toml, linhas_de, normalizar_nome, numero, porcentagem)
 
@@ -174,6 +174,8 @@ def ler_oficial(local: Path, base: str) -> tuple[dict, list[dict]] | None:
     fonte = ler_toml(pasta / "fonte.toml")
     col = fonte["colunas"]
     _, linhas = ler_csv(pasta / fonte["arquivo"])
+    if fonte.get("comparacao", "itens") != "itens":   # contagem e nomes: as linhas como estão no CSV
+        return fonte, linhas
     itens = []
     for linha in linhas:
         def num(chave):
@@ -184,6 +186,35 @@ def ler_oficial(local: Path, base: str) -> tuple[dict, list[dict]] | None:
         itens.append({"id": linha.get(col["id"], ""), "nome": linha.get(col["nome"], ""),
                       "lat": num("lat"), "lon": num("lon")})
     return fonte, itens
+
+
+def comparar_por_modo(local: Path, fonte: dict, linhas: list[dict], feicoes: list[dict]) -> dict:
+    """Comparação por contagem (totais por unidade territorial) ou por nomes (logradouros)."""
+    col, pasta = fonte["colunas"], local / "dados" / "oficiais"
+    no_filtro = [f for f in feicoes if no_escopo(f["properties"]["tags"], fonte.get("filtro_osm"))]
+    if fonte["comparacao"] == "contagem":
+        unidades_fonte = ler_toml(pasta / fonte["unidades"] / "fonte.toml")
+        unidades = json.loads((pasta / fonte["unidades"] / unidades_fonte["arquivo"]).read_text(encoding="utf-8"))["features"]
+        totais = {}
+        for linha in linhas:
+            try:
+                totais[linha[col["unidade"]]] = float(linha[col["total"]])
+            except (TypeError, ValueError):
+                continue
+        return montar_contagem(fonte, totais, unidades, no_filtro)
+    geometrias = []
+    if fonte.get("geometrias"):
+        arq = next((p / fonte["geometrias"] for p in pasta.iterdir() if (p / fonte["geometrias"]).is_file()), None)
+        if arq:
+            geometrias = json.loads(arq.read_text(encoding="utf-8"))["features"]
+    oficiais = []
+    for linha in linhas:
+        try:
+            km = float(linha.get("faces_km") or 0)
+        except ValueError:
+            km = 0.0
+        oficiais.append({"nome": linha[col["nome"]], "km": km})
+    return montar_nomes(fonte, oficiais, no_filtro, geometrias)
 
 
 def comprimento_m(geometria: dict) -> float:
@@ -237,6 +268,13 @@ def calcular(local: Path, tema: Tema, config: dict) -> dict:
         if oficial is None:
             res["completude"] = None
             res["linhas"].append(("Completude em relação à base oficial", f"base '{tema.referencia}' ainda não carregada"))
+        elif oficial[0].get("comparacao", "itens") != "itens":
+            fonte, linhas_csv = oficial
+            comp = comparar_por_modo(local, fonte, linhas_csv, feicoes)
+            res["comparacao"] = comp
+            res["completude"] = {"C_t": comp["resumo"]["cobertura"], "Q_t": None, "oficiais": comp["resumo"]["oficial"],
+                                 "correspondidos": comp["resumo"].get("ambas", comp["resumo"]["osm"]), "sem_coordenada": 0,
+                                 "fonte": fonte["nome"], "data_acesso": str(fonte["data_acesso"])}
         else:
             fonte, itens = oficial
             cc = config["completude"]
