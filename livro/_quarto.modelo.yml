@@ -19,6 +19,9 @@ book:
   output-file: {{arquivo}}             # nome do PDF, sem acento (vai para URLs)
   downloads: [pdf]
   search: true
+  description: "{{descricao}}"
+  favicon: marca/ymufv_logo.png
+  open-graph: true
   page-footer:
     center: "{{rodape}}"
   chapters:
@@ -27,6 +30,7 @@ book:
     - part: "Pranchas"
       chapters:
 {{capitulos}}
+    - evolucao.qmd
     - dados.qmd
 
 format:
@@ -34,6 +38,7 @@ format:
     theme: [cosmo, brand, estilo.scss]     # cores, fontes e logo do _brand.yml
     toc: true
     number-sections: false
+    include-after-body: mapa.html          # mapa interativo das pranchas
   pdf:
     documentclass: scrreprt
     papersize: a4

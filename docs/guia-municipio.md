@@ -59,7 +59,7 @@ Abre o site no navegador e recarrega a cada texto salvo em `atlas/`. Mudou dados
 
 ### Retrato novo do OSM
 
-O workflow *Atualizar dados do OSM* faz isso todo mês e abre um PR. À mão: `python ../atlas-motor/scripts/baixar_osm.py` (todos os temas) ou `--tema educacao`. O Overpass às vezes falha (erro 502, tempo esgotado): espere alguns minutos e tente de novo; o script já tenta outros servidores.
+O workflow *Atualizar dados do OSM* faz isso todo mês e abre um PR. À mão: `python ../atlas-motor/scripts/baixar_osm.py` (temas ativos e os de fundo dos mapas; `--todos` inclui os planejados) ou `--tema educacao`. O Overpass às vezes falha (erro 502, tempo esgotado): espere alguns minutos e tente de novo; o script já tenta outros servidores.
 
 ### Abrir uma prancha
 

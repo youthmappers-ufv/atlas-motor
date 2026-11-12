@@ -1,7 +1,9 @@
 # Workflow reutilizável: retrato do OpenStreetMap de um município, proposto por pull request.
 # Chamado pelo .github/workflows/atualizar-dados.yml de cada atlas-<cidade> (dia 1 de cada mês).
-# O chamador concede contents: write e pull-requests: write.
-# PRs abertos pelo GITHUB_TOKEN não disparam o Verificar; por isso a validação roda aqui.
+# O chamador concede contents: write, pull-requests: write e actions: write.
+# PRs abertos pelo GITHUB_TOKEN não disparam o Verificar sozinhos (ficam à espera de aprovação), e a
+# main só aceita merge com ele verde: por isso este workflow valida aqui e dispara o Verificar no
+# ramo do PR (o disparo manual é permitido ao token; é para isso o actions: write).
 name: Atualizar dados do OSM (reutilizável)
 
 on:
@@ -57,3 +59,5 @@ jobs:
           } > "$RUNNER_TEMP/corpo-pr.md"
           gh pr create --base main --head "$ramo" --title "[DADOS] Retrato do OSM de $base" --body-file "$RUNNER_TEMP/corpo-pr.md" \
             || echo "Já existe um PR aberto para este ramo."
+          gh workflow run verificar.yml --ref "$ramo" \
+            || echo "::warning::Não consegui disparar o Verificar no ramo $ramo (falta 'actions: write' no atualizar-dados.yml do município?). Na página do PR, use 'Approve and run'."

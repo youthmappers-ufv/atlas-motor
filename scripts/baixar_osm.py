@@ -9,8 +9,12 @@ Os arquivos são ordenados e as coordenadas arredondadas (7 casas, ~1 cm), para
 que cada atualização produza diferenças legíveis no Git.
 
 Uso:
-  python <motor>/scripts/baixar_osm.py --local <município>                # todos os temas
+  python <motor>/scripts/baixar_osm.py --local <município>                # temas ativos e os de fundo dos mapas
   python <motor>/scripts/baixar_osm.py --local <município> --tema educacao # só um tema
+  python <motor>/scripts/baixar_osm.py --local <município> --todos         # também os temas em "planejado"
+
+Vias e rios são cortados no limite do município: uma via que o atravessa em mais de um trecho
+vira MultiLineString, com o mesmo identificador do OSM.
 """
 from __future__ import annotations
 
@@ -21,11 +25,11 @@ import sys
 import time
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from comum import (aneis_externos, argumento_local, caminho_consulta, dentro, escrever_json, ler_config, ler_temas,
-                   ponto_representativo, usar_versao_declarada)
+from comum import (TEMAS_DE_FUNDO, IndiceDeBordas, aneis_externos, argumento_local, caminho_consulta, dentro,
+                   escrever_json, ler_config, ler_temas, ponto_representativo, recortar_linha, usar_versao_declarada)
 
 USER_AGENT = "atlas-motor (Programa Youthmappers UFV)"
 CHAVES_AREA = ("building", "landuse", "leisure", "natural", "amenity", "place", "tourism",
@@ -36,15 +40,30 @@ def consultar(config: dict, corpo: str) -> tuple[dict, str]:
     # "out geom" traz etiquetas, membros e geometria ("out tags geom" omitiria os membros das relações)
     consulta = f"[out:json][timeout:{config['overpass']['tempo_limite']}];{corpo}out geom;"
     dados = urllib.parse.urlencode({"data": consulta}).encode()
-    erros = []
-    for url in config["overpass"]["servidores"]:
+    # Os servidores públicos nem sempre estão em dia (uma mesma instância pode responder com a base
+    # de dias atrás): resposta mais velha que overpass.atraso_max_horas (padrão 24) é guardada como
+    # reserva, e a consulta segue para o próximo servidor, por até duas voltas. Sem nenhuma em dia,
+    # vale a mais recente, com aviso; cada tema registra no retrato a data da sua base.
+    limite = datetime.now(timezone.utc) - timedelta(hours=config["overpass"].get("atraso_max_horas", 24))
+    erros, reserva = [], None
+    for url in config["overpass"]["servidores"] * 2:
         try:
             req = urllib.request.Request(url, data=dados, headers={"User-Agent": USER_AGENT})
             with urllib.request.urlopen(req, timeout=config["overpass"]["tempo_limite"] + 30) as r:
-                return json.load(r), url
+                resposta = json.load(r)
         except Exception as erro:               # servidor fora do ar ou sobrecarregado: tenta o próximo
             erros.append(f"{url}: {erro}")
             time.sleep(3)
+            continue
+        base = resposta.get("osm3s", {}).get("timestamp_osm_base", "")
+        if not base or base >= limite.strftime("%Y-%m-%dT%H:%M:%SZ"):
+            return resposta, url
+        if reserva is None or base > reserva[2]:
+            reserva = (resposta, url, base)
+        time.sleep(2)
+    if reserva:
+        print(f"(aviso: nenhum servidor em dia; usando a base de {reserva[2][:10]}) ", end="", file=sys.stderr, flush=True)
+        return reserva[0], reserva[1]
     raise RuntimeError("nenhum servidor Overpass respondeu:\n  " + "\n  ".join(erros))
 
 
@@ -64,6 +83,13 @@ def geometria(e: dict) -> dict | None:
             return {"type": "Polygon", "coordinates": [pts]}
         return {"type": "LineString", "coordinates": pts}
     if e["type"] == "relation":
+        if e.get("tags", {}).get("type") in ("multipolygon", "boundary"):
+            # multipolígono: os anéis externos viram áreas (os internos, "buracos", não são descontados)
+            aneis = [a for a in aneis_externos(e) if len(a) >= 4 and a[0] == a[-1]]
+            if len(aneis) == 1:
+                return {"type": "Polygon", "coordinates": [[[r7(x), r7(y)] for x, y in aneis[0]]]}
+            if aneis:
+                return {"type": "MultiPolygon", "coordinates": [[[[r7(x), r7(y)] for x, y in a]] for a in aneis]}
         pts = [(p["lon"], p["lat"]) for m in e.get("members", []) for p in (m.get("geometry") or []) if p]
         if pts:                                  # relação: guardamos o centro da caixa envolvente
             xs, ys = [p[0] for p in pts], [p[1] for p in pts]
@@ -72,16 +98,18 @@ def geometria(e: dict) -> dict | None:
 
 
 def feicoes(bruto: dict, aneis: list) -> list[dict]:
-    saida = {}
+    saida, indice = {}, IndiceDeBordas(aneis)
     for e in bruto["elements"]:
         g = geometria(e)
         if g is None:
             continue
-        lon, lat = ponto_representativo(g)
-        if g["type"] == "LineString":            # via ou rio: basta um vértice dentro do município
-            if not any(dentro(x, y, aneis) for x, y in g["coordinates"]):
+        if g["type"] == "LineString":            # via ou rio: só os trechos dentro do município
+            trechos = recortar_linha(g["coordinates"], indice)
+            if not trechos:
                 continue
-        elif not dentro(lon, lat, aneis):
+            g = ({"type": "LineString", "coordinates": trechos[0]} if len(trechos) == 1
+                 else {"type": "MultiLineString", "coordinates": trechos})
+        elif not dentro(*ponto_representativo(g), aneis):
             continue
         osm = f"{e['type']}/{e['id']}"
         saida[osm] = {"type": "Feature", "properties": {"osm": osm, "tags": dict(sorted(e.get("tags", {}).items()))},
@@ -101,13 +129,16 @@ def main() -> int:
     usar_versao_declarada("baixar_osm.py")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--tema", action="append", help="baixar só este tema (pode repetir)")
+    ap.add_argument("--todos", action="store_true",
+                    help="baixar também os temas ainda em 'planejado' (padrão: os ativos e os de fundo dos mapas)")
     argumento_local(ap)
     args = ap.parse_args()
     local = args.local.resolve()
     config, temas = ler_config(local), ler_temas(local)
     pasta = local / "dados" / "osm"
     pasta.mkdir(parents=True, exist_ok=True)
-    escolhidos = [t for t in temas if not args.tema or t.id in args.tema]
+    escolhidos = [t for t in temas if (t.id in args.tema if args.tema
+                                       else args.todos or t.ativo or t.id in TEMAS_DE_FUNDO)]
     if args.tema and len(escolhidos) != len(args.tema):
         print(f"Tema desconhecido: {set(args.tema) - {t.id for t in temas}}", file=sys.stderr)
         return 2

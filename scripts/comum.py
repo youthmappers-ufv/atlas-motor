@@ -27,6 +27,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 MOTOR = Path(__file__).resolve().parents[1]
+
+# Saída em UTF-8 em qualquer sistema: no Windows, com a saída redirecionada (Git Bash, CI, arquivo),
+# o Python usaria a página de código local e os acentos sairiam trocados.
+for _saida in (sys.stdout, sys.stderr):
+    if hasattr(_saida, "reconfigure"):
+        _saida.reconfigure(encoding="utf-8", errors="replace")
 CATALOGO = MOTOR / "catalogo"
 SITUACOES = ("planejado", "em-andamento", "publicado")
 
@@ -55,8 +61,10 @@ class Tema:
         return self.situacao != "planejado"
 
 
-MAPAS = ("pontos", "linhas")
-INDICADORES = ("servico", "vias")
+# Temas que todo mapa usa como fundo (vias e nomes das localidades): são baixados mesmo em "planejado".
+TEMAS_DE_FUNDO = ("sistema-viario", "localizacao")
+MAPAS = ("pontos", "linhas", "areas")
+INDICADORES = ("servico", "vias", "linhas", "areas")
 
 
 def _visual(base: dict, escolha: dict) -> dict:
@@ -217,6 +225,28 @@ def escrever_json(arquivo: Path, dados) -> None:
     arquivo.write_text(json.dumps(dados, ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
 
 
+# ---------------------------------------------------------------- Formatos (pt-BR)
+def numero(valor: float, casas: int = 1) -> str:
+    """Número no formato brasileiro: 3213.64 -> "3.213,6"; 9 (casas=0) -> "9"."""
+    return f"{valor:,.{casas}f}".translate(str.maketrans(",.", ".,"))
+
+
+def porcentagem(valor: float | None) -> str:
+    """88.9 -> "88,9%"; 100.0 -> "100%"; None -> "—"."""
+    return "—" if valor is None else numero(valor).removesuffix(",0") + "%"
+
+
+def data_br(iso: str) -> str:
+    """"2026-10-21T20:01:36Z" ou "2026-10-21" -> "21/10/2026"; o que não for data volta como veio."""
+    m = re.match(r"^(\d{4})-(\d{2})-(\d{2})", iso or "")
+    return f"{m[3]}/{m[2]}/{m[1]}" if m else iso
+
+
+def texto_md(texto: str) -> str:
+    """Texto vindo de dados (nomes do OSM ou de bases oficiais) para uma célula de tabela Markdown."""
+    return re.sub(r"\s+", " ", str(texto)).replace("|", "\\|").strip()
+
+
 # ---------------------------------------------------------------- Geometria
 def aneis_externos(relacao: dict) -> list[list[tuple[float, float]]]:
     """Junta os caminhos 'outer' de uma relação do Overpass (out geom) em anéis (lon, lat)."""
@@ -260,23 +290,157 @@ def distancia_m(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
     return 2 * r * math.asin(math.sqrt(a))
 
 
+def linhas_de(geometria: dict) -> list[list]:
+    """As linhas de uma geometria linear: uma (LineString) ou várias (MultiLineString, que é
+    como fica a via cortada pelo limite em mais de um trecho). Outras geometrias: nenhuma."""
+    if geometria["type"] == "LineString":
+        return [geometria["coordinates"]]
+    if geometria["type"] == "MultiLineString":
+        return list(geometria["coordinates"])
+    return []
+
+
+def poligonos_de(geometria: dict) -> list[list]:
+    """Os polígonos de uma geometria de área, cada um como lista de anéis (o primeiro é o externo):
+    um (Polygon) ou vários (MultiPolygon, que é como fica a relação multipolígono do OSM)."""
+    if geometria["type"] == "Polygon":
+        return [geometria["coordinates"]]
+    if geometria["type"] == "MultiPolygon":
+        return list(geometria["coordinates"])
+    return []
+
+
 def coordenadas(geometria: dict) -> list[tuple[float, float]]:
-    """Todos os vértices de uma geometria GeoJSON (Point, LineString, Polygon)."""
+    """Todos os vértices de uma geometria GeoJSON (ponto, linha, área e as formas "Multi" das duas)."""
     t, c = geometria["type"], geometria["coordinates"]
     if t == "Point":
         return [tuple(c)]
-    if t == "LineString":
-        return [tuple(p) for p in c]
-    if t == "Polygon":
-        return [tuple(p) for anel in c for p in anel]
+    if t in ("LineString", "MultiLineString"):
+        return [tuple(p) for linha in linhas_de(geometria) for p in linha]
+    if t in ("Polygon", "MultiPolygon"):
+        return [tuple(p) for poligono in poligonos_de(geometria) for anel in poligono for p in anel]
     raise ValueError(f"geometria não suportada: {t}")
 
 
 def ponto_representativo(geometria: dict) -> tuple[float, float]:
     pts = coordenadas(geometria)
-    if geometria["type"] == "LineString":
+    if geometria["type"] in ("LineString", "MultiLineString"):
         return pts[len(pts) // 2]
+    if geometria["type"] == "MultiPolygon":       # centro do maior polígono (o que tem mais vértices)
+        pts = [tuple(p) for p in max(poligonos_de(geometria), key=lambda pol: len(pol[0]))[0]]
     return sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts)
+
+
+def area_m2(geometria: dict) -> float:
+    """Área em metros quadrados de uma geometria de área (anéis internos descontados); outras: zero.
+    Plano local na latitude média de cada anel: erro desprezível na escala de um município."""
+    def anel_m2(anel) -> float:
+        if len(anel) < 4:
+            return 0.0
+        fx = math.cos(math.radians(sum(p[1] for p in anel) / len(anel)))
+        soma = sum(a[0] * fx * b[1] - b[0] * fx * a[1] for a, b in zip(anel, anel[1:]))
+        return abs(soma) / 2 * 111_194.9 ** 2
+    return sum(anel_m2(pol[0]) - sum(anel_m2(furo) for furo in pol[1:]) for pol in poligonos_de(geometria) if pol)
+
+
+def _distancia_segmento_m(lon: float, lat: float, a, b) -> float:
+    """Distância em metros do ponto ao segmento a-b (plano local: erro desprezível a poucos km)."""
+    fx = math.cos(math.radians(lat))
+    ax, ay, bx, by = (a[0] - lon) * fx, a[1] - lat, (b[0] - lon) * fx, b[1] - lat
+    dx, dy = bx - ax, by - ay
+    t = 0.0 if not (dx or dy) else max(0.0, min(1.0, -(ax * dx + ay * dy) / (dx * dx + dy * dy)))
+    return math.hypot(ax + t * dx, ay + t * dy) * 111_194.9
+
+
+def distancia_geometria_m(lon: float, lat: float, geometria: dict) -> float:
+    """Distância em metros do ponto ao objeto: zero dentro de um polígono; senão, até a borda
+    (polígono) ou até a linha. Medir até o "centro" do objeto afastaria os lotes grandes: a
+    coordenada oficial de uma escola costuma cair em qualquer lugar do terreno."""
+    t, c = geometria["type"], geometria["coordinates"]
+    if t == "Point":
+        return distancia_m(lon, lat, c[0], c[1])
+    if t in ("Polygon", "MultiPolygon"):
+        for pol in poligonos_de(geometria):
+            if dentro(lon, lat, pol[:1]) and not any(dentro(lon, lat, [furo]) for furo in pol[1:]):
+                return 0.0
+        partes = [anel for pol in poligonos_de(geometria) for anel in pol]
+    else:
+        partes = linhas_de(geometria)
+    return min((_distancia_segmento_m(lon, lat, a, b) for parte in partes for a, b in zip(parte, parte[1:])),
+               default=float("inf"))
+
+
+class IndiceDeBordas:
+    """Arestas dos anéis do limite numa grade, para achar depressa as que um segmento pode cruzar."""
+
+    def __init__(self, aneis: list, celula: float = 0.01) -> None:
+        self.aneis, self.celula, self.grade = aneis, celula, {}
+        for anel in aneis:
+            for a, b in zip(anel, anel[1:]):
+                for chave in self._celulas(a, b):
+                    self.grade.setdefault(chave, []).append((a, b))
+
+    def _celulas(self, a, b):
+        c = self.celula
+        for i in range(math.floor(min(a[0], b[0]) / c), math.floor(max(a[0], b[0]) / c) + 1):
+            for j in range(math.floor(min(a[1], b[1]) / c), math.floor(max(a[1], b[1]) / c) + 1):
+                yield i, j
+
+    def cruzamentos(self, a, b) -> list[float]:
+        """Posições (entre 0 e 1) em que o segmento a-b cruza o limite, em ordem."""
+        ts = set()
+        for chave in self._celulas(a, b):
+            for p, q in self.grade.get(chave, ()):
+                rx, ry, sx, sy = b[0] - a[0], b[1] - a[1], q[0] - p[0], q[1] - p[1]
+                den = rx * sy - ry * sx
+                if not den:
+                    continue                       # paralelos
+                t = ((p[0] - a[0]) * sy - (p[1] - a[1]) * sx) / den
+                u = ((p[0] - a[0]) * ry - (p[1] - a[1]) * rx) / den
+                if 0 < t < 1 and 0 <= u <= 1:
+                    ts.add(t)
+        return sorted(ts)
+
+
+def recortar_linha(pontos: list, indice: IndiceDeBordas, casas: int = 7) -> list[list]:
+    """Trechos da linha que ficam dentro do limite (lista de listas de [lon, lat]).
+
+    A linha é cortada onde cruza o limite; o ponto de corte entra nos trechos, arredondado como as
+    demais coordenadas. Quem decide se um pedaço está dentro é o ponto médio dele, o que também
+    resolve a linha que só toca o limite. Entre dois cruzamentos nada muda de lado, e por isso o
+    teste de ponto no polígono só roda no começo da linha e nos segmentos que cruzam o limite."""
+    trechos, atual, lado = [], [], None           # lado: True dentro, False fora, None ainda não se sabe
+
+    def meio_dentro(a, b, t0, t1) -> bool:
+        tm = (t0 + t1) / 2
+        return dentro(a[0] + (b[0] - a[0]) * tm, a[1] + (b[1] - a[1]) * tm, indice.aneis)
+
+    def ponto(a, b, t):
+        if t <= 0:
+            return list(a)
+        if t >= 1:
+            return list(b)
+        return [round(a[0] + (b[0] - a[0]) * t, casas), round(a[1] + (b[1] - a[1]) * t, casas)]
+
+    def fechar():
+        nonlocal atual
+        if len(atual) >= 2:
+            trechos.append(atual)
+        atual = []
+
+    for a, b in zip(pontos, pontos[1:]):
+        cortes = [0.0, *indice.cruzamentos(a, b), 1.0]
+        for t0, t1 in zip(cortes, cortes[1:]):
+            if lado is None or len(cortes) > 2:
+                lado = meio_dentro(a, b, t0, t1)
+            if lado:
+                atual = atual or [ponto(a, b, t0)]
+                if atual[-1] != ponto(a, b, t1):
+                    atual.append(ponto(a, b, t1))
+            else:
+                fechar()
+    fechar()
+    return trechos
 
 
 def ler_limite(local: Path) -> list[list[tuple[float, float]]]:

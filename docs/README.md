@@ -17,6 +17,7 @@ O atlas tem dois tipos de repositório: o **motor** (este, comum a todos) e um *
 - [Arquitetura](arquitetura.md): repositórios, versão fixada, ciclo mensal, máquina local, identidade visual (com diagramas).
 - [Guia do município](guia-municipio.md): o trabalho do dia a dia no repositório de um município.
 - [Pranchas](pranchas.md): abrir, escrever e personalizar uma prancha (texto, seções, mapas, imagens, tamanhos); prancha própria do município.
+- [Duas fontes](duas-fontes.md): como o OpenStreetMap e a base oficial aparecem juntos na prancha (mapa de comparação, quadro-resumo, tabelas, arquivos), no site e no PDF.
 - [Novos temas](novos-temas.md): como um tema entra no catálogo comum, da proposta à adoção pelos municípios.
 - [Identidade visual](identidade-visual.md): cores, fontes e logos do site e do PDF com um `_brand.yml`.
 - [Referência](referencia.md): todos os arquivos de configuração (`atlas.toml`, `temas.toml`, catálogo, bases oficiais, esquemas, `_brand.yml`) e todos os comandos.

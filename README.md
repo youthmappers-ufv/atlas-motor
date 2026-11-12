@@ -32,7 +32,9 @@ modelo-local/           modelo de repositório municipal (usado por novo_local.p
 scripts/
   baixar_osm.py         retrato do OSM do município
   validar.py            integridade do repositório do município (CI em todo PR)
-  indicadores.py        completude C_t e Q_t e indicadores internos
+  indicadores.py        indicadores do tema e comparação com a base oficial
+  comparacao.py         as duas fontes juntas: por itens, por contagem e por nomes
+  baixar_bases.py       baixa e prepara as bases oficiais federais (CNES, CNEFE, setores, faces)
   mapas.py              mapas das pranchas (matplotlib)
   construir.py          monta o livro e renderiza site e PDF
   identidade.py         traduz o _brand.yml (identidade visual) para o PDF
@@ -82,7 +84,7 @@ O município declara a versão em `atlas.toml` (`[motor] versao = "vX.Y.Z"`) e c
 
 Em trabalho acadêmico, cite a versão usada (a do `atlas.toml` do município). O DOI abaixo é o conceito (todas as versões); o de cada versão está no [Zenodo](https://doi.org/10.5281/zenodo.23573341).
 
-SMARZARO, Rodrigo; PROGRAMA YOUTHMAPPERS UFV. **atlas-motor**: motor aberto para atlas municipais colaborativos a partir do OpenStreetMap. Versão v0.12.0. Rio Paranaíba: Universidade Federal de Viçosa, 2026. DOI: 10.5281/zenodo.23573341. Disponível em: <https://github.com/youthmappers-ufv/atlas-motor>. Acesso em: *data do acesso*.
+SMARZARO, Rodrigo; PROGRAMA YOUTHMAPPERS UFV. **atlas-motor**: motor aberto para atlas municipais colaborativos a partir do OpenStreetMap. Versão v0.13.0. Rio Paranaíba: Universidade Federal de Viçosa, 2026. DOI: 10.5281/zenodo.23573341. Disponível em: <https://github.com/youthmappers-ufv/atlas-motor>. Acesso em: *data do acesso*.
 
 Em BibLaTeX (estilo `abnt` do pacote biblatex-abnt, que imprime a versão a partir de `edition`; acrescente `urldate = {AAAA-MM-DD}`):
 
@@ -91,7 +93,7 @@ Em BibLaTeX (estilo `abnt` do pacote biblatex-abnt, que imprime a versão a part
   author    = {Smarzaro, Rodrigo and {Programa Youthmappers UFV}},
   title     = {atlas-motor},
   subtitle  = {motor aberto para atlas municipais colaborativos a partir do {OpenStreetMap}},
-  edition   = {Versão v0.12.0},
+  edition   = {Versão v0.13.0},
   location  = {Rio Paranaíba},
   publisher = {Universidade Federal de Viçosa},
   year      = {2026},

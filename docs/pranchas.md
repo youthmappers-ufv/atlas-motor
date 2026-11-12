@@ -40,12 +40,17 @@ O motor gera também cada parte em separado, em `_gerado/<tema>/`:
 |---|---|---|
 | mapa do município | `{{< include ../_gerado/educacao/mapa-municipio.md >}}` | figura do município inteiro (largura total) |
 | mapa da sede | `{{< include ../_gerado/educacao/mapa-sede.md >}}` | figura da área urbana da sede (largura total) |
-| legenda | `{{< include ../_gerado/educacao/legenda.md >}}` | "Pontos cheios: com nome; vazados: sem nome." |
-| indicadores | `{{< include ../_gerado/educacao/indicadores.md >}}` | tabela de indicadores (total, nome, endereço, horário, completude) |
-| lacunas | `{{< include ../_gerado/educacao/lacunas.md >}}` | itens da base oficial sem correspondente no mapa, com o motivo provável |
-| fonte | `{{< include ../_gerado/educacao/fonte.md >}}` | data do retrato e atribuição ao OSM (obrigatória pela licença) |
+| legenda | `{{< include ../_gerado/educacao/legenda.md >}}` | vazio desde a v0.13.0: a legenda é desenhada dentro de cada mapa |
+| indicadores | `{{< include ../_gerado/educacao/indicadores.md >}}` | tabela de indicadores do tema no OpenStreetMap (total, nome, endereço, horário, extensão, área) |
+| mapa interativo | `{{< include ../_gerado/educacao/interativo.md >}}` | só no site: mapa com as camadas do tema e da comparação (no PDF fica vazio) |
+| comparação: município | `{{< include ../_gerado/educacao/comparacao-municipio.md >}}` | mapa das duas fontes (nas duas, só no OpenStreetMap, só na base oficial) |
+| comparação: sede | `{{< include ../_gerado/educacao/comparacao-sede.md >}}` | o mesmo, na área urbana da sede |
+| resumo | `{{< include ../_gerado/educacao/resumo.md >}}` | quadro-resumo da comparação com a base oficial (cobertura do mapa) |
+| lacunas | `{{< include ../_gerado/educacao/lacunas.md >}}` | itens só na base oficial, numerados como no mapa de comparação, com o motivo provável |
+| só no OSM | `{{< include ../_gerado/educacao/so-osm.md >}}` | objetos do OpenStreetMap sem item na base oficial |
+| fonte | `{{< include ../_gerado/educacao/fonte.md >}}` | as fontes e suas datas, com a atribuição ao OSM (obrigatória pela licença) |
 
-Uma parte que não se aplica fica vazia (ex.: o mapa da sede de um tema só com recorte do município, as lacunas de um tema sem base oficial); incluí-la não dá erro. Troque o include único pelas partes, na ordem que quiser, com o seu texto entre elas.
+Uma parte que não se aplica fica vazia (ex.: o mapa da sede de um tema só com recorte do município; a comparação, o resumo e as lacunas de um tema sem base oficial). Como as duas fontes são apresentadas: [Duas fontes](duas-fontes.md); incluí-la não dá erro. Troque o include único pelas partes, na ordem que quiser, com o seu texto entre elas.
 
 > **Atribuição:** mantenha sempre a parte `fonte` (ou outra menção a "© colaboradores do OpenStreetMap") na prancha; a licença do OSM (ODbL) exige.
 

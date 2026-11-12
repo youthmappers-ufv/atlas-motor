@@ -3,7 +3,8 @@
 Temas com base oficial (temas.toml: referencia = <pasta em dados/oficiais/>):
   C_t = itens oficiais com correspondente no OSM / itens oficiais
   Q_t = correspondidos com os atributos essenciais (nome e endereço) / correspondidos
-  Correspondência: mesmo item a até distancia_max_m e similaridade de nome >= similaridade_min
+  Correspondência: mesmo item a até distancia_max_m (medidos até o objeto: zero se a coordenada
+  oficial cai dentro do polígono; senão, até a borda) e similaridade de nome >= similaridade_min
   (atlas.toml), pareando cada objeto do OSM no máximo uma vez. A similaridade é a maior entre a
   do nome normalizado inteiro e a das palavras distintivas (nome contido no outro: 0,95).
   Cada item sem correspondente (lacuna) recebe um motivo provável (motivos_lacunas).
@@ -21,8 +22,9 @@ import sys
 from difflib import SequenceMatcher
 from pathlib import Path
 
-from comum import (Tema, argumento_local, dentro, distancia_m, ler_config, ler_csv, ler_limite, ler_temas,
-                   ler_toml, normalizar_nome, ponto_representativo)
+from comparacao import montar, montar_contagem, montar_nomes, no_escopo
+from comum import (Tema, area_m2, argumento_local, dentro, distancia_geometria_m, distancia_m, ler_config, ler_csv, ler_limite,
+                   ler_temas, ler_toml, linhas_de, normalizar_nome, numero, porcentagem)
 
 
 def ler_feicoes(local: Path, tema_id: str) -> list[dict]:
@@ -77,7 +79,6 @@ def correspondencias(oficiais: list[dict], feicoes: list[dict], dist_max: float,
     cujas palavras não contam como distintivas.
     """
     ignorar = frozenset(normalizar_nome(municipio).split())
-    pontos = [ponto_representativo(f["geometry"]) for f in feicoes]
     candidatos = []
     for i, o in enumerate(oficiais):
         if o.get("lat") is None or o.get("lon") is None:
@@ -86,7 +87,7 @@ def correspondencias(oficiais: list[dict], feicoes: list[dict], dist_max: float,
             nome = f["properties"]["tags"].get("name", "")
             if not nome:
                 continue
-            d = distancia_m(o["lon"], o["lat"], *pontos[j])
+            d = distancia_geometria_m(o["lon"], o["lat"], f["geometry"])
             if d > dist_max:
                 continue
             s = similaridade(o["nome"], nome, ignorar)
@@ -101,8 +102,13 @@ def correspondencias(oficiais: list[dict], feicoes: list[dict], dist_max: float,
     return sorted(pares)
 
 
+def a_distancia(d: float) -> str:
+    """"a 23 m", "a 1,2 km" ou, dentro do polígono do objeto, "no mesmo lugar"."""
+    return "no mesmo lugar" if d < 1 else f"a {metros(d)}"
+
+
 def metros(d: float) -> str:
-    return f"{d / 1000:.1f} km".replace(".", ",") if d >= 1000 else f"{d:.0f} m"
+    return f"{numero(d / 1000)} km" if d >= 1000 else f"{d:.0f} m"
 
 
 def motivos_lacunas(oficiais: list[dict], feicoes: list[dict], pares: list[tuple], dist_max: float,
@@ -118,7 +124,6 @@ def motivos_lacunas(oficiais: list[dict], feicoes: list[dict], pares: list[tuple
     são candidatos.
     """
     ignorar = frozenset(normalizar_nome(municipio).split())
-    pontos = [ponto_representativo(f["geometry"]) for f in feicoes]
     nomes = [f["properties"]["tags"].get("name", "") for f in feicoes]
     par_de = {j: i for i, j, _, _ in pares}
     motivos = {}
@@ -134,7 +139,7 @@ def motivos_lacunas(oficiais: list[dict], feicoes: list[dict], pares: list[tuple
         if limite and not dentro(o["lon"], o["lat"], limite):
             motivos[i] = "coordenada oficial fora do município"
             continue
-        dist = [distancia_m(o["lon"], o["lat"], *p) for p in pontos]
+        dist = [distancia_geometria_m(o["lon"], o["lat"], f["geometry"]) for f in feicoes]
         sims = [similaridade(o["nome"], n, ignorar) if n else 0.0 for n in nomes]
         palavras = [semelhanca_palavras(o["nome"], n, ignorar) if n else 0.0 for n in nomes]
         longe = sorted((-palavras[j], dist[j], j) for j in range(len(feicoes))
@@ -145,18 +150,18 @@ def motivos_lacunas(oficiais: list[dict], feicoes: list[dict], pares: list[tuple
         sem_nome = [(d, j) for d, j in perto if not nomes[j]]
         if longe:
             _, d, j = longe[0]
-            motivos[i] = (f"nome semelhante no OSM a {metros(d)} (\"{nomes[j]}\"; limite {metros(dist_max)}): "
+            motivos[i] = (f"nome semelhante no OSM {a_distancia(d)} (\"{nomes[j]}\"; limite {metros(dist_max)}): "
                           "conferir a coordenada oficial e a posição no mapa")
         elif ocupado:
             d, j = ocupado[0]
-            motivos[i] = (f"\"{nomes[j]}\", a {metros(d)}, já corresponde a outro item da base "
+            motivos[i] = (f"\"{nomes[j]}\", {a_distancia(d)}, já corresponde a outro item da base "
                           f"({oficiais[par_de[j]]['nome']}): item repetido na base ou falta um objeto no mapa")
         elif sem_nome:
-            motivos[i] = f"objeto sem nome no OSM a {metros(sem_nome[0][0])}: provavelmente este, falta o nome"
+            motivos[i] = f"objeto sem nome no OSM {a_distancia(sem_nome[0][0])}: provavelmente este, falta o nome"
         elif perto:
             d, j = perto[0]
-            motivos[i] = (f"\"{nomes[j]}\" no OSM a {metros(d)}, com nome diferente "
-                          f"(semelhança {sims[j]:.2f}".replace(".", ",") + "): conferir qual é o nome correto")
+            motivos[i] = (f"\"{nomes[j]}\" no OSM {a_distancia(d)}, com nome diferente "
+                          f"(semelhança {numero(sims[j], 2)})" + ": conferir qual é o nome correto")
         else:
             motivos[i] = f"nada deste tema no OSM até {metros(dist_max)}: não mapeado"
     return motivos
@@ -169,6 +174,8 @@ def ler_oficial(local: Path, base: str) -> tuple[dict, list[dict]] | None:
     fonte = ler_toml(pasta / "fonte.toml")
     col = fonte["colunas"]
     _, linhas = ler_csv(pasta / fonte["arquivo"])
+    if fonte.get("comparacao", "itens") != "itens":   # contagem e nomes: as linhas como estão no CSV
+        return fonte, linhas
     itens = []
     for linha in linhas:
         def num(chave):
@@ -181,11 +188,37 @@ def ler_oficial(local: Path, base: str) -> tuple[dict, list[dict]] | None:
     return fonte, itens
 
 
+def comparar_por_modo(local: Path, fonte: dict, linhas: list[dict], feicoes: list[dict]) -> dict:
+    """Comparação por contagem (totais por unidade territorial) ou por nomes (logradouros)."""
+    col, pasta = fonte["colunas"], local / "dados" / "oficiais"
+    no_filtro = [f for f in feicoes if no_escopo(f["properties"]["tags"], fonte.get("filtro_osm"))]
+    if fonte["comparacao"] == "contagem":
+        unidades_fonte = ler_toml(pasta / fonte["unidades"] / "fonte.toml")
+        unidades = json.loads((pasta / fonte["unidades"] / unidades_fonte["arquivo"]).read_text(encoding="utf-8"))["features"]
+        totais = {}
+        for linha in linhas:
+            try:
+                totais[linha[col["unidade"]]] = float(linha[col["total"]])
+            except (TypeError, ValueError):
+                continue
+        return montar_contagem(fonte, totais, unidades, no_filtro)
+    geometrias = []
+    if fonte.get("geometrias"):
+        arq = next((p / fonte["geometrias"] for p in pasta.iterdir() if (p / fonte["geometrias"]).is_file()), None)
+        if arq:
+            geometrias = json.loads(arq.read_text(encoding="utf-8"))["features"]
+    oficiais = []
+    for linha in linhas:
+        try:
+            km = float(linha.get("faces_km") or 0)
+        except ValueError:
+            km = 0.0
+        oficiais.append({"nome": linha[col["nome"]], "km": km})
+    return montar_nomes(fonte, oficiais, no_filtro, geometrias)
+
+
 def comprimento_m(geometria: dict) -> float:
-    if geometria["type"] != "LineString":
-        return 0.0
-    c = geometria["coordinates"]
-    return sum(distancia_m(*a, *b) for a, b in zip(c, c[1:]))
+    return sum(distancia_m(*a, *b) for c in linhas_de(geometria) for a, b in zip(c, c[1:]))
 
 
 def calcular(local: Path, tema: Tema, config: dict) -> dict:
@@ -199,28 +232,56 @@ def calcular(local: Path, tema: Tema, config: dict) -> dict:
 
     com_nome = sum(1 for t in tags if t.get("name"))
     res["linhas"].append(("Objetos no OpenStreetMap", str(total)))
-    res["linhas"].append(("Com nome", f"{com_nome} ({pct(com_nome, total)}%)" if total else "—"))
+    def parte(n, d):
+        return f"{n} ({porcentagem(pct(n, d))})" if d else "—"
+
+    res["linhas"].append(("Com nome", parte(com_nome, total)))
     if "servico" in tema.indicadores:
         com_horario = sum(1 for t in tags if t.get("opening_hours"))
         com_endereco = sum(1 for t in tags if t.get("addr:street"))
-        res["linhas"].append(("Com endereço (rua)", f"{com_endereco} ({pct(com_endereco, total)}%)" if total else "—"))
-        res["linhas"].append(("Com horário de funcionamento", f"{com_horario} ({pct(com_horario, total)}%)" if total else "—"))
+        res["linhas"].append(("Com endereço (rua)", parte(com_endereco, total)))
+        res["linhas"].append(("Com horário de funcionamento", parte(com_horario, total)))
     if "vias" in tema.indicadores:
         vias = [f for f in feicoes if "highway" in f["properties"]["tags"]]
         km = sum(comprimento_m(f["geometry"]) for f in vias) / 1000
         km_pav = sum(comprimento_m(f["geometry"]) for f in vias if f["properties"]["tags"].get("surface")) / 1000
-        res["linhas"].append(("Comprimento de vias", f"{km:.1f} km"))
-        res["linhas"].append(("Com tipo de pavimento informado", f"{km_pav:.1f} km ({pct(km_pav, km)}%)" if km else "—"))
+        res["linhas"].append(("Comprimento de vias (dentro do município)", f"{numero(km)} km"))
+        res["linhas"].append(("Com tipo de pavimento informado",
+                              f"{numero(km_pav)} km ({porcentagem(pct(km_pav, km))})" if km else "—"))
         res["km_vias"], res["km_pavimento"] = round(km, 2), round(km_pav, 2)
+    if "linhas" in tema.indicadores:
+        km = sum(comprimento_m(f["geometry"]) for f in feicoes) / 1000
+        km_nome = sum(comprimento_m(f["geometry"]) for f in feicoes if f["properties"]["tags"].get("name")) / 1000
+        res["linhas"].append(("Comprimento das linhas (dentro do município)", f"{numero(km)} km"))
+        res["linhas"].append(("Comprimento com nome", f"{numero(km_nome)} km ({porcentagem(pct(km_nome, km))})" if km else "—"))
+        res["km_linhas"] = round(km, 2)
+    if "areas" in tema.indicadores:
+        ha = sum(area_m2(f["geometry"]) for f in feicoes) / 10_000
+        arq_limite = local / "dados" / "osm" / "limite.geojson"
+        ha_mun = (sum(area_m2({"type": "Polygon", "coordinates": [anel]}) for anel in ler_limite(local)) / 10_000
+                  if arq_limite.exists() else 0)
+        res["linhas"].append(("Área mapeada", f"{numero(ha)} ha" + (f" ({porcentagem(pct(ha, ha_mun))} do município)" if ha_mun else "")))
+        res["ha_areas"] = round(ha, 1)
 
     if tema.referencia != "interno":
         oficial = ler_oficial(local, tema.referencia)
         if oficial is None:
             res["completude"] = None
             res["linhas"].append(("Completude em relação à base oficial", f"base '{tema.referencia}' ainda não carregada"))
+        elif oficial[0].get("comparacao", "itens") != "itens":
+            fonte, linhas_csv = oficial
+            comp = comparar_por_modo(local, fonte, linhas_csv, feicoes)
+            res["comparacao"] = comp
+            res["completude"] = {"C_t": comp["resumo"]["cobertura"], "Q_t": None, "oficiais": comp["resumo"]["oficial"],
+                                 "correspondidos": comp["resumo"].get("ambas", comp["resumo"]["osm"]), "sem_coordenada": 0,
+                                 "fonte": fonte["nome"], "data_acesso": str(fonte["data_acesso"])}
         else:
             fonte, itens = oficial
             cc = config["completude"]
+            # Só entram na comparação os objetos do tipo que a base cobre (fonte.toml: filtro_osm).
+            todas = feicoes
+            feicoes = [f for f in todas if no_escopo(f["properties"]["tags"], fonte.get("filtro_osm"))]
+            tags = [f["properties"]["tags"] for f in feicoes]
             pares = correspondencias(itens, feicoes, cc["distancia_max_m"], cc["similaridade_min"],
                                      config["municipio"]["nome"])
             correspondidos = {i for i, _, _, _ in pares}
@@ -230,13 +291,13 @@ def calcular(local: Path, tema: Tema, config: dict) -> dict:
             c_t, q_t = pct(len(pares), len(itens)), pct(completos, len(pares))
             res["completude"] = {"C_t": c_t, "Q_t": q_t, "oficiais": len(itens), "correspondidos": len(pares),
                                  "sem_coordenada": sem_coord, "fonte": fonte["nome"], "data_acesso": str(fonte["data_acesso"])}
-            res["linhas"].append((f"Itens na base oficial ({fonte['nome']})", str(len(itens))))
-            res["linhas"].append(("Completude C_t (com correspondente no OSM)", f"{len(pares)} ({c_t}%)"))
-            res["linhas"].append(("Qualidade Q_t (nome e endereço)", f"{completos} ({q_t}%)" if pares else "—"))
+            res["linhas"].append(("Encontrados na base oficial que têm nome e endereço no mapa", parte(completos, len(pares))))
             arq_limite = local / "dados" / "osm" / "limite.geojson"
             motivos = motivos_lacunas(itens, feicoes, pares, cc["distancia_max_m"], cc["similaridade_min"],
                                       config["municipio"]["nome"], ler_limite(local) if arq_limite.exists() else None)
             res["lacunas"] = [dict(o, motivo=motivos[i]) for i, o in enumerate(itens) if i not in correspondidos]
+            # As duas fontes juntas: quadro-resumo, tabelas, mapa de comparação e downloads saem daqui.
+            res["comparacao"] = montar(fonte, itens, feicoes, pares, motivos, fora_escopo=len(todas) - len(feicoes))
     return res
 
 

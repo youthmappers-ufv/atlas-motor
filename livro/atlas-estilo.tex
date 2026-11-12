@@ -59,6 +59,10 @@
 \AtBeginEnvironment{longtable}{\sffamily\small\arrayrulecolor{atlasprimaria}}
 \renewcommand{\arraystretch}{1.25}
 
+% Figuras e tabelas numeradas em sequência no atlas inteiro (sem recomeçar a cada prancha)
+\counterwithout{figure}{chapter}
+\counterwithout{table}{chapter}
+
 % Legendas, links e quadros (callouts do Quarto)
 \captionsetup{font={small,sf}, labelfont={bf,color=atlasprimaria}}
 \AtBeginDocument{\hypersetup{colorlinks=true, linkcolor=atlasprimaria, urlcolor=atlasprimaria,

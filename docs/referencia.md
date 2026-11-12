@@ -99,6 +99,8 @@ data_acesso = 2026-11-10
 licenca = "..."                       # como consta na fonte
 arquivo = "escolas.csv"
 observacao = "Filtrado para o município 3155504; colunas renomeadas."   # opcional
+filtro_osm = ["amenity=school|kindergarten|childcare"]   # opcional: o que a base cobre (docs/duas-fontes.md)
+comparacao = "itens"                  # opcional: itens (padrão) | contagem | nomes (docs/duas-fontes.md)
 
 [colunas]                             # quais colunas do CSV fazem cada papel
 id = "codigo_inep"
@@ -165,7 +167,8 @@ Todos rodam de dentro do repositório do município (ou com `--local <pasta>`). 
 | Comando | O que faz | Opções |
 |---|---|---|
 | `validar.py` | confere o repositório (configuração, temas, retratos, bases, curados, pranchas, identidade, dados pessoais, arquivos) | `--local` |
-| `baixar_osm.py` | baixa o retrato do OSM dos temas ativos | `--tema <id>` (repetível), `--local` |
+| `baixar_bases.py` | baixa e prepara as bases oficiais federais (CNES, setores censitários, CNEFE, faces de logradouro) para `dados/oficiais/` | `--base <nome>` (repetível), `--de-novo`, `--local` |
+| `baixar_osm.py` | baixa o retrato do OSM dos temas ativos e dos de fundo dos mapas (vias e localidades), com vias e rios cortados no limite | `--tema <id>` (repetível), `--todos`, `--local` |
 | `construir.py` | monta o livro em `_construcao/livro/` e, se pedido, renderiza | `--renderizar html\|pdf\|todos`, `--previa` (`--porta`, `--sem-navegador`), `--baixar`, `--sem-mapas`, `--local` |
 | `ativar_tema.py <id>` | muda a situação de um tema e cria a prancha | `--situacao planejado\|em-andamento\|publicado`, `--local` |
 | `preparar_base.py <base> <arquivo>` | converte uma base oficial como baixada do órgão para `dados/oficiais/<base>/` (formatos: `inep`) | `--data`, `--todas`, `--substituir`, `--local` |

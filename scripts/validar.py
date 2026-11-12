@@ -29,8 +29,8 @@ import tomllib
 from datetime import date
 from pathlib import Path
 
-from comum import (CATALOGO, INDICADORES, MAPAS, MOTOR, SITUACOES, Tema, argumento_local, caminho_consulta, coordenadas, ler_csv,
-                   ler_esquemas, ler_temas, ler_toml, sobrenome_e_prenome, usar_versao_declarada)
+from comum import (CATALOGO, INDICADORES, MAPAS, MOTOR, SITUACOES, TEMAS_DE_FUNDO, Tema, argumento_local, caminho_consulta, coordenadas, ler_csv,
+                   ler_esquemas, ler_temas, ler_toml, ponto_representativo, sobrenome_e_prenome, usar_versao_declarada)
 
 RECORTES = {"municipio", "sede", "ambos"}
 COLUNAS_PROIBIDAS = {"cpf", "rg", "email", "e-mail", "telefone_pessoal", "celular", "matricula", "endereco_residencial"}
@@ -60,6 +60,8 @@ def orcid_valido(orcid: str) -> bool:
     digito = (12 - total % 11) % 11
     return orcid[-1] == ("X" if digito == 10 else str(digito))
 HOSPEDAGENS = ("pages", "artefato")
+# Modos de comparação com a base oficial (fonte.toml: comparacao) e os papéis de coluna de cada um
+MODOS_COMPARACAO = {"itens": ("id", "nome", "lat", "lon"), "contagem": ("unidade", "total"), "nomes": ("nome",)}
 RE_CHAMADA = re.compile(r"uses:\s*youthmappers-ufv/atlas-motor/\.github/workflows/[\w.-]+@(\S+)")
 TIPOS = {"texto", "inteiro", "decimal", "data", "lista", "latitude", "longitude", "tema", "url"}
 IGNORAR = {".git", "_site", "_gerado", "_construcao", ".quarto", "__pycache__", "_freeze", ".venv"}
@@ -236,7 +238,10 @@ def verificar_osm(local: Path, config: dict, temas: list[Tema], r: Relatorio) ->
             except (KeyError, ValueError, TypeError) as e:
                 r.erro(f"[osm] {arq.name}: {osm or i}: geometria inválida ({e})")
                 continue
-            if nome != "limite" and f["geometry"]["type"] != "LineString" and not all(dentro_caixa(x, y, bbox) for x, y in pts):
+            # áreas: vale o ponto representativo (uma mata ou represa pode passar do limite)
+            if f["geometry"]["type"] in ("Polygon", "MultiPolygon"):
+                pts = [ponto_representativo(f["geometry"])]
+            if nome != "limite" and not all(dentro_caixa(x, y, bbox) for x, y in pts):
                 r.erro(f"[osm] {arq.name}: {osm} fora da área do município")
         if nome != "limite":
             esperado = retrato.get(nome, {}).get("feicoes")
@@ -247,6 +252,11 @@ def verificar_osm(local: Path, config: dict, temas: list[Tema], r: Relatorio) ->
     for t in temas:
         if t.ativo and not (pasta / f"{t.id}.geojson").exists():
             r.erro(f"[osm] {t.id} está ativo, mas falta dados/osm/{t.id}.geojson (rode baixar_osm.py --tema {t.id})")
+    if any(t.ativo for t in temas):
+        for fundo in TEMAS_DE_FUNDO:
+            if not (pasta / f"{fundo}.geojson").exists():
+                r.aviso(f"[osm] falta dados/osm/{fundo}.geojson, usado no fundo de todos os mapas (vias e nomes das "
+                        f"localidades): rode baixar_osm.py --tema {fundo}")
 
 
 # ---------------------------------------------------------------- Bases oficiais
@@ -273,13 +283,31 @@ def verificar_oficiais(local: Path, config: dict, r: Relatorio) -> None:
         if not arq.is_file():
             r.erro(f"[oficiais] {pasta.name}: arquivo declarado não existe: {fonte.get('arquivo')}")
             continue
+        modo = fonte.get("comparacao", "itens")
+        if modo not in MODOS_COMPARACAO:
+            r.erro(f"[oficiais] {pasta.name}/fonte.toml: comparacao '{modo}' (use {list(MODOS_COMPARACAO)})")
+            continue
+        geo = [arq] if arq.suffix == ".geojson" else []
+        if fonte.get("geometrias"):
+            geo.append(pasta / str(fonte["geometrias"]))
+        for g in geo:                             # unidades (setores) e geometrias de apoio: GeoJSON bem formado
+            try:
+                if json.loads(g.read_text(encoding="utf-8")).get("type") != "FeatureCollection":
+                    r.erro(f"[oficiais] {pasta.name}/{g.name}: não é FeatureCollection")
+            except (OSError, ValueError) as e:
+                r.erro(f"[oficiais] {pasta.name}/{g.name}: GeoJSON ilegível ({e})")
+        if arq.suffix == ".geojson":
+            continue
         try:
             cab, linhas = ler_csv(arq)
         except UnicodeDecodeError:
             r.erro(f"[oficiais] {pasta.name}/{arq.name}: não está em UTF-8")
             continue
         colunas = fonte.get("colunas", {})
-        for papel in ("id", "nome", "lat", "lon"):
+        if modo == "contagem" and not (local / "dados" / "oficiais" / str(fonte.get("unidades", "")) / "fonte.toml").is_file():
+            r.erro(f"[oficiais] {pasta.name}/fonte.toml: comparação por contagem pede 'unidades' = pasta das unidades "
+                   "(ex.: \"setores\") em dados/oficiais/")
+        for papel in MODOS_COMPARACAO[modo]:
             if colunas.get(papel) not in cab:
                 r.erro(f"[oficiais] {pasta.name}: coluna para '{papel}' ({colunas.get(papel)}) não está no CSV")
         if colunas.get("lat") in cab and colunas.get("lon") in cab:

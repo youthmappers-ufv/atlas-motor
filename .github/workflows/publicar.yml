@@ -120,7 +120,7 @@ jobs:
       # A raiz do gh-pages é a versão principal; keep_files preserva as edições em /edicoes/.
       - name: Publicar como versão principal
         if: steps.local.outputs.hospedagem == 'pages' && (steps.alvo.outputs.destino == 'principal' || github.event_name == 'push')
-        uses: peaceiris/actions-gh-pages@v4
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453   # v4 (fixada por commit: publica com contents: write)
         with:
           github_token: ${{ github.token }}
           publish_branch: gh-pages
@@ -142,7 +142,7 @@ jobs:
 
       - name: Publicar como edição numerada
         if: steps.local.outputs.hospedagem == 'pages' && steps.alvo.outputs.destino == 'edicao'
-        uses: peaceiris/actions-gh-pages@v4
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453   # v4 (fixada por commit: publica com contents: write)
         with:
           github_token: ${{ github.token }}
           publish_branch: gh-pages

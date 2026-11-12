@@ -8,7 +8,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-from comum import dentro, distancia_m, normalizar_nome  # noqa: E402
+from comum import (IndiceDeBordas, data_br, dentro, distancia_geometria_m, distancia_m, normalizar_nome, numero,  # noqa: E402
+                   porcentagem, recortar_linha)
 from indicadores import correspondencias, motivos_lacunas, similaridade  # noqa: E402
 
 
@@ -178,3 +179,59 @@ class Geometria(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+QUADRADO = [[[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0], [0.0, 0.0]]]
+
+
+class Recorte(unittest.TestCase):
+    """Vias e rios são cortados no limite do município."""
+
+    def setUp(self):
+        self.indice = IndiceDeBordas(QUADRADO)
+
+    def test_linha_toda_dentro_fica_inteira(self):
+        linha = [[0.2, 0.2], [0.5, 0.5], [0.8, 0.2]]
+        self.assertEqual(recortar_linha(linha, self.indice), [linha])
+
+    def test_linha_toda_fora_some(self):
+        self.assertEqual(recortar_linha([[1.5, 0.2], [2.0, 0.5]], self.indice), [])
+
+    def test_linha_que_sai_e_cortada_no_limite(self):
+        self.assertEqual(recortar_linha([[0.5, 0.5], [1.5, 0.5]], self.indice), [[[0.5, 0.5], [1.0, 0.5]]])
+
+    def test_linha_que_atravessa_sem_vertice_dentro(self):
+        self.assertEqual(recortar_linha([[-1.0, 0.5], [2.0, 0.5]], self.indice), [[[0.0, 0.5], [1.0, 0.5]]])
+
+    def test_linha_que_sai_e_volta_vira_dois_trechos(self):
+        linha = [[0.5, 0.5], [1.5, 0.5], [1.5, 0.8], [0.5, 0.8]]
+        self.assertEqual(recortar_linha(linha, self.indice),
+                         [[[0.5, 0.5], [1.0, 0.5]], [[1.0, 0.8], [0.5, 0.8]]])
+
+
+class DistanciaAoObjeto(unittest.TestCase):
+    """A distância da correspondência é até o objeto, não até o centro dele."""
+
+    def test_ponto_dentro_do_poligono_tem_distancia_zero(self):
+        lote = {"type": "Polygon", "coordinates": [[[-46.0, -19.0], [-45.99, -19.0], [-45.99, -18.99],
+                                                    [-46.0, -18.99], [-46.0, -19.0]]]}
+        self.assertEqual(distancia_geometria_m(-45.9999, -18.9999, lote), 0.0, "canto do lote: longe do centro")
+        fora = distancia_geometria_m(-46.001, -18.995, lote)
+        self.assertAlmostEqual(fora, distancia_m(-46.001, -18.995, -46.0, -18.995), delta=1)
+
+    def test_ponto_e_linha(self):
+        self.assertAlmostEqual(distancia_geometria_m(-46.0, -19.0, {"type": "Point", "coordinates": [-46.0, -19.001]}),
+                               111.2, delta=0.5)
+        via = {"type": "LineString", "coordinates": [[-46.01, -19.0], [-45.99, -19.0]]}
+        self.assertAlmostEqual(distancia_geometria_m(-46.0, -19.001, via), 111.2, delta=0.5)
+
+
+class Formatos(unittest.TestCase):
+    def test_numeros_e_datas_em_portugues(self):
+        self.assertEqual(numero(3213.64), "3.213,6")
+        self.assertEqual(numero(0.44, 2), "0,44")
+        self.assertEqual(porcentagem(88.9), "88,9%")
+        self.assertEqual(porcentagem(100.0), "100%")
+        self.assertEqual(porcentagem(None), "—")
+        self.assertEqual(data_br("2026-10-21T20:01:36Z"), "21/10/2026")
+        self.assertEqual(data_br(""), "")
