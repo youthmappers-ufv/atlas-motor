@@ -9,8 +9,12 @@ Os arquivos são ordenados e as coordenadas arredondadas (7 casas, ~1 cm), para
 que cada atualização produza diferenças legíveis no Git.
 
 Uso:
-  python <motor>/scripts/baixar_osm.py --local <município>                # todos os temas
+  python <motor>/scripts/baixar_osm.py --local <município>                # temas ativos e os de fundo dos mapas
   python <motor>/scripts/baixar_osm.py --local <município> --tema educacao # só um tema
+  python <motor>/scripts/baixar_osm.py --local <município> --todos         # também os temas em "planejado"
+
+Vias e rios são cortados no limite do município: uma via que o atravessa em mais de um trecho
+vira MultiLineString, com o mesmo identificador do OSM.
 """
 from __future__ import annotations
 
@@ -24,8 +28,8 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-from comum import (aneis_externos, argumento_local, caminho_consulta, dentro, escrever_json, ler_config, ler_temas,
-                   ponto_representativo, usar_versao_declarada)
+from comum import (TEMAS_DE_FUNDO, IndiceDeBordas, aneis_externos, argumento_local, caminho_consulta, dentro,
+                   escrever_json, ler_config, ler_temas, ponto_representativo, recortar_linha, usar_versao_declarada)
 
 USER_AGENT = "atlas-motor (Programa Youthmappers UFV)"
 CHAVES_AREA = ("building", "landuse", "leisure", "natural", "amenity", "place", "tourism",
@@ -72,16 +76,18 @@ def geometria(e: dict) -> dict | None:
 
 
 def feicoes(bruto: dict, aneis: list) -> list[dict]:
-    saida = {}
+    saida, indice = {}, IndiceDeBordas(aneis)
     for e in bruto["elements"]:
         g = geometria(e)
         if g is None:
             continue
-        lon, lat = ponto_representativo(g)
-        if g["type"] == "LineString":            # via ou rio: basta um vértice dentro do município
-            if not any(dentro(x, y, aneis) for x, y in g["coordinates"]):
+        if g["type"] == "LineString":            # via ou rio: só os trechos dentro do município
+            trechos = recortar_linha(g["coordinates"], indice)
+            if not trechos:
                 continue
-        elif not dentro(lon, lat, aneis):
+            g = ({"type": "LineString", "coordinates": trechos[0]} if len(trechos) == 1
+                 else {"type": "MultiLineString", "coordinates": trechos})
+        elif not dentro(*ponto_representativo(g), aneis):
             continue
         osm = f"{e['type']}/{e['id']}"
         saida[osm] = {"type": "Feature", "properties": {"osm": osm, "tags": dict(sorted(e.get("tags", {}).items()))},
@@ -101,13 +107,16 @@ def main() -> int:
     usar_versao_declarada("baixar_osm.py")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--tema", action="append", help="baixar só este tema (pode repetir)")
+    ap.add_argument("--todos", action="store_true",
+                    help="baixar também os temas ainda em 'planejado' (padrão: os ativos e os de fundo dos mapas)")
     argumento_local(ap)
     args = ap.parse_args()
     local = args.local.resolve()
     config, temas = ler_config(local), ler_temas(local)
     pasta = local / "dados" / "osm"
     pasta.mkdir(parents=True, exist_ok=True)
-    escolhidos = [t for t in temas if not args.tema or t.id in args.tema]
+    escolhidos = [t for t in temas if (t.id in args.tema if args.tema
+                                       else args.todos or t.ativo or t.id in TEMAS_DE_FUNDO)]
     if args.tema and len(escolhidos) != len(args.tema):
         print(f"Tema desconhecido: {set(args.tema) - {t.id for t in temas}}", file=sys.stderr)
         return 2

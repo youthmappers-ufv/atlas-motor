@@ -29,7 +29,7 @@ import tomllib
 from datetime import date
 from pathlib import Path
 
-from comum import (CATALOGO, INDICADORES, MAPAS, MOTOR, SITUACOES, Tema, argumento_local, caminho_consulta, coordenadas, ler_csv,
+from comum import (CATALOGO, INDICADORES, MAPAS, MOTOR, SITUACOES, TEMAS_DE_FUNDO, Tema, argumento_local, caminho_consulta, coordenadas, ler_csv,
                    ler_esquemas, ler_temas, ler_toml, sobrenome_e_prenome, usar_versao_declarada)
 
 RECORTES = {"municipio", "sede", "ambos"}
@@ -236,7 +236,7 @@ def verificar_osm(local: Path, config: dict, temas: list[Tema], r: Relatorio) ->
             except (KeyError, ValueError, TypeError) as e:
                 r.erro(f"[osm] {arq.name}: {osm or i}: geometria inválida ({e})")
                 continue
-            if nome != "limite" and f["geometry"]["type"] != "LineString" and not all(dentro_caixa(x, y, bbox) for x, y in pts):
+            if nome != "limite" and not all(dentro_caixa(x, y, bbox) for x, y in pts):
                 r.erro(f"[osm] {arq.name}: {osm} fora da área do município")
         if nome != "limite":
             esperado = retrato.get(nome, {}).get("feicoes")
@@ -247,6 +247,11 @@ def verificar_osm(local: Path, config: dict, temas: list[Tema], r: Relatorio) ->
     for t in temas:
         if t.ativo and not (pasta / f"{t.id}.geojson").exists():
             r.erro(f"[osm] {t.id} está ativo, mas falta dados/osm/{t.id}.geojson (rode baixar_osm.py --tema {t.id})")
+    if any(t.ativo for t in temas):
+        for fundo in TEMAS_DE_FUNDO:
+            if not (pasta / f"{fundo}.geojson").exists():
+                r.aviso(f"[osm] falta dados/osm/{fundo}.geojson, usado no fundo de todos os mapas (vias e nomes das "
+                        f"localidades): rode baixar_osm.py --tema {fundo}")
 
 
 # ---------------------------------------------------------------- Bases oficiais
