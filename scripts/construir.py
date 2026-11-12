@@ -131,19 +131,21 @@ def evolucao(local: Path, ativos: list, maximo: int = 6) -> str:
         linhas = serie(local)
     except Exception:                             # sem git, clone raso, retrato antigo ilegível
         linhas = []
-    datas = sorted({l["base_osm"][:10] for l in linhas if l["base_osm"]})[-maximo:]
+    # uma coluna por retrato (commit que mudou os dados), na ordem do histórico; os temas de um
+    # mesmo retrato podem ter datas de base diferentes, e por isso a coluna leva a data do commit
+    datas = list(dict.fromkeys((l["commit"], l["data_commit"]) for l in linhas))[-maximo:]
     if not datas:
         return "*Série indisponível nesta construção (sem o histórico do repositório).*\n"
-    por = {(l["tema"], l["base_osm"][:10]): l for l in linhas}
+    por = {(l["tema"], l["commit"]): l for l in linhas}
 
     def celula(tema, data):
-        l = por.get((tema.id, data))
+        l = por.get((tema.id, data[0]))
         if not l:
             return "—"
         cobertura = f" ({porcentagem(l['C_t'])})" if l["C_t"] not in ("", None) else ""
         return f"{numero(l['total'], 0)}{cobertura}"
 
-    cabecalho = "| Prancha | " + " | ".join(data_br(d) for d in datas) + " |\n|:-----|" + "---:|" * len(datas)
+    cabecalho = "| Prancha | " + " | ".join(data_br(d[1]) for d in datas) + " |\n|:-----|" + "---:|" * len(datas)
     corpo = "\n".join(f"| {t.numero}. {t.titulo} | " + " | ".join(celula(t, d) for d in datas) + " |" for t in ativos)
     return (f"{cabecalho}\n{corpo}\n\nObjetos no OpenStreetMap em cada retrato; entre parênteses, nos temas com "
             "base oficial, a proporção dos itens oficiais encontrados no mapa.\n")
