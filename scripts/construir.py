@@ -56,7 +56,12 @@ def trechos_tema(tema, res: dict, figuras: list[tuple[str, str, str]], retrato: 
     t = dict.fromkeys(TRECHOS, "")
     for arq, legenda, recorte in figuras:
         alt = f"Mapa: {legenda}".replace('"', "'")
-        t[f"mapa-{recorte}"] = f"![{legenda}](../_gerado/figuras/{arq}){{fig-alt=\"{alt}\" width=100%}}\n"
+        # No PDF o mapa ocupa no máximo metade da altura da página, para os indicadores (e a fonte)
+        # caberem com ele; no site, a largura toda.
+        # (só a altura no PDF: com largura e altura juntas a imagem seria esticada)
+        imagem = f"![{legenda}](../_gerado/figuras/{arq}){{fig-alt=\"{alt}\""
+        t[f"mapa-{recorte}"] = (f"::: {{.content-visible when-format=\"html\"}}\n{imagem} width=100%}}\n:::\n\n"
+                                f"::: {{.content-visible unless-format=\"html\"}}\n{imagem} height=50%}}\n:::\n")
     # "legenda" fica vazia: a legenda é desenhada dentro de cada mapa (mapas.py). O trecho continua
     # existindo para as pranchas que o incluem em separado.
     t["indicadores"] = tabela(res["linhas"])
@@ -353,7 +358,10 @@ def main() -> int:
         (t.titulo, f"{t.id}.geojson") for t, _ in resumo if (gerado / "downloads" / f"{t.id}.geojson").exists()]
     (gerado / "downloads.md").write_text(trecho_downloads(arquivos_dados, dados_citacao(config)["site"]),
                                          encoding="utf-8")
-    base_iso = retrato.get("base_osm", "")[:10]
+    # Data da edição: a do tema ativo com dados mais antigos (os servidores do Overpass nem sempre
+    # estão na mesma data, e um tema pode ter sido baixado sozinho); cada prancha mostra a sua.
+    datas = [retrato.get("temas", {}).get(t.id, {}).get("base_osm", "") for t, _ in resumo]
+    base_iso = (min([d for d in datas if d], default="") or retrato.get("base_osm", ""))[:10]
     base_osm = data_br(base_iso) or "data desconhecida"
     versao = (f"Versão **{versao_local(local)}** (motor {versao_motor()}), com dados do OpenStreetMap de "
               f"**{base_osm}**.\n")
