@@ -17,6 +17,30 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
+## v0.13.0 — 2026-11-12
+
+**Ao atualizar o município:**
+
+1. Baixe o retrato de novo (`python ../atlas-motor/scripts/baixar_osm.py`): vias e rios passam a ser cortados no limite do município, e o validador recusa as linhas antigas, que saíam dele.
+2. No `.github/workflows/atualizar-dados.yml`, acrescente `actions: write` em `permissions` (texto em `modelo-local/`), para o PR mensal de dados disparar o *Verificar* sozinho.
+3. Nas bases oficiais cujo tema é mais largo que a base, declare `filtro_osm` no `fonte.toml` (ex.: `["amenity=school|kindergarten|childcare"]` no INEP): [Duas fontes](docs/duas-fontes.md).
+4. Pranchas que incluem partes em separado: `legenda` fica vazia (a legenda vai dentro do mapa) e há partes novas (`interativo`, `comparacao-municipio`, `comparacao-sede`, `resumo`, `so-osm`): [Pranchas](docs/pranchas.md).
+
+- **Duas fontes.** Nos temas com base oficial, a prancha mostra o OpenStreetMap e, em seguida, a comparação: mapa com itens nas duas fontes, só no OpenStreetMap e só na base oficial (numerados como na tabela), quadro-resumo com a cobertura do mapa, tabela dos itens só na base (com o motivo provável) e dos objetos só no OpenStreetMap, e as duas fontes citadas com suas datas. Um arquivo de comparação por tema (`<tema>-comparacao.geojson` e `.csv`) alimenta o PDF, o site e os downloads. A página inicial ganha a síntese por prancha.
+- **Mapa interativo no site** (Leaflet), com as camadas do tema e da comparação e a ficha de cada objeto; os mapas estáticos continuam, e são os do PDF.
+- **Catálogo:** nove temas novos (10 Hidrografia, 11 Uso do solo e agricultura, 12 Edificações, 13 Logradouros e endereços, 14 Bairros, distritos e povoados, 15 Comércio e serviços, 16 Assistência social, 17 Infraestrutura e saneamento, 18 Agroindústria e armazenagem); Meio ambiente passa a mapa de áreas.
+- **Mapa de áreas** (`mapa = "areas"`) e relações multipolígono do OpenStreetMap como áreas (antes viravam um ponto); indicadores `areas` (hectares e proporção do município) e `linhas` (km e km com nome).
+- **O mapa em números:** capítulo novo com os objetos por prancha nos últimos retratos versionados, recalculados com o método da edição.
+- **Vias e rios cortados no limite** do município; a via que o atravessa em mais de um trecho vira `MultiLineString`. O comprimento de vias deixa de contar o que está fora.
+- **Completude:** a distância é medida até o objeto (zero se a coordenada oficial cai dentro do polígono), e não até o centro dele.
+- **Mapas:** legenda dentro do mapa, só do que aparece nele; nomes dos objetos no mapa da sede quando são poucos.
+- **PDF:** figuras numeradas em sequência no atlas inteiro; mapa com até metade da altura da página; links de download com o endereço completo.
+- **Formato:** números e datas no padrão brasileiro; rótulos por extenso no lugar de C_t e Q_t; texto vindo dos dados escapado nas tabelas.
+- **Versão mostrada:** a edição mensal, que sai da `main`, deixa de aparecer como "Versão main"; a data da edição é a do tema ativo com dados mais antigos.
+- `baixar_osm.py` baixa os temas ativos e os de fundo dos mapas (`--todos` inclui os planejados); o validador avisa se faltar o fundo.
+- **CI:** o PR mensal de dados dispara o *Verificar* no próprio ramo; bibliotecas em versão fixa (`requirements.txt`); ação de publicação fixada por commit.
+- Site: descrição, Open Graph e ícone. Saída dos scripts em UTF-8 também no Windows com redirecionamento.
+
 ## v0.12.0 — 2026-10-22
 
 **Ao atualizar o município:** no `atlas.toml`, em `[publicacao]`, acrescente `coordenacao_orcid` e `doi` (texto em `modelo-local/atlas.toml`; `doi` fica vazio até o primeiro DOI) e rode `python ../atlas-motor/scripts/citacao_repositorio.py`, que regrava `CITATION.cff`, `.zenodo.json` (só município público), badges e "Como citar". Commit dos arquivos antes de criar o próximo release.
