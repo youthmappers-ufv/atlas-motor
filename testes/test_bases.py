@@ -166,5 +166,35 @@ class ValidadorDosModos(unittest.TestCase):
         self.assertIn("comparacao 'area'", erros)
 
 
+class ServidorAtrasado(unittest.TestCase):
+    """baixar_osm: resposta com a base velha não é aceita se outro servidor está em dia."""
+
+    def consultar(self, bases: list[str]):
+        import baixar_osm
+        from unittest import mock
+        respostas = iter(bases)
+
+        class Resposta(io.BytesIO):
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+
+        def abrir(req, timeout=0):
+            return Resposta(json.dumps({"elements": [], "osm3s": {"timestamp_osm_base": next(respostas)}}).encode())
+        config = {"overpass": {"servidores": ["https://a.exemplo/api", "https://b.exemplo/api"], "tempo_limite": 5}}
+        with mock.patch.object(baixar_osm.urllib.request, "urlopen", abrir), mock.patch.object(baixar_osm.time, "sleep"):
+            return baixar_osm.consultar(config, "node(1);")
+
+    def test_passa_para_o_servidor_em_dia(self):
+        from datetime import datetime, timezone
+        hoje = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        resposta, servidor = self.consultar(["2020-01-01T00:00:00Z", hoje])
+        self.assertEqual((resposta["osm3s"]["timestamp_osm_base"], servidor), (hoje, "https://b.exemplo/api"))
+
+    def test_sem_servidor_em_dia_vale_o_mais_recente(self):
+        resposta, _ = self.consultar(["2020-01-01T00:00:00Z", "2021-01-01T00:00:00Z", "2020-06-01T00:00:00Z",
+                                      "2020-07-01T00:00:00Z"])
+        self.assertEqual(resposta["osm3s"]["timestamp_osm_base"], "2021-01-01T00:00:00Z")
+
+
 if __name__ == "__main__":
     unittest.main()

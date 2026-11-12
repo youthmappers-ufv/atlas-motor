@@ -40,6 +40,7 @@ As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renum
 - **PDF:** figuras numeradas em sequência no atlas inteiro; mapa com até metade da altura da página; links de download com o endereço completo.
 - **Formato:** números e datas no padrão brasileiro; rótulos por extenso no lugar de C_t e Q_t; texto vindo dos dados escapado nas tabelas.
 - **Versão mostrada:** a edição mensal, que sai da `main`, deixa de aparecer como "Versão main"; a data da edição é a do tema ativo com dados mais antigos.
+- `baixar_osm.py` não aceita resposta de servidor Overpass atrasado (base mais velha que `overpass.atraso_max_horas`, padrão 24) se outro estiver em dia; sem nenhum em dia, usa a mais recente e avisa.
 - `baixar_osm.py` baixa os temas ativos e os de fundo dos mapas (`--todos` inclui os planejados); o validador avisa se faltar o fundo.
 - **CI:** o PR mensal de dados dispara o *Verificar* no próprio ramo; bibliotecas em versão fixa (`requirements.txt`); ação de publicação fixada por commit.
 - Site: descrição, Open Graph e ícone. Saída dos scripts em UTF-8 também no Windows com redirecionamento.

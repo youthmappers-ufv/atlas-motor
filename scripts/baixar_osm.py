@@ -25,7 +25,7 @@ import sys
 import time
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from comum import (TEMAS_DE_FUNDO, IndiceDeBordas, aneis_externos, argumento_local, caminho_consulta, dentro,
@@ -40,15 +40,30 @@ def consultar(config: dict, corpo: str) -> tuple[dict, str]:
     # "out geom" traz etiquetas, membros e geometria ("out tags geom" omitiria os membros das relações)
     consulta = f"[out:json][timeout:{config['overpass']['tempo_limite']}];{corpo}out geom;"
     dados = urllib.parse.urlencode({"data": consulta}).encode()
-    erros = []
-    for url in config["overpass"]["servidores"]:
+    # Os servidores públicos nem sempre estão em dia (uma mesma instância pode responder com a base
+    # de dias atrás): resposta mais velha que overpass.atraso_max_horas (padrão 24) é guardada como
+    # reserva, e a consulta segue para o próximo servidor, por até duas voltas. Sem nenhuma em dia,
+    # vale a mais recente, com aviso; cada tema registra no retrato a data da sua base.
+    limite = datetime.now(timezone.utc) - timedelta(hours=config["overpass"].get("atraso_max_horas", 24))
+    erros, reserva = [], None
+    for url in config["overpass"]["servidores"] * 2:
         try:
             req = urllib.request.Request(url, data=dados, headers={"User-Agent": USER_AGENT})
             with urllib.request.urlopen(req, timeout=config["overpass"]["tempo_limite"] + 30) as r:
-                return json.load(r), url
+                resposta = json.load(r)
         except Exception as erro:               # servidor fora do ar ou sobrecarregado: tenta o próximo
             erros.append(f"{url}: {erro}")
             time.sleep(3)
+            continue
+        base = resposta.get("osm3s", {}).get("timestamp_osm_base", "")
+        if not base or base >= limite.strftime("%Y-%m-%dT%H:%M:%SZ"):
+            return resposta, url
+        if reserva is None or base > reserva[2]:
+            reserva = (resposta, url, base)
+        time.sleep(2)
+    if reserva:
+        print(f"(aviso: nenhum servidor em dia; usando a base de {reserva[2][:10]}) ", end="", file=sys.stderr, flush=True)
+        return reserva[0], reserva[1]
     raise RuntimeError("nenhum servidor Overpass respondeu:\n  " + "\n  ".join(erros))
 
 

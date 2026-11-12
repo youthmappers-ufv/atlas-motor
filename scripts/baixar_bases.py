@@ -139,7 +139,8 @@ def base_cnes(local: Path, config: dict, de_novo: bool) -> str:
     gravar_fonte(pasta, {
         "nome": "Cadastro Nacional de Estabelecimentos de Saúde", "orgao": "CNES",
         "url": "https://apidadosabertos.saude.gov.br/v1/#/CNES", "data_acesso": date.today(),
-        "licenca": "Dados abertos do Ministério da Saúde (https://opendatasus.saude.gov.br/); a API não declara uma licença específica",
+        "licenca": ("Livre utilização: dados abertos do Poder Executivo federal (Decreto nº 8.777/2016, art. 4º); "
+                    "a API do Ministério da Saúde não declara uma licença específica"),
         "arquivo": "estabelecimentos.csv",
         "observacao": (f"Baixado pela API para o município {ibge6} por baixar_bases.py: {len(itens)} estabelecimentos, "
                        f"mantidos os {len(ativos)} sem motivo de desabilitação. Ficam só código, nome fantasia, tipo, esfera, "
