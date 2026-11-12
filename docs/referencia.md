@@ -99,6 +99,7 @@ data_acesso = 2026-11-10
 licenca = "..."                       # como consta na fonte
 arquivo = "escolas.csv"
 observacao = "Filtrado para o município 3155504; colunas renomeadas."   # opcional
+filtro_osm = ["amenity=school|kindergarten|childcare"]   # opcional: o que a base cobre (docs/duas-fontes.md)
 
 [colunas]                             # quais colunas do CSV fazem cada papel
 id = "codigo_inep"
