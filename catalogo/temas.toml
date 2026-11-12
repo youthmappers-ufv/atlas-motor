@@ -10,7 +10,9 @@
 #   recorte     municipio | sede | ambos (mapas gerados)
 #   cor         cor dos objetos do tema no mapa (#RRGGBB)
 #   mapa        pontos (objetos sobre as vias de fundo) | linhas (o próprio tema é uma rede: vias, estradas)
-#   indicadores além de total e nome: "servico" (endereço e horário), "vias" (km e pavimento)
+#               | areas (o tema são áreas: água, uso do solo, edificações)
+#   indicadores além de total e nome: "servico" (endereço e horário), "vias" (km e pavimento),
+#               "linhas" (km e km com nome), "areas" (hectares e proporção do município)
 # Como propor um tema novo: docs/novos-temas.md.
 
 [[tema]]
@@ -76,8 +78,8 @@ consulta = "meio-ambiente.overpassql"
 referencia = "interno"
 recorte = "municipio"
 cor = "#2E7D32"
-mapa = "pontos"
-indicadores = []
+mapa = "areas"
+indicadores = ["areas"]
 
 [[tema]]
 id = "mobilidade"
@@ -111,3 +113,102 @@ recorte = "ambos"
 cor = "#7A1C1C"
 mapa = "pontos"
 indicadores = ["servico"]
+
+[[tema]]
+id = "hidrografia"
+numero = 10
+titulo = "Hidrografia"
+consulta = "hidrografia.overpassql"
+referencia = "interno"
+recorte = "municipio"
+cor = "#3A7BD5"
+mapa = "areas"
+indicadores = ["areas", "linhas"]
+
+[[tema]]
+id = "uso-do-solo"
+numero = 11
+titulo = "Uso do solo e agricultura"
+consulta = "uso-do-solo.overpassql"
+referencia = "interno"
+recorte = "municipio"
+cor = "#8D6E3A"
+mapa = "areas"
+indicadores = ["areas"]
+
+[[tema]]
+id = "edificacoes"
+numero = 12
+titulo = "Edificações"
+consulta = "edificacoes.overpassql"
+referencia = "interno"
+recorte = "ambos"
+cor = "#5D4037"
+mapa = "areas"
+indicadores = ["areas"]
+
+[[tema]]
+id = "logradouros"
+numero = 13
+titulo = "Logradouros e endereços"
+consulta = "logradouros.overpassql"
+referencia = "interno"
+recorte = "sede"
+cor = "#303030"
+mapa = "linhas"
+indicadores = ["vias"]
+
+[[tema]]
+id = "bairros-distritos"
+numero = 14
+titulo = "Bairros, distritos e povoados"
+consulta = "bairros-distritos.overpassql"
+referencia = "interno"
+recorte = "ambos"
+cor = "#7A1C1C"
+mapa = "pontos"
+indicadores = []
+
+[[tema]]
+id = "comercio-servicos"
+numero = 15
+titulo = "Comércio e serviços"
+consulta = "comercio-servicos.overpassql"
+referencia = "interno"
+recorte = "sede"
+cor = "#BC9C38"
+mapa = "pontos"
+indicadores = ["servico"]
+
+[[tema]]
+id = "assistencia-social"
+numero = 16
+titulo = "Assistência social"
+consulta = "assistencia-social.overpassql"
+referencia = "interno"
+recorte = "sede"
+cor = "#6A1B9A"
+mapa = "pontos"
+indicadores = ["servico"]
+
+[[tema]]
+id = "infraestrutura"
+numero = 17
+titulo = "Infraestrutura e saneamento"
+consulta = "infraestrutura.overpassql"
+referencia = "interno"
+recorte = "municipio"
+cor = "#455A64"
+mapa = "pontos"
+indicadores = []
+
+[[tema]]
+id = "agroindustria"
+numero = 18
+titulo = "Agroindústria e armazenagem"
+consulta = "agroindustria.overpassql"
+referencia = "interno"
+recorte = "municipio"
+cor = "#2E7D32"
+mapa = "pontos"
+indicadores = []
