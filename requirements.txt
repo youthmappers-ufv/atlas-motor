@@ -1,4 +1,5 @@
 # Só para construir o atlas: mapas (scripts/mapas.py) e tema (scripts/tema.py lê o _brand.yml).
 # Validação e testes usam só a biblioteca padrão.
-matplotlib>=3.8
-PyYAML>=6.0
+# Versões fixas: uma edição antiga refeita hoje usa as mesmas bibliotecas de quando foi feita.
+matplotlib==3.11.2
+PyYAML==6.0.3

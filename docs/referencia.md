@@ -165,7 +165,7 @@ Todos rodam de dentro do repositório do município (ou com `--local <pasta>`). 
 | Comando | O que faz | Opções |
 |---|---|---|
 | `validar.py` | confere o repositório (configuração, temas, retratos, bases, curados, pranchas, identidade, dados pessoais, arquivos) | `--local` |
-| `baixar_osm.py` | baixa o retrato do OSM dos temas ativos | `--tema <id>` (repetível), `--local` |
+| `baixar_osm.py` | baixa o retrato do OSM dos temas ativos e dos de fundo dos mapas (vias e localidades), com vias e rios cortados no limite | `--tema <id>` (repetível), `--todos`, `--local` |
 | `construir.py` | monta o livro em `_construcao/livro/` e, se pedido, renderiza | `--renderizar html\|pdf\|todos`, `--previa` (`--porta`, `--sem-navegador`), `--baixar`, `--sem-mapas`, `--local` |
 | `ativar_tema.py <id>` | muda a situação de um tema e cria a prancha | `--situacao planejado\|em-andamento\|publicado`, `--local` |
 | `preparar_base.py <base> <arquivo>` | converte uma base oficial como baixada do órgão para `dados/oficiais/<base>/` (formatos: `inep`) | `--data`, `--todas`, `--substituir`, `--local` |

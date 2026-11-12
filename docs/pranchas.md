@@ -40,7 +40,7 @@ O motor gera também cada parte em separado, em `_gerado/<tema>/`:
 |---|---|---|
 | mapa do município | `{{< include ../_gerado/educacao/mapa-municipio.md >}}` | figura do município inteiro (largura total) |
 | mapa da sede | `{{< include ../_gerado/educacao/mapa-sede.md >}}` | figura da área urbana da sede (largura total) |
-| legenda | `{{< include ../_gerado/educacao/legenda.md >}}` | "Pontos cheios: com nome; vazados: sem nome." |
+| legenda | `{{< include ../_gerado/educacao/legenda.md >}}` | vazio desde a v0.13.0: a legenda é desenhada dentro de cada mapa |
 | indicadores | `{{< include ../_gerado/educacao/indicadores.md >}}` | tabela de indicadores (total, nome, endereço, horário, completude) |
 | lacunas | `{{< include ../_gerado/educacao/lacunas.md >}}` | itens da base oficial sem correspondente no mapa, com o motivo provável |
 | fonte | `{{< include ../_gerado/educacao/fonte.md >}}` | data do retrato e atribuição ao OSM (obrigatória pela licença) |
