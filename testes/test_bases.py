@@ -133,6 +133,12 @@ class PorNomes(unittest.TestCase):
         self.assertIn("Rua Nova", tabela_sobras(self.comp))
         self.assertEqual(len(json.loads(geojson_modo(self.comp))["features"]), 2)
 
+    def test_rua_de_uma_letra_e_sem_denominacao(self):
+        comp = montar_nomes({"nome": "Faces", "orgao": "IBGE"}, [{"nome": "RUA A", "km": 1.0}, {"nome": "RUA SEM DENOMINACAO 2", "km": 1.0}],
+                            [via("way/1", "Rua Z")], [])
+        self.assertEqual([o["nome"] for o in comp["oficiais"]], ["RUA A"], "via sem denominação não é nome a procurar")
+        self.assertIn("nenhuma via com este nome", comp["oficiais"][0]["motivo"], "Rua A e Rua Z não são grafias uma da outra")
+
 
 class ValidadorDosModos(unittest.TestCase):
     def setUp(self):

@@ -235,6 +235,12 @@ def montar_nomes(fonte: dict, oficiais: list[dict], feicoes: list[dict], geometr
         nome = f["properties"]["tags"].get("name", "")
         if nome:
             nomes_osm.setdefault(nome_de_rua(nome), nome)
+    def miolo(chave: str) -> str:
+        """O nome sem o tipo de logradouro: é ele que distingue uma rua da outra."""
+        return re.sub(r"^(rua|avenida|praca|travessa|alameda|rodovia|estrada|acesso|saida)\s+", "", chave)
+
+    # "SEM DENOMINACAO" é como a base oficial marca a via sem nome: não é um nome a procurar no mapa.
+    oficiais = [o for o in oficiais if "sem denominacao" not in nome_de_rua(o["nome"])]
     usados, linhas, n = set(), [], 0
     for o in oficiais:
         chave = nome_de_rua(o["nome"])
@@ -244,8 +250,12 @@ def montar_nomes(fonte: dict, oficiais: list[dict], feicoes: list[dict], geometr
             linha.update(situacao="ambas", nome_osm=nomes_osm[chave])
         else:
             n += 1
-            parecido = max(((SequenceMatcher(None, chave, k).ratio(), k) for k in nomes_osm), default=(0, ""))
-            motivo = (f"nome parecido no OSM: \"{nomes_osm[parecido[1]]}\" (conferir a grafia)" if parecido[0] >= 0.8
+            # Pista de grafia: só pelo miolo do nome e só se ele for longo o bastante ("Rua A" e
+            # "Rua Z" são parecidas no texto e nada têm a ver uma com a outra).
+            m = miolo(chave)
+            parecido = max(((SequenceMatcher(None, m, miolo(k)).ratio(), k) for k in nomes_osm), default=(0, ""))
+            motivo = (f"nome parecido no OSM: \"{nomes_osm[parecido[1]]}\" (conferir a grafia)"
+                      if parecido[0] >= 0.8 and len(m) >= 5
                       else "nenhuma via com este nome no OSM: sem nome no mapa ou não mapeada")
             linha.update(situacao="so_oficial", n=n, motivo=motivo)
         linhas.append(linha)
