@@ -1,0 +1,7 @@
+# O mapa em números {.unnumbered}
+
+Como o mapa do município vem crescendo. Cada coluna é um retrato do OpenStreetMap guardado no repositório do atlas; os números de todos os retratos são recalculados com o método desta edição, para que a comparação entre datas valha.
+
+{{< include _gerado/evolucao.md >}}
+
+Um traço indica que o tema ainda não era acompanhado naquela data. Crescimento no número de objetos é mapeamento novo; crescimento na proporção encontrada na base oficial é lacuna fechada.

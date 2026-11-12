@@ -36,7 +36,7 @@ from pathlib import Path
 from comparacao import csv_texto as csv_comparacao
 from comparacao import geojson as geojson_comparacao
 from comparacao import quadro_resumo, resumo_curto, tabela_so_oficial, tabela_so_osm
-from comum import (MOTOR, argumento_local, data_br, ler_config, ler_temas, numero, sobrenome_e_prenome, texto_md,
+from comum import (MOTOR, argumento_local, data_br, ler_config, ler_temas, numero, porcentagem, sobrenome_e_prenome, texto_md,
                    tirar_somente_leitura, usar_versao_declarada, versao_motor)
 from indicadores import calcular
 from identidade import gerar as gerar_identidade
@@ -120,6 +120,33 @@ def sintese(resumo: list) -> str:
                       f"| {texto_md(base)} | {resumo_curto(comp)} |")
     return ("| Nº | Prancha | Objetos no OpenStreetMap | Com nome | Base oficial | Encontrados no mapa |\n"
             "|--:|:-----|---:|---:|:--|---:|\n" + "\n".join(linhas) + "\n")
+
+
+def evolucao(local: Path, ativos: list, maximo: int = 6) -> str:
+    """_gerado/evolucao.md: objetos no OpenStreetMap por tema nos últimos retratos versionados e,
+    nos temas com base oficial, a cobertura. A série vem do histórico do Git do município
+    (serie_historica.py); sem histórico (cópia sem Git ou clone raso), fica só o aviso."""
+    try:
+        from serie_historica import serie
+        linhas = serie(local)
+    except Exception:                             # sem git, clone raso, retrato antigo ilegível
+        linhas = []
+    datas = sorted({l["base_osm"][:10] for l in linhas if l["base_osm"]})[-maximo:]
+    if not datas:
+        return "*Série indisponível nesta construção (sem o histórico do repositório).*\n"
+    por = {(l["tema"], l["base_osm"][:10]): l for l in linhas}
+
+    def celula(tema, data):
+        l = por.get((tema.id, data))
+        if not l:
+            return "—"
+        cobertura = f" ({porcentagem(l['C_t'])})" if l["C_t"] not in ("", None) else ""
+        return f"{numero(l['total'], 0)}{cobertura}"
+
+    cabecalho = "| Prancha | " + " | ".join(data_br(d) for d in datas) + " |\n|:-----|" + "---:|" * len(datas)
+    corpo = "\n".join(f"| {t.numero}. {t.titulo} | " + " | ".join(celula(t, d) for d in datas) + " |" for t in ativos)
+    return (f"{cabecalho}\n{corpo}\n\nObjetos no OpenStreetMap em cada retrato; entre parênteses, nos temas com "
+            "base oficial, a proporção dos itens oficiais encontrados no mapa.\n")
 
 
 def trecho_tema(tema, res: dict, figuras: list[tuple[str, str, str]], retrato: dict, config: dict) -> str:
@@ -407,6 +434,7 @@ def main() -> int:
         print(f"{t.numero:>2}. {t.titulo}: {res['total']} objetos")
 
     (gerado / "pranchas.md").write_text(sintese(resumo), encoding="utf-8")
+    (gerado / "evolucao.md").write_text(evolucao(local, ativos), encoding="utf-8")
     shutil.copy2(local / "dados" / "osm" / "limite.geojson", gerado / "downloads" / "limite.geojson")
     arquivos_dados = [("Limite do município", "limite.geojson")] + [
         (t.titulo, f"{t.id}.geojson") for t, _ in resumo if (gerado / "downloads" / f"{t.id}.geojson").exists()]

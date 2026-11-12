@@ -30,6 +30,7 @@ book:
     - part: "Pranchas"
       chapters:
 {{capitulos}}
+    - evolucao.qmd
     - dados.qmd
 
 format:

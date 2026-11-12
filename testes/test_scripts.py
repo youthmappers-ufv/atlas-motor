@@ -488,7 +488,7 @@ class CatalogoDeTemas(unittest.TestCase):
         res = {"linhas": [], "lacunas": [{"id": "1", "nome": "E.E. A | B", "motivo": "x"}]}
         partes = trechos_tema(tema, res, [("m.png", 'Educação "básica": município', "municipio")],
                               {"base_osm": "2026-10-21T20:01:36Z"}, {"publicacao": {"atribuicao": "© OSM"}})
-        self.assertIn("| 1 | E.E. A \| B | x |", partes["lacunas"], "barra vertical escapada na tabela")
+        self.assertIn(r"| 1 | E.E. A \| B | x |", partes["lacunas"], "barra vertical escapada na tabela")
         self.assertIn("fig-alt=\"Mapa: Educação 'básica': município\"", partes["mapa-municipio"])
         self.assertIn("dados de 21/10/2026", partes["fonte"])
 
