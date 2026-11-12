@@ -133,7 +133,8 @@ def evolucao(local: Path, ativos: list, maximo: int = 6) -> str:
         linhas = []
     # uma coluna por retrato (commit que mudou os dados), na ordem do histórico; os temas de um
     # mesmo retrato podem ter datas de base diferentes, e por isso a coluna leva a data do commit
-    datas = list(dict.fromkeys((l["commit"], l["data_commit"]) for l in linhas))[-maximo:]
+    ultimo_do_dia = {l["data_commit"]: l["commit"] for l in linhas}      # dois retratos no mesmo dia: vale o último
+    datas = [(commit, dia) for dia, commit in sorted(ultimo_do_dia.items())][-maximo:]
     if not datas:
         return "*Série indisponível nesta construção (sem o histórico do repositório).*\n"
     por = {(l["tema"], l["commit"]): l for l in linhas}
