@@ -17,6 +17,20 @@ Cada versão é uma tag no `main`, criada só com o workflow *Testes do motor* v
 
 As duas primeiras versões foram numeradas inicialmente como v1.0 e v1.1 e renumeradas para v0.1.0 e v0.2.0 antes de qualquer publicação.
 
+## v0.14.0 — 2026-11-12
+
+**Ao atualizar o município:**
+
+1. Para o encarte de localização nos mapas do município, rode `python ../atlas-motor/scripts/baixar_bases.py --base uf` (contorno do estado, poucos KB, em `dados/oficiais/uf/`). Sem ele, só os mapas da sede levam encarte.
+2. Nada mais muda nos arquivos do município. O capítulo *Mapa geral* entra sozinho no livro, depois de *Como o atlas é feito*.
+
+- **Mapa geral** (só no site). Capítulo novo com todas as pranchas num mapa só: um painel de camadas, uma por prancha, que o leitor marca ou desmarca. Abrem marcados os temas de pontos; os arquivos maiores, com o tamanho indicado no painel, só são baixados quando a camada é marcada. A ordem de desenho é fixa (áreas, linhas, pontos). A ficha de cada objeto leva à prancha do tema. As camadas vêm de `_gerado/downloads/mapa-geral.json`, escrito por `construir.py`. No PDF, o capítulo diz onde o mapa está.
+- **O que falta no mapa, no mapa geral.** Nos temas com base oficial, uma segunda linha no painel liga a comparação: itens só na base oficial, numerados como na tabela da prancha (modo `itens`), faces cujo nome não está no mapa (`nomes`) ou setores na cor da razão (`contagem`).
+- **Atalhos para o editor do OpenStreetMap.** As fichas dos mapas interativos ganham *Editar* (abre o iD no objeto) e, nos itens só na base oficial, *Mapear aqui* (abre o iD na coordenada). As tabelas *Só na base oficial* e *Só no OpenStreetMap* ganham a coluna *No editor*, no site e no PDF. Nada é copiado da base oficial: o atalho só leva ao lugar a conferir.
+- **Classes de cor num tema** (`[[tema.classe]]`: `rotulo`, `cor`, `filtro`). O mapa do tema pinta cada área pela primeira classe cuja regra casa, com legenda por classe, no PDF e no site; o que não casa fica na cor do tema ("Outros usos"). O catálogo traz as classes do *Uso do solo e agricultura* (lavoura, café e outras perenes, pastagem, mata, silvicultura, sede de fazenda, área urbana, indústria e mineração); o município pode trocá-las no `temas.toml`. Nos mapas de áreas, as maiores são desenhadas primeiro.
+- **Grade de coordenadas e encarte de localização** em todos os mapas do PDF: linhas de latitude e longitude com os valores nas bordas (passo de 5 minutos no município e 30 segundos na sede, conforme a extensão) e, no canto inferior direito, a sede dentro do município ou o município dentro do estado. `baixar_bases.py --base uf` baixa o contorno do estado da API de malhas do IBGE.
+- **Correção.** No mapa interativo das pranchas, os pontos com nome saíam com o preenchimento quase transparente (o estilo das linhas e áreas era aplicado também aos pontos).
+
 ## v0.13.0 — 2026-11-12
 
 **Ao atualizar o município:**

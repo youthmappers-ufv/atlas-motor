@@ -56,8 +56,13 @@ titulo = "Educação e creches"    # opcional: troca o título do catálogo
 recorte = "sede"                 # opcional: municipio | sede | ambos
 referencia = "inep"              # opcional: pasta em dados/oficiais/ ou "interno"
 cor = "#304068"                  # opcional: cor no mapa
-mapa = "pontos"                  # opcional: pontos | linhas
-indicadores = ["servico"]        # opcional: "servico", "vias"
+mapa = "pontos"                  # opcional: pontos | linhas | areas
+indicadores = ["servico"]        # opcional: "servico", "vias", "linhas", "areas"
+
+[[tema.uso-do-solo.classe]]      # opcional: classes de cor do mapa (trocam as do catálogo)
+rotulo = "Café"                  # nome na legenda
+cor = "#A6532B"                  # #RRGGBB
+filtro = ["landuse=orchard"]     # regras chave=valor (alternativas com |); vale a primeira classe que casar
 
 [tema.feiras]                    # prancha própria (id fora do catálogo)
 numero = 20                      # obrigatório; 20 em diante
@@ -81,9 +86,16 @@ consulta = "educacao.overpassql" # em catalogo/consultas/
 referencia = "inep"              # pasta padrão da base oficial no município, ou "interno"
 recorte = "ambos"                # municipio | sede | ambos
 cor = "#304068"                  # #RRGGBB
-mapa = "pontos"                  # pontos | linhas
-indicadores = ["servico"]        # [] | ["servico"] | ["vias"]
+mapa = "pontos"                  # pontos | linhas | areas
+indicadores = ["servico"]        # [] | "servico" | "vias" | "linhas" | "areas"
+
+[[tema.classe]]                  # opcional, repetível: classes de cor do mapa do tema
+rotulo = "Lavoura"
+cor = "#E3B23C"
+filtro = ["landuse=farmland|greenhouse_horticulture"]
 ```
+
+Com classes, cada área é pintada pela primeira classe cuja regra casa com as etiquetas do objeto, e a legenda lista as classes que aparecem; o que não casa fica na cor do tema, como "Outros usos". As regras têm a mesma forma do `filtro_osm` das bases oficiais.
 
 Consultas (`catalogo/consultas/<id>.overpassql` e `consultas/` do município) são Overpass QL com `{{bbox}}` em cada linha; o motor troca pela caixa do município, baixa com `out geom` e recorta pelo limite. Uma consulta de mesmo nome em `consultas/` do município substitui a do catálogo.
 
@@ -153,6 +165,7 @@ Em `_construcao/livro/_gerado/` (fora do Git, refeito a cada construção):
 | `<tema>/mapa-municipio.md`, `<tema>/mapa-sede.md` | figuras dos mapas |
 | `<tema>/legenda.md`, `indicadores.md`, `lacunas.md`, `fonte.md` | legenda, tabela de indicadores, lacunas da base oficial (com o motivo provável), fonte e atribuição |
 | `figuras/<tema>-municipio.png`, `figuras/<tema>-sede.png` | mapas (PNG, 200 dpi) |
+| `mapa-geral.md`, `downloads/mapa-geral.json` | o mapa geral do site e o índice das suas camadas (uma por prancha ativa: arquivo, cor, tamanho, classes e, havendo base oficial, a comparação) |
 | `edicao.md`, `pranchas.md`, `downloads.md` | versão e data dos dados com o botão de baixar o PDF (só no site), lista de pranchas, links dos dados |
 | `citacao.md` | referência do atlas no formato da ABNT (NBR 6023), para "Como usar e citar"; no site, também a entrada BibLaTeX (estilo `abnt` do biblatex-abnt) |
 | `downloads/atlas-<slug>.bib` | a entrada BibLaTeX para baixar |
@@ -167,7 +180,7 @@ Todos rodam de dentro do repositório do município (ou com `--local <pasta>`). 
 | Comando | O que faz | Opções |
 |---|---|---|
 | `validar.py` | confere o repositório (configuração, temas, retratos, bases, curados, pranchas, identidade, dados pessoais, arquivos) | `--local` |
-| `baixar_bases.py` | baixa e prepara as bases oficiais federais (CNES, setores censitários, CNEFE, faces de logradouro) para `dados/oficiais/` | `--base <nome>` (repetível), `--de-novo`, `--local` |
+| `baixar_bases.py` | baixa e prepara as bases oficiais federais (CNES, setores censitários, CNEFE, faces de logradouro) e o contorno do estado para o encarte dos mapas (`--base uf`), em `dados/oficiais/` | `--base <nome>` (repetível), `--de-novo`, `--local` |
 | `baixar_osm.py` | baixa o retrato do OSM dos temas ativos e dos de fundo dos mapas (vias e localidades), com vias e rios cortados no limite | `--tema <id>` (repetível), `--todos`, `--local` |
 | `construir.py` | monta o livro em `_construcao/livro/` e, se pedido, renderiza | `--renderizar html\|pdf\|todos`, `--previa` (`--porta`, `--sem-navegador`), `--baixar`, `--sem-mapas`, `--local` |
 | `ativar_tema.py <id>` | muda a situação de um tema e cria a prancha | `--situacao planejado\|em-andamento\|publicado`, `--local` |
@@ -175,7 +188,7 @@ Todos rodam de dentro do repositório do município (ou com `--local <pasta>`). 
 | `atualizar_motor.py` | troca a versão do motor no `atlas.toml` e nos workflows | `--versao vX.Y.Z`, `--local` |
 | `instalar_ganchos.py` | instala o gancho de pre-push com o validador | `--local` |
 | `indicadores.py` | mostra os indicadores e as lacunas, com o motivo provável, no terminal | `--tema`, `--local` |
-| `mapas.py` | gera só os mapas | `--tema`, `--local` |
+| `mapas.py` | gera só os mapas (com grade de coordenadas e encarte de localização) | `--tema`, `--local` |
 | `serie_historica.py` | refaz a série dos indicadores a partir dos retratos no Git | `--saida <csv>`, `--local` |
 | `citacao_repositorio.py` | regrava, a partir do `atlas.toml`, o `CITATION.cff`, o `.zenodo.json` (município público), a fileira de badges e a seção "Como citar" do README | `--organizacao`, `--local` |
 | `notas_versao.py <tag>` | (motor) notas da versão tiradas do CHANGELOG; diz se a tag dispara o release sozinha | `--automatico` |

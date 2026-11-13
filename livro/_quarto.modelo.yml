@@ -27,6 +27,7 @@ book:
   chapters:
     - index.qmd
     - metodo.qmd
+    - mapa-geral.qmd
     - part: "Pranchas"
       chapters:
 {{capitulos}}
@@ -38,7 +39,7 @@ format:
     theme: [cosmo, brand, estilo.scss]     # cores, fontes e logo do _brand.yml
     toc: true
     number-sections: false
-    include-after-body: mapa.html          # mapa interativo das pranchas
+    include-after-body: mapa.html          # mapas interativos: pranchas e mapa geral
   pdf:
     documentclass: scrreprt
     papersize: a4

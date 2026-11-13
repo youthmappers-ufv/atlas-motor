@@ -1,0 +1,13 @@
+---
+toc: false
+---
+
+# Mapa geral {.unnumbered}
+
+::: {.content-visible when-format="html"}
+Todas as pranchas do atlas num mapa só. Marque no painel **Camadas** os temas que quer ver juntos; os arquivos maiores, com o tamanho indicado, só são baixados quando a camada é marcada. Nos temas com base oficial, a linha logo abaixo liga o que falta no mapa. Clique num objeto para ver a ficha, abrir a prancha do tema ou editar o objeto no OpenStreetMap.
+:::
+
+{{< include _gerado/mapa-geral.md >}}
+
+O mapa mostra os mesmos dados das pranchas, na mesma data. Os itens que só existem numa base oficial aparecem para orientar a conferência em campo: nada se copia da base oficial para o OpenStreetMap.

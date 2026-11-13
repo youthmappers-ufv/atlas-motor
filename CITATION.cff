@@ -10,7 +10,7 @@ authors:
   - name: "Programa Youthmappers UFV"
 doi: "10.5281/zenodo.23573341"
 license: MIT
-version: v0.13.0
+version: v0.14.0
 date-released: 2026-11-12
 repository-code: "https://github.com/youthmappers-ufv/atlas-motor"
 keywords:

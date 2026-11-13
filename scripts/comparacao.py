@@ -22,7 +22,7 @@ import io
 import json
 import re
 
-from comum import numero, ponto_representativo, porcentagem, texto_md
+from comum import casa_regras, numero, ponto_representativo, porcentagem, texto_md
 
 SITUACOES_COMPARACAO = {"ambas": "Nas duas fontes", "so_oficial": "Só na base oficial", "so_osm": "Só no OpenStreetMap"}
 
@@ -30,13 +30,25 @@ SITUACOES_COMPARACAO = {"ambas": "Nas duas fontes", "so_oficial": "Só na base o
 def no_escopo(tags: dict, filtro: list[str] | None) -> bool:
     """O objeto do OSM é do tipo que a base oficial cobre? filtro: ["amenity=school|kindergarten", ...]
     (chave=valor, com alternativas separadas por |; basta uma regra casar). Sem filtro: todos."""
-    if not filtro:
-        return True
-    for regra in filtro:
-        chave, _, valores = regra.partition("=")
-        if chave in tags and (not valores or re.fullmatch(valores, tags[chave])):
-            return True
-    return False
+    return not filtro or casa_regras(tags, filtro)
+
+
+EDITOR = "https://www.openstreetmap.org/edit?editor=id"
+
+
+def link_editor(osm: str = "", lat: float | None = None, lon: float | None = None) -> str:
+    """Endereço que abre o editor do OpenStreetMap (iD) no objeto ("way/123") ou, sem objeto, na
+    coordenada (aproximação de rua). Vazio se não há nem um nem outra."""
+    tipo, _, numero_osm = osm.partition("/")
+    if tipo in ("node", "way", "relation") and numero_osm.isdigit():
+        return f"{EDITOR}&{tipo}={numero_osm}"
+    if lat is not None and lon is not None:
+        return f"{EDITOR}#map=19/{lat:.5f}/{lon:.5f}"
+    return ""
+
+
+def _mapear(url: str, texto: str) -> str:
+    return f"[{texto}]({url})" if url else "—"
 
 
 def montar(fonte: dict, itens: list[dict], feicoes: list[dict], pares: list[tuple], motivos: dict[int, str],
@@ -96,10 +108,12 @@ def tabela_so_oficial(comp: dict, maximo: int = 60) -> str:
     if not lacunas:
         return ""
     partes = [f"\n**Só na base oficial: itens sem correspondente no mapa** ({len(lacunas)}). "
-              "O número é o do item no mapa de comparação.\n",
-              # traços na proporção das larguras (nº 6%, código 14%, nome 32%, motivo 48%)
-              "| Nº | Código | Nome | Motivo provável |\n|:-|:---|:-------|:-----------|\n"
-              + "\n".join(f"| {o['n']} | {texto_md(o['id'])} | {texto_md(o['nome'])} | {texto_md(o['motivo'])} |"
+              "O número é o do item no mapa de comparação; *mapear* abre o editor do OpenStreetMap no lugar "
+              "que a base indica (confira em campo antes de desenhar: nada se copia da base oficial).\n",
+              # traços na proporção das larguras (nº 5%, código 13%, nome 30%, motivo 40%, editor 12%)
+              "| Nº | Código | Nome | Motivo provável | No editor |\n|:-|:---|:-------|:----------|:--|\n"
+              + "\n".join(f"| {o['n']} | {texto_md(o['id'])} | {texto_md(o['nome'])} | {texto_md(o['motivo'])} | "
+                          f"{_mapear(link_editor(lat=o['lat'], lon=o['lon']), 'mapear')} |"
                           for o in lacunas[:maximo]) + "\n"]
     if len(lacunas) > maximo:
         partes.append(f"\n… e mais {len(lacunas) - maximo} (lista completa no arquivo de comparação, em Dados para download).\n")
@@ -112,8 +126,9 @@ def tabela_so_osm(comp: dict, maximo: int = 40) -> str:
         return ""
     partes = [f"\n**Só no OpenStreetMap: objetos sem item na base oficial** ({len(itens)}). Podem ser novos, "
               "estar fora do cadastro ou ser erro no mapa: conferir.\n",
-              "| Objeto no OSM | Nome no mapa |\n|:----|:--------|\n"
-              + "\n".join(f"| [{o['osm']}](https://www.openstreetmap.org/{o['osm']}) | {texto_md(o['nome']) or '*sem nome*'} |"
+              "| Objeto no OSM | Nome no mapa | No editor |\n|:----|:--------|:--|\n"
+              + "\n".join(f"| [{o['osm']}](https://www.openstreetmap.org/{o['osm']}) | {texto_md(o['nome']) or '*sem nome*'} | "
+                          f"{_mapear(link_editor(o['osm']), 'editar')} |"
                           for o in itens[:maximo]) + "\n"]
     if len(itens) > maximo:
         partes.append(f"\n… e mais {len(itens) - maximo} (lista completa no arquivo de comparação, em Dados para download).\n")

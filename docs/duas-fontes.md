@@ -16,6 +16,10 @@ Na mesma ordem no site e no PDF:
 5. **Só no OpenStreetMap**: objetos sem item na base. Podem ser novos, estar fora do cadastro ou ser erro no mapa; a tabela leva ao objeto no OpenStreetMap.
 6. **Fontes**: as duas, cada uma com a sua data (retrato do OpenStreetMap e data de acesso à base).
 
+As tabelas dos itens 4 e 5 têm a coluna **No editor**: abre o editor do OpenStreetMap (iD) no lugar que a base indica ou no objeto a conferir. O atalho só leva ao lugar; o que se desenha no mapa é o que foi conferido em campo ou em imagem de uso permitido.
+
+No **Mapa geral** do site, cada tema com base oficial tem uma segunda camada, desligada de início, com o que falta no mapa: os itens só na base oficial (com o número da tabela), as faces cujo nome não está no mapa ou os setores na cor da razão.
+
 A página inicial traz a **síntese**: uma linha por prancha, com os objetos no OpenStreetMap e, onde há base oficial, quantos itens dela foram encontrados no mapa.
 
 ## Um dado só para o site e para o PDF
@@ -68,6 +72,7 @@ python ../atlas-motor/scripts/baixar_bases.py --base cnes    # só uma (pode rep
 | `setores` | Malha de setores do Censo 2022 (IBGE), arquivo da UF | `setores/setores.geojson`: os setores do município | unidades da contagem |
 | `cnefe` | CNEFE do Censo 2022 (IBGE), arquivo do município | `cnefe/enderecos-por-setor.csv`: endereços por setor e por espécie | Edificações (`contagem`) |
 | `faces` | Base de Faces de Logradouros 2022 (IBGE), arquivo da UF | `faces/logradouros.csv` e `faces/faces.geojson` | Logradouros (`nomes`) |
+| `uf` | API de malhas do IBGE (contorno simplificado do estado) | `uf/uf.geojson` | nenhuma: encarte de localização dos mapas do município |
 
 Só o recorte do município entra no repositório, e só o que a comparação usa: do CNES não saem razão social, CNPJ ou CPF, telefone nem e-mail; do CNEFE saem só as contagens, nenhum endereço. Os arquivos originais ficam em `~/.cache/atlas-motor/bases` (os da UF servem a todos os municípios do estado; setores e faces de Minas Gerais somam cerca de 300 MB). `setores` deve vir antes de `cnefe`: cada endereço é contado no setor da malha publicada em que a sua coordenada cai, porque o código de setor do CNEFE é o da coleta e nem sempre existe na malha.
 

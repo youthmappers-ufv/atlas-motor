@@ -51,6 +51,11 @@ class Tema:
     cor: str = "#304068"           # cor dos objetos do tema no mapa
     mapa: str = "pontos"           # pontos (objetos em destaque sobre as vias) | linhas (rede: vias, estradas)
     indicadores: tuple = ()        # além de total e nome: "servico" (endereço, horário), "vias" (km, pavimento)
+    classes: tuple = ()            # classes de cor do mapa: (rótulo, cor, regras); ver classe_do_objeto
+
+    def classe(self, tags: dict) -> tuple[str, str] | None:
+        """(rótulo, cor) da classe do objeto, ou None se o tema não tem classes ou nenhuma casa."""
+        return classe_do_objeto(self.classes, tags)
 
     @property
     def prancha(self) -> str:
@@ -68,10 +73,32 @@ INDICADORES = ("servico", "vias", "linhas", "areas")
 
 
 def _visual(base: dict, escolha: dict) -> dict:
-    """cor, mapa e indicadores de um tema: do catálogo, trocáveis pelo município."""
+    """cor, mapa, indicadores e classes de um tema: do catálogo, trocáveis pelo município."""
     return {"cor": escolha.get("cor", base.get("cor", "#304068")),
             "mapa": escolha.get("mapa", base.get("mapa", "pontos")),
-            "indicadores": tuple(escolha.get("indicadores", base.get("indicadores", ())))}
+            "indicadores": tuple(escolha.get("indicadores", base.get("indicadores", ()))),
+            "classes": tuple((str(c.get("rotulo", "")), str(c.get("cor", "")), tuple(c.get("filtro", ())))
+                             for c in escolha.get("classe", base.get("classe", ())))}
+
+
+def casa_regras(tags: dict, regras) -> bool:
+    """Alguma regra casa com as etiquetas? Regra: "chave=valor", com alternativas separadas por |
+    ("landuse=farmland|orchard"); só a chave ("healthcare") aceita qualquer valor."""
+    for regra in regras:
+        chave, _, valores = regra.partition("=")
+        if chave in tags and (not valores or re.fullmatch(valores, tags[chave])):
+            return True
+    return False
+
+
+def classe_do_objeto(classes, tags: dict) -> tuple[str, str] | None:
+    """Classe de cor de um objeto num tema com classes ([[tema.classe]] no catálogo ou no temas.toml
+    do município: rotulo, cor e filtro). Vale a primeira classe cuja regra casa; sem nenhuma, None
+    (o objeto fica na cor do tema, como "outros")."""
+    for rotulo, cor, regras in classes:
+        if casa_regras(tags, regras):
+            return rotulo, cor
+    return None
 
 
 def ler_toml(arquivo: Path) -> dict:
