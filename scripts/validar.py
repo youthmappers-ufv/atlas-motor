@@ -100,6 +100,15 @@ def erros_visuais(tema: dict) -> list[str]:
     for i in tema.get("indicadores", []):
         if i not in INDICADORES:
             erros.append(f"indicador '{i}' (use {list(INDICADORES)})")
+    for n, c in enumerate(tema.get("classe", []), 1):
+        if not isinstance(c, dict) or not str(c.get("rotulo", "")).strip():
+            erros.append(f"classe {n}: falta 'rotulo'")
+            continue
+        if not RE_COR.match(str(c.get("cor", ""))):
+            erros.append(f"classe '{c['rotulo']}': cor '{c.get('cor', '')}' (use #RRGGBB)")
+        filtro = c.get("filtro")
+        if not isinstance(filtro, list) or not filtro or not all(isinstance(x, str) and x.strip() for x in filtro):
+            erros.append(f"classe '{c['rotulo']}': 'filtro' deve ser uma lista de regras (ex.: [\"landuse=farmland|orchard\"])")
     return erros
 
 

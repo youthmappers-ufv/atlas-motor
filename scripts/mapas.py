@@ -11,6 +11,7 @@ Usado por construir.py; direto: python <motor>/scripts/mapas.py --local <municí
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import sys
 from pathlib import Path
@@ -31,6 +32,9 @@ from indicadores import calcular, ler_feicoes  # noqa: E402
 BORDO, CINZA, CLARO, AGUA, VIA_FUNDO = "#7A1C1C", "#303030", "#F4F1E8", "#3A7BD5", "#C9C9C9"
 FALTA = "#C62828"                                 # itens só na base oficial (lacunas do mapa)
 ROTULOS_MAX = 14                                  # acima disso os nomes não cabem no mapa
+GRADE = "#8A8A8A"                                 # linhas e rótulos da grade de coordenadas
+# Passos da grade, em segundos de arco: vale o maior que ainda dá pelo menos três linhas no mapa.
+PASSOS_GRADE = (3600, 1800, 900, 600, 300, 120, 60, 30, 15, 10, 5)
 
 
 def caixa(recorte: str, config: dict) -> tuple[float, float, float, float]:
@@ -42,8 +46,97 @@ def na_caixa(x: float, y: float, cx: tuple) -> bool:
     return o <= x <= l and s <= y <= n
 
 
+def passo_da_grade(extensao_graus: float) -> int:
+    """Passo da grade (em segundos de arco) para um mapa com essa extensão no menor lado."""
+    return next((p for p in PASSOS_GRADE if extensao_graus * 3600 / p >= 2.5), PASSOS_GRADE[-1])
+
+
+def rotulo_da_grade(segundos: int, eixo: str, passo: int) -> str:
+    """Coordenada em graus e minutos (e segundos, se o passo pedir): -69300, "lat" -> 19°15′S."""
+    letra = ("N" if segundos >= 0 else "S") if eixo == "lat" else ("E" if segundos >= 0 else "W")
+    g, resto = divmod(abs(segundos), 3600)
+    m, seg = divmod(resto, 60)
+    return f"{g}°{m:02d}′" + (f"{seg:02d}″" if passo < 60 else "") + letra
+
+
+def _grade(ax, cx: tuple) -> None:
+    """Grade de coordenadas geográficas: linhas finas e os valores junto às bordas esquerda
+    (latitude) e superior (longitude). Os cantos ficam livres para legenda, norte e escala."""
+    s, o, n, l = cx
+    passo = passo_da_grade(min(n - s, l - o))
+    estilo = dict(color=GRADE, lw=0.3, alpha=0.55, zorder=1.2)
+    texto = dict(fontsize=5, color=GRADE, zorder=7,
+                 bbox=dict(boxstyle="round,pad=0.1", facecolor="white", edgecolor="none", alpha=0.7))
+    for k in range(math.ceil(s * 3600 / passo), math.floor(n * 3600 / passo) + 1):
+        y = k * passo / 3600
+        ax.plot([o, l], [y, y], **estilo)
+        if 0.16 < (y - s) / (n - s) < 0.72:        # abaixo da legenda e acima da escala
+            ax.text(o + (l - o) * 0.008, y, rotulo_da_grade(k * passo, "lat", passo), ha="left", va="center", **texto)
+    for k in range(math.ceil(o * 3600 / passo), math.floor(l * 3600 / passo) + 1):
+        x = k * passo / 3600
+        ax.plot([x, x], [s, n], **estilo)
+        if 0.42 < (x - o) / (l - o) < 0.88:        # à direita da legenda e antes do norte
+            ax.text(x, n - (n - s) * 0.008, rotulo_da_grade(k * passo, "lon", passo), ha="center", va="top", **texto)
+
+
+def ler_uf(local: Path) -> list:
+    """Contorno do estado, para o encarte de localização (dados/oficiais/uf/, de baixar_bases.py
+    --base uf). Sem o arquivo, lista vazia: o mapa do município sai sem encarte."""
+    arq = local / "dados" / "oficiais" / "uf" / "uf.geojson"
+    try:
+        feicoes = json.loads(arq.read_text(encoding="utf-8"))["features"]
+    except (OSError, ValueError, KeyError):
+        return []
+    return [p[0] for f in feicoes for p in poligonos_de(f["geometry"])]
+
+
+def _encarte(ax, local: Path, recorte: str, config: dict) -> None:
+    """Encarte de localização, no canto inferior direito: a sede dentro do município (mapa da
+    sede) ou o município dentro do estado (mapa do município, se houver o contorno do estado)."""
+    limite = ler_limite(local)
+    if recorte == "sede":
+        fundo, destaque = limite, None
+        s, o, n, l = caixa("sede", config)
+        marca = [(o, s), (l, s), (l, n), (o, n), (o, s)]
+    else:
+        fundo, destaque, marca = ler_uf(local), limite, None
+        if not fundo:
+            return
+    xs = [x for anel in fundo for x, _ in anel]
+    ys = [y for anel in fundo for _, y in anel]
+    mx, my = (max(xs) - min(xs)) * 0.06, (max(ys) - min(ys)) * 0.06
+    ins = ax.inset_axes([0.775, 0.05, 0.21, 0.21], zorder=8)
+    ins.set_xlim(min(xs) - mx, max(xs) + mx)
+    ins.set_ylim(min(ys) - my, max(ys) + my)
+    ins.set_aspect(1 / math.cos(math.radians((min(ys) + max(ys)) / 2)), adjustable="box", anchor="SE")
+    ins.set_xticks([])
+    ins.set_yticks([])
+    ins.set_facecolor("white")
+    for lado in ins.spines.values():
+        lado.set_edgecolor("#BBBBBB")
+        lado.set_linewidth(0.6)
+    for anel in fundo:
+        ax_x, ax_y = zip(*anel)
+        ins.fill(ax_x, ax_y, facecolor=CLARO, edgecolor=CINZA, linewidth=0.4)
+    if destaque:                                   # o município no estado: pequeno demais sem um círculo em volta
+        for anel in destaque:
+            ax_x, ax_y = zip(*anel)
+            ins.fill(ax_x, ax_y, facecolor=FALTA, edgecolor=FALTA, linewidth=0.3)
+        cx = [x for anel in destaque for x, _ in anel]
+        cy = [y for anel in destaque for _, y in anel]
+        ins.scatter([(min(cx) + max(cx)) / 2], [(min(cy) + max(cy)) / 2], s=42, facecolors="none", edgecolors=FALTA,
+                    linewidths=0.8)
+        titulo = f"Localização em {config['municipio'].get('uf', 'o estado')}"
+    else:
+        ax_x, ax_y = zip(*marca)
+        ins.fill(ax_x, ax_y, facecolor=FALTA, edgecolor=FALTA, linewidth=0.8, alpha=0.9)
+        titulo = "Localização no município"
+    ins.set_title(titulo, fontsize=5, color=CINZA, pad=2)
+
+
 def _base(local: Path, recorte: str, config: dict, vias_de_fundo: bool):
-    """Figura com o limite, as vias de referência e, no município, os nomes das localidades."""
+    """Figura com o limite, as vias de referência, os nomes das localidades (no município), a
+    grade de coordenadas e o encarte de localização."""
     s, o, n, l = caixa(recorte, config)
     fx = math.cos(math.radians((s + n) / 2))
     largura = 7.0
@@ -73,6 +166,8 @@ def _base(local: Path, recorte: str, config: dict, vias_de_fundo: bool):
                 x, y = f["geometry"]["coordinates"]
                 ax.text(x, y + (n - s) * 0.012, nome, ha="center", va="bottom", fontsize=6.5, color=CINZA,
                         style="italic", zorder=8)
+    _grade(ax, (s, o, n, l))
+    _encarte(ax, local, recorte, config)
     return fig, ax
 
 
@@ -128,7 +223,12 @@ def desenhar(local: Path, tema: Tema, recorte: str, config: dict, saida: Path) -
     fig, ax = _base(local, recorte, config, fundo)
     cor = tema.cor
     cheios, vazios, tem = [], [], set()            # tem: o que foi desenhado, para a legenda
-    for f in ler_feicoes(local, tema.id):
+    usadas = set()                                 # classes de cor que apareceram (temas com classes)
+    opaco = 0.75 if tema.classes else 0.5          # com classes, a cor precisa se distinguir das vizinhas
+    feicoes = ler_feicoes(local, tema.id)
+    if tema.mapa == "areas":                       # as maiores primeiro: a área pequena fica por cima da que a contém
+        feicoes = sorted(feicoes, key=lambda f: -area_m2(f["geometry"]) if poligonos_de(f["geometry"]) else 0)
+    for f in feicoes:
         g, tags = f["geometry"], f["properties"]["tags"]
         if linhas_de(g):
             for linha in linhas_de(g):
@@ -144,10 +244,15 @@ def desenhar(local: Path, tema: Tema, recorte: str, config: dict, saida: Path) -
             continue
         if poligonos_de(g):
             agua = tags.get("natural") in ("water", "wetland") or "water" in tags
+            classe = None if agua else tema.classe(tags)
             for poligono in poligonos_de(g):
                 xs, ys = zip(*poligono[0])
-                ax.fill(xs, ys, color=AGUA if agua else cor, alpha=0.5 if tema.mapa == "areas" else 0.35, lw=0, zorder=2)
-            tem.add("corpos" if agua else "areas")
+                ax.fill(xs, ys, color=AGUA if agua else classe[1] if classe else cor,
+                        alpha=opaco if tema.mapa == "areas" else 0.35, lw=0, zorder=2)
+            if classe:
+                usadas.add(classe[0])
+            else:
+                tem.add("corpos" if agua else "areas")
             if tema.mapa == "areas":               # no mapa de áreas, a área é o objeto: sem ponto no centro
                 continue
         x, y = ponto_representativo(g)
@@ -168,9 +273,11 @@ def desenhar(local: Path, tema: Tema, recorte: str, config: dict, saida: Path) -
     if vazios:
         itens.append(Line2D([], [], marker="o", ls="", markerfacecolor="white", markeredgecolor=cor, markersize=4.5,
                             label="Sem nome no mapa"))
+    itens += [Patch(facecolor=c, alpha=opaco, lw=0, label=rotulo) for rotulo, c, _ in tema.classes if rotulo in usadas]
     if "areas" in tem:
-        itens.append(Patch(facecolor=cor, alpha=0.5 if tema.mapa == "areas" else 0.35, lw=0,
-                           label="Áreas do tema" if tema.mapa == "areas" else "Área do objeto"))
+        itens.append(Patch(facecolor=cor, alpha=opaco if tema.mapa == "areas" else 0.35, lw=0,
+                           label="Outros usos" if tema.classes else
+                           "Áreas do tema" if tema.mapa == "areas" else "Área do objeto"))
     if "corpos" in tem:
         itens.append(Patch(facecolor=AGUA, alpha=0.5, lw=0, label="Corpos d'água"))
     if "linhas" in tem:

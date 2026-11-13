@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 import io
 import json
 import re
@@ -390,7 +391,35 @@ def base_faces(local: Path, config: dict, de_novo: bool) -> str:
     return f"faces: {len(feicoes)} faces, {len(nomes)} logradouros com nome"
 
 
-BASES = {"cnes": base_cnes, "setores": base_setores, "cnefe": base_cnefe, "faces": base_faces}
+# ---------------------------------------------------------------- Contorno do estado (encarte dos mapas)
+URL_UF = "https://servicodados.ibge.gov.br/api/v3/malhas/estados/{uf}?formato=application/vnd.geo%2Bjson&qualidade=minima"
+
+
+def base_uf(local: Path, config: dict, de_novo: bool) -> str:
+    """Contorno simplificado do estado (API de malhas do IBGE, poucos KB): mapas.py o usa no encarte
+    de localização dos mapas do município. Não é base de comparação."""
+    uf = config["municipio"]["uf"]
+    arq = baixar(URL_UF.format(uf=uf), CACHE / f"{uf}_contorno.geojson", de_novo)
+    bruto = arq.read_bytes()
+    if bruto[:2] == bytes([0x1F, 0x8B]):          # gzip: a API responde compactada mesmo sem o pedido
+        bruto = gzip.decompress(bruto)
+    dados = json.loads(bruto.decode("utf-8"))
+    feicoes = [{"type": "Feature", "properties": {"uf": uf}, "geometry": f["geometry"]}
+               for f in dados.get("features", []) if f.get("geometry", {}).get("type") in ("Polygon", "MultiPolygon")]
+    if not feicoes:
+        raise ValueError(f"a malha de {uf} veio sem polígono")
+    pasta = local / "dados" / "oficiais" / "uf"
+    gravar_geojson(pasta / "uf.geojson", feicoes)
+    gravar_fonte(pasta, {
+        "nome": f"Malha estadual ({uf}), qualidade mínima", "orgao": "IBGE",
+        "url": URL_UF.format(uf=uf), "data_acesso": date.today(), "licenca": IBGE_LICENCA,
+        "arquivo": "uf.geojson", "papel": "encarte",
+        "observacao": "Contorno simplificado do estado, usado só no encarte de localização dos mapas (baixar_bases.py).",
+    })
+    return f"uf: contorno de {uf}"
+
+
+BASES = {"cnes": base_cnes, "setores": base_setores, "cnefe": base_cnefe, "faces": base_faces, "uf": base_uf}
 
 
 def main() -> int:

@@ -23,6 +23,7 @@ versão do motor; sem a variável, usa o git describe do município.
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
 import re
@@ -100,12 +101,64 @@ def mapa_interativo(tema, com_comparacao: bool) -> str:
     publicadas em _gerado/downloads/ (o mesmo dado dos mapas do PDF). Sem JavaScript, ficam os
     mapas estáticos logo abaixo."""
     comparacao = f' data-comparacao="../_gerado/downloads/{tema.id}-comparacao.geojson"' if com_comparacao else ""
+    if tema.classes:                              # classes de cor: as mesmas do mapa do PDF
+        classes = json.dumps([[r, c, list(f)] for r, c, f in tema.classes], ensure_ascii=False)
+        comparacao += f' data-classes="{html.escape(classes, quote=True)}"'
     return ("::: {.content-visible when-format=\"html\"}\n```{=html}\n"
             f'<div class="atlas-mapa" data-tema="../_gerado/downloads/{tema.id}.geojson" '
             f'data-limite="../_gerado/downloads/limite.geojson" data-cor="{tema.cor}" data-forma="{tema.mapa}" '
             f'data-titulo="{tema.titulo.replace(chr(34), chr(39))}"{comparacao} role="region" '
             f'aria-label="Mapa interativo: {tema.titulo.replace(chr(34), chr(39))}"></div>\n'
             "```\n:::\n")
+
+
+LEVE_KB = 300                                     # até aqui, a camada de pontos já abre marcada no mapa geral
+ROTULOS_GERAL = {"itens": "Faltam no mapa", "nomes": "Nomes que faltam no mapa", "contagem": "Razão por setor"}
+
+
+def tamanho_legivel(octetos: int) -> str:
+    """Tamanho do arquivo para o painel do mapa geral; vazio nos leves (não vale o aviso)."""
+    if octetos < LEVE_KB * 1024:
+        return ""
+    return f"{numero(octetos / 1e6, 1)} MB" if octetos >= 1e6 else f"{round(octetos / 1024)} KB"
+
+
+def indice_geral(resumo: list, downloads: Path) -> dict:
+    """_gerado/downloads/mapa-geral.json: as camadas do Mapa geral (livro/mapa.html), uma por prancha
+    ativa com dados e, nos temas com base oficial, a camada do que falta no mapa. Os endereços são
+    relativos à página do capítulo, na raiz do site. Abrem marcados só os temas de pontos e leves:
+    os demais são baixados quando o leitor marca a camada."""
+    temas = []
+    for t, res in resumo:
+        arq = downloads / f"{t.id}.geojson"
+        if not arq.exists():
+            continue
+        octetos = arq.stat().st_size
+        item = {"id": t.id, "numero": t.numero, "titulo": t.titulo, "cor": t.cor, "forma": t.mapa,
+                "arquivo": f"_gerado/downloads/{t.id}.geojson", "tamanho": tamanho_legivel(octetos),
+                "inicial": t.mapa == "pontos" and octetos < LEVE_KB * 1024,
+                "prancha": f"pranchas/{t.prancha.removesuffix('.qmd')}.html",
+                "classes": [[r, c, list(f)] for r, c, f in t.classes]}
+        comp = res.get("comparacao")
+        if comp:
+            modo = comp.get("modo", "itens")
+            orgao = comp["fonte"]["orgao"] or "base oficial"
+            item["comparacao"] = {"arquivo": f"_gerado/downloads/{t.id}-comparacao.geojson", "modo": modo,
+                                  "rotulo": f"{ROTULOS_GERAL[modo]} ({orgao})"}
+        temas.append(item)
+    return {"limite": "_gerado/downloads/limite.geojson", "temas": temas}
+
+
+def trecho_mapa_geral(site: str) -> str:
+    """_gerado/mapa-geral.md: no site, o mapa com as camadas; no PDF, onde encontrá-lo."""
+    onde = f"no site do atlas, em <{site}mapa-geral.html>" if site else "na versão em site do atlas"
+    return ("::: {.content-visible when-format=\"html\"}\n```{=html}\n"
+            '<div class="atlas-mapa atlas-mapa-geral" data-indice="_gerado/downloads/mapa-geral.json" role="region" '
+            'aria-label="Mapa geral: todas as pranchas num mapa só, com camadas para marcar"></div>\n'
+            "```\n:::\n\n"
+            "::: {.content-visible unless-format=\"html\"}\n"
+            f"Todas as pranchas do atlas num mapa só, cada uma numa camada que o leitor marca ou desmarca. O mapa é "
+            f"interativo e por isso só existe {onde}.\n:::\n")
 
 
 def sintese(resumo: list) -> str:
@@ -439,6 +492,9 @@ def main() -> int:
     (gerado / "pranchas.md").write_text(sintese(resumo), encoding="utf-8")
     (gerado / "evolucao.md").write_text(evolucao(local, ativos), encoding="utf-8")
     shutil.copy2(local / "dados" / "osm" / "limite.geojson", gerado / "downloads" / "limite.geojson")
+    (gerado / "downloads" / "mapa-geral.json").write_text(
+        json.dumps(indice_geral(resumo, gerado / "downloads"), ensure_ascii=False), encoding="utf-8")
+    (gerado / "mapa-geral.md").write_text(trecho_mapa_geral(dados_citacao(config)["site"]), encoding="utf-8")
     arquivos_dados = [("Limite do município", "limite.geojson")] + [
         (t.titulo, f"{t.id}.geojson") for t, _ in resumo if (gerado / "downloads" / f"{t.id}.geojson").exists()]
     for t in comparacoes:

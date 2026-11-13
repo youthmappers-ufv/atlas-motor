@@ -136,6 +136,47 @@ cor = "#8D6E3A"
 mapa = "areas"
 indicadores = ["areas"]
 
+# Classes de cor do mapa (vale a primeira que casar; o que sobra fica na cor do tema, como "Outros usos").
+[[tema.classe]]
+rotulo = "Lavoura"
+cor = "#E3B23C"
+filtro = ["landuse=farmland|greenhouse_horticulture|plant_nursery"]
+
+[[tema.classe]]
+rotulo = "Café, pomar e outras culturas perenes"
+cor = "#A6532B"
+filtro = ["landuse=orchard|vineyard"]
+
+[[tema.classe]]
+rotulo = "Pastagem e campo"
+cor = "#B7D06A"
+filtro = ["landuse=meadow", "natural=grassland|heath"]
+
+[[tema.classe]]
+rotulo = "Mata e vegetação nativa"
+cor = "#1B7837"
+filtro = ["natural=wood|scrub"]
+
+[[tema.classe]]
+rotulo = "Silvicultura"
+cor = "#5AAE61"
+filtro = ["landuse=forest"]
+
+[[tema.classe]]
+rotulo = "Sede de fazenda"
+cor = "#7B5A3A"
+filtro = ["landuse=farmyard"]
+
+[[tema.classe]]
+rotulo = "Área urbana"
+cor = "#8C8C8C"
+filtro = ["landuse=residential|commercial"]
+
+[[tema.classe]]
+rotulo = "Indústria e mineração"
+cor = "#6A4C93"
+filtro = ["landuse=industrial|quarry"]
+
 [[tema]]
 id = "edificacoes"
 numero = 12

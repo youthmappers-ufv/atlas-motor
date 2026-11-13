@@ -28,6 +28,7 @@ O atlas tem dois tipos de repositório: o **motor** (este, comum a todos) e um *
 ## Vocabulário
 
 - **Tema**: assunto de uma prancha (educação, saúde, sistema viário...). O catálogo de temas é comum a todos os municípios (`catalogo/temas.toml`); um município pode ter temas próprios.
+- **Mapa geral**: capítulo do site com todas as pranchas num mapa só, cada uma numa camada que o leitor marca ou desmarca.
 - **Prancha**: o capítulo do atlas sobre um tema: texto da equipe e partes geradas pelo motor (mapas, indicadores, lacunas).
 - **Retrato do OSM**: os dados de um tema baixados do OpenStreetMap numa data, guardados em `dados/osm/` do município.
 - **Base oficial**: lista de um órgão público (INEP, CNES, Prefeitura) usada para medir a completude do mapa; nunca é copiada para o OSM.

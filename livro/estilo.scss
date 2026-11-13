@@ -13,3 +13,22 @@ table { font-size: 0.92rem; }
 .atlas-mapa .atlas-ficha-rotulo { color: $text-muted; }
 .atlas-mapa .atlas-numero { background: $body-bg; border: 0; box-shadow: none; color: $danger; font-weight: 700; padding: 0 3px; }
 .atlas-mapa .atlas-numero::before { display: none; }
+
+// Mapa geral: todas as pranchas num mapa, com o painel de camadas (livro/mapa.html)
+.atlas-mapa-geral { height: 42rem; max-height: 85vh; }
+.atlas-mapa .atlas-painel { background: $body-bg; color: $body-color; border: 1px solid $border-color; border-radius: 4px;
+  padding: 0.4rem 0.6rem; font-size: 0.8rem; line-height: 1.5; max-width: 17rem; }
+.atlas-mapa .atlas-painel-cabeca { display: flex; justify-content: space-between; gap: 0.5rem; }
+.atlas-mapa .atlas-painel-botao { background: none; border: 0; padding: 0; color: $primary; font-weight: 700; cursor: pointer; }
+.atlas-mapa .atlas-painel-botao + .atlas-painel-botao { font-weight: 400; }
+.atlas-mapa .atlas-painel-lista { max-height: 30rem; overflow-y: auto; margin-top: 0.25rem; }
+.atlas-mapa .atlas-painel label { display: block; margin: 0; cursor: pointer; }
+.atlas-mapa .atlas-painel label small { color: $text-muted; }
+.atlas-mapa .atlas-painel input { margin-right: 0.35rem; }
+.atlas-mapa .atlas-painel .atlas-sub, .atlas-mapa .atlas-classes { margin-left: 1.3rem; }
+.atlas-mapa .atlas-classes { color: $text-muted; }
+.atlas-mapa .atlas-legenda .atlas-classes { margin-left: 0; color: $body-color; }
+.atlas-mapa .atlas-amostra { display: inline-block; width: 0.75rem; height: 0.75rem; margin-right: 0.35rem; border: 2px solid; border-radius: 2px; vertical-align: -1px; }
+.atlas-mapa .atlas-fechado { display: none; }
+.atlas-mapa .atlas-ficha-links a { display: inline-block; margin: 0.25rem 0.75rem 0 0; }
+@media (max-width: 576px) { .atlas-mapa .atlas-painel { max-width: 12.5rem; } .atlas-mapa .atlas-painel-lista { max-height: 14rem; } }
